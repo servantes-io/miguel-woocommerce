@@ -1,0 +1,4 @@
+DB=test_wc_wosa
+USER=dbuser
+PASS=dbpass
+HOST=127.0.0.1
