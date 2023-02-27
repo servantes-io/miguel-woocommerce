@@ -13,7 +13,7 @@ class Miguel_Test_API extends WP_UnitTestCase {
     parent::setUp();
 
     $this->token = '1a2b3c4d5e6f7g8h9';
-    $this->miguel = new Miguel_API( $this->token );
+    $this->miguel = new Miguel_API( 'https://miguel.servantes.cz/v1/', $this->token );
   }
 
   /**

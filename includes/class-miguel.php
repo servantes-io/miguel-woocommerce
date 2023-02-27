@@ -86,7 +86,14 @@ class Miguel {
    */
   public function api() {
     if ( is_null( $this->api ) ) {
-      $url = get_option( 'miguel_api_url' );
+      $env = get_option( 'miguel_api_env' );
+      $url = 'https://miguel.servantes.cz/v1/';
+      if ($env == 'staging') {
+        $url = 'https://miguel-staging.servantes.cz/v1/';
+      } else if ($env == 'test') {
+        $url = 'https://miguel-test.servantes.cz/v1/';
+      }
+
       $token = get_option( 'miguel_api_token' );
       $this->api = new Miguel_API( $url, $token );
     }

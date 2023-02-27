@@ -20,6 +20,8 @@ class Miguel_Settings extends WC_Settings_Page {
     add_action( 'woocommerce_settings_' . $this->id, array( $this, 'output' ) );
     add_action( 'woocommerce_settings_save_' . $this->id, array( $this, 'save' ) );
     add_filter( 'woocommerce_settings_tabs_array', array( $this, 'add_settings_page' ), 20 );
+
+    parent::__construct();
   }
 
   /**
@@ -33,16 +35,24 @@ class Miguel_Settings extends WC_Settings_Page {
         'title' => __( 'API', 'miguel' )
       ),
       array(
-        'id' => 'miguel_api_url',
-        'css' => 'min-width: 350px;',
-        'type' => 'text',
-        'title' => __( 'Url', 'miguel' ),
+        'id'       => 'miguel_api_env',
+        'title'    => __( 'Miguel environment', 'miguel' ),
+        'desc' => __( 'Select production for regular use', 'miguel' ),
+        'default'  => 'prod',
+        'type'     => 'select',
+        'class'    => 'wc-enhanced-select',
+        'options'  => array(
+          'prod' => __( 'Production', 'miguel' ),
+          'staging' => __( 'Staging', 'miguel' ),
+          'test' => __( 'Test', 'miguel' ),
+        ),
       ),
       array(
         'id' => 'miguel_api_token',
         'css' => 'min-width: 350px;',
         'type' => 'text',
         'title' => __( 'Token', 'miguel' ),
+        'desc' => __( 'To setup safe communication between your e-shop and our server.', 'miguel' ),
       ),
       array(
         'id' => 'miguel_async_gen',

@@ -24,7 +24,7 @@ class Miguel_API {
    * @param string $url
    * @param string $token
    */
-  public function __construct( $url = 'https://miguel.servantes.cz/v1/', $token ) {
+  public function __construct( $url, $token ) {
     $this->url = $url;
     $this->token = $token;
   }

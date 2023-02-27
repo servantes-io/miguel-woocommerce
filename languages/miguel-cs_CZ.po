@@ -48,6 +48,24 @@ msgstr "Testovací režim"
 msgid "Enable testmode"
 msgstr "Povolit testovací režim"
 
+msgid "Miguel environment"
+msgstr "Prostředí Miguel serveru"
+
+msgid "Select production for regular use"
+msgstr "Pro běžný provoz zvolte produkční prostředí."
+
+msgid "Production"
+msgstr "Produkce"
+
+msgid "Staging"
+msgstr "Staging"
+
+msgid "Test"
+msgstr "Test"
+
+msgid "To setup safe communication between your e-shop and our server."
+msgstr "Pomocí API klíče bude váš e-shop bezpečně komunikovat s naším serverem."
+
 #: includes/class-miguel-api.php:66
 msgid "Format is not allowed."
 msgstr "Formát není povolen."
