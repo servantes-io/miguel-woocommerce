@@ -6,10 +6,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Die page
  *
- * @package WC_Wosa
+ * @package Miguel
  */
 
-$title = isset( $title ) ? $title : __( 'WOSA', 'wc-wosa' );
+$title = isset( $title ) ? $title : __( 'MIGUEL', 'miguel' );
 $content = isset( $content ) ? $content : '';
 
 ?>
@@ -19,7 +19,7 @@ $content = isset( $content ) ? $content : '';
     <meta charset="utf-8">
     <meta name="robots" content="noindex,follow">
     <title><?php echo esc_html( $title ); ?></title>
-    <link rel="stylesheet" href="<?php echo plugins_url( '/assets/css/style.css', WC_WOSA_PLUGIN_FILE ); ?>">
+    <link rel="stylesheet" href="<?php echo plugins_url( '/assets/css/style.css', MIGUEL_PLUGIN_FILE ); ?>">
   </head>
   <body><?php echo $content; ?></body>
 </html><?php

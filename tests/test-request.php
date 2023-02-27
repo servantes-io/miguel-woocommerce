@@ -2,15 +2,15 @@
 /**
  * Test Generate Request
  *
- * @package WC_Wosa\Tests
+ * @package Miguel\Tests
  */
-class WC_Wosa_Test_Request extends WP_UnitTestCase {
+class Miguel_Test_Request extends WP_UnitTestCase {
 
   /**
    * Test get_args(), guest
    */
   public function test_get_args() {
-    $order = WC_Wosa_Helper_Order::create_order();
+    $order = Miguel_Helper_Order::create_order();
 
     $want = array(
       'user' => array(
@@ -22,18 +22,18 @@ class WC_Wosa_Test_Request extends WP_UnitTestCase {
       'purchase_date' => $order->get_date_paid()->format( 'Y-m-d' )
     );
 
-    $request = new WC_Wosa_Request( $order );
+    $request = new Miguel_Request( $order );
 
     $this->assertEquals( $want, $request->to_array() );
 
-    WC_Wosa_Helper_Order::delete_order( $order->get_id() );
+    Miguel_Helper_Order::delete_order( $order->get_id() );
   }
 
   /**
    * Test get_args(), customer exists
    */
   public function test_get_args__customer() {
-    $order = WC_Wosa_Helper_Order::create_order();
+    $order = Miguel_Helper_Order::create_order();
 
     $customer_id = $this->factory->user->create( array(
       'role' => 'customer',
@@ -52,11 +52,11 @@ class WC_Wosa_Test_Request extends WP_UnitTestCase {
       'purchase_date' => $order->get_date_paid()->format( 'Y-m-d' )
     );
 
-    $request = new WC_Wosa_Request( $order );
+    $request = new Miguel_Request( $order );
 
     $this->assertEquals( $want, $request->to_array() );
 
-    WC_Wosa_Helper_Order::delete_order( $order->get_id() );
+    Miguel_Helper_Order::delete_order( $order->get_id() );
     wp_delete_user( $customer_id );
   }
 
@@ -64,8 +64,8 @@ class WC_Wosa_Test_Request extends WP_UnitTestCase {
    * Test is_valid()
    */
   public function test_is_valid() {
-    $order = WC_Wosa_Helper_Order::create_order();
-    $request = new WC_Wosa_Request( $order );
+    $order = Miguel_Helper_Order::create_order();
+    $request = new Miguel_Request( $order );
 
     $this->assertEquals( true, $request->is_valid() );
 
@@ -74,6 +74,6 @@ class WC_Wosa_Test_Request extends WP_UnitTestCase {
 
     $this->assertEquals( false, $request->is_valid() );
 
-    WC_Wosa_Helper_Order::delete_order( $order->get_id() );
+    Miguel_Helper_Order::delete_order( $order->get_id() );
   }
 }

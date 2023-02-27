@@ -1,6 +1,6 @@
 {
-  "name": "doctype/wc-wosa",
-  "author": "DOCTYPE, s.r.o.",
+  "name": "servantes/miguel",
+  "author": "Servantes, s.r.o.",
   "require-dev": {
     "phpunit/phpunit": "6.*"
   }

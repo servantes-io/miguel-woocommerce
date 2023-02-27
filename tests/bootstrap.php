@@ -2,7 +2,7 @@
 /**
  * PHPUnit bootstrap file
  *
- * @package WC_Wosa
+ * @package Miguel
  */
 
 $_tests_dir = getenv( 'WP_TESTS_DIR' );
@@ -23,15 +23,15 @@ require_once $_tests_dir . '/includes/functions.php';
  */
 function _manually_load_plugin() {
   require dirname( dirname( __FILE__ ) ) . '../../woocommerce/woocommerce.php';
-  require dirname( dirname( __FILE__ ) ) . '/wc-wosa.php';
+  require dirname( dirname( __FILE__ ) ) . '/miguel.php';
 }
 
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
 // Plugin helpers
-require dirname( dirname( __FILE__ ) ) . '/tests/helpers/class-wc-wosa-helper-http.php';
-require dirname( dirname( __FILE__ ) ) . '/tests/helpers/class-wc-wosa-helper-order.php';
-require dirname( dirname( __FILE__ ) ) . '/tests/helpers/class-wc-wosa-helper-product.php';
+require dirname( dirname( __FILE__ ) ) . '/tests/helpers/class-miguel-helper-http.php';
+require dirname( dirname( __FILE__ ) ) . '/tests/helpers/class-miguel-helper-order.php';
+require dirname( dirname( __FILE__ ) ) . '/tests/helpers/class-miguel-helper-product.php';
 
 // WooCommerce helpers
 $wc_tests_framework_base_dir = dirname( dirname( __FILE__ ) ) . '../../woocommerce/tests/framework/';

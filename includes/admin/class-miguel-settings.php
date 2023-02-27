@@ -4,18 +4,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Settings 
+ * Settings
  *
- * @package WC_Wosa
+ * @package Miguel
  */
-class WC_Wosa_Settings extends WC_Settings_Page {
+class Miguel_Settings extends WC_Settings_Page {
 
   /**
-   * Init settings page. 
+   * Init settings page.
    */
-  public function __construct() {    
-    $this->id = 'wosa';
-    $this->label = __( 'Wosa', 'wc-wosa' );
+  public function __construct() {
+    $this->id = 'miguel';
+    $this->label = __( 'Miguel', 'miguel' );
 
     add_action( 'woocommerce_settings_' . $this->id, array( $this, 'output' ) );
     add_action( 'woocommerce_settings_save_' . $this->id, array( $this, 'save' ) );
@@ -26,38 +26,38 @@ class WC_Wosa_Settings extends WC_Settings_Page {
    * @return array
    */
   public function get_settings() {
-    $settings = array( 
+    $settings = array(
       array(
-        'id' => 'wc_wosa_api_options',
-        'type' => 'title', 
-        'title' => __( 'API', 'wc-wosa' )
+        'id' => 'miguel_api_options',
+        'type' => 'title',
+        'title' => __( 'API', 'miguel' )
       ),
       array(
-        'id' => 'wc_wosa_api_url',
+        'id' => 'miguel_api_url',
         'css' => 'min-width: 350px;',
         'type' => 'text',
-        'title' => __( 'Url', 'wc-wosa' ),
+        'title' => __( 'Url', 'miguel' ),
       ),
       array(
-        'id' => 'wc_wosa_api_token',
+        'id' => 'miguel_api_token',
         'css' => 'min-width: 350px;',
         'type' => 'text',
-        'title' => __( 'Token', 'wc-wosa' ),
+        'title' => __( 'Token', 'miguel' ),
       ),
       array(
-        'id' => 'wc_wosa_async_gen',
+        'id' => 'miguel_async_gen',
         'type' => 'checkbox',
-        'title' => __( 'Asynchronous generation', 'wc-wosa' ),
-        'desc' => __( 'Enable asynchronous generation', 'wc-wosa' )
+        'title' => __( 'Asynchronous generation', 'miguel' ),
+        'desc' => __( 'Enable asynchronous generation', 'miguel' )
       ),
       array(
-        'id' => 'wc_wosa_testmode',
+        'id' => 'miguel_testmode',
         'type' => 'checkbox',
-        'title' => __( 'Testmode', 'wc-wosa' ),
-        'desc' => __( 'Enable testmode', 'wc-wosa' )
+        'title' => __( 'Testmode', 'miguel' ),
+        'desc' => __( 'Enable testmode', 'miguel' )
       ),
       array(
-        'id' => 'wc_wosa_api_options',
+        'id' => 'miguel_api_options',
         'type' => 'sectionend'
       )
     );
@@ -86,4 +86,4 @@ class WC_Wosa_Settings extends WC_Settings_Page {
   }
 }
 
-return new WC_Wosa_Settings();
+return new Miguel_Settings();

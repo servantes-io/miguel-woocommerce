@@ -1,4 +1,4 @@
-DB=test_wc_wosa
+DB=test_miguel
 USER=dbuser
 PASS=dbpass
 HOST=127.0.0.1

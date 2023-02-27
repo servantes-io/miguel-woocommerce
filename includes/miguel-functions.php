@@ -2,7 +2,7 @@
 /**
  * Functions
  *
- * @package WC_Wosa
+ * @package Miguel
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param string $needle
  * @return boolean
  */
-function wc_wosa_starts_with( $haystack, $needle ) {
+function miguel_starts_with( $haystack, $needle ) {
   return $needle === "" || strpos( $haystack, $needle ) === 0;
 }
 
@@ -23,7 +23,7 @@ function wc_wosa_starts_with( $haystack, $needle ) {
  * @param array $defaults
  * @param array
  */
-function wc_wosa_get_shortcode_atts( $shortcode, $defaults = array() ) {
+function miguel_get_shortcode_atts( $shortcode, $defaults = array() ) {
   return shortcode_atts( $defaults, shortcode_parse_atts( trim( $shortcode, '[]' ) ) );
 }
 
@@ -32,8 +32,8 @@ function wc_wosa_get_shortcode_atts( $shortcode, $defaults = array() ) {
  * @param array $data
  * @return string
  */
-function wc_wosa_get_template( $tpl, $data = array() ) {
-  $path = dirname( WC_WOSA_PLUGIN_FILE ) . '/includes/views/' . $tpl . '.php';
+function miguel_get_template( $tpl, $data = array() ) {
+  $path = dirname( MIGUEL_PLUGIN_FILE ) . '/includes/views/' . $tpl . '.php';
   if ( ! file_exists( $path ) ) {
     return;
   }
@@ -50,11 +50,11 @@ function wc_wosa_get_template( $tpl, $data = array() ) {
 /**
  * @param int $product_id
  * @param int $download_id
- * @return WC_Wosa_File|WP_Error
+ * @return Miguel_File|WP_Error
  */
-function wc_wosa_get_file( $product_id, $download_id ) {
+function miguel_get_file( $product_id, $download_id ) {
   try {
-    $file = new WC_Wosa_File( $product_id, $download_id );
+    $file = new Miguel_File( $product_id, $download_id );
   } catch( \Exception $e ) {
     return new WP_Error( 'invalid-file', $e->getMessage() );
   }
@@ -62,14 +62,14 @@ function wc_wosa_get_file( $product_id, $download_id ) {
 }
 
 /**
- * @param WC_Wosa_File $file
- * @param WC_Wosa_Request $request
+ * @param Miguel_File $file
+ * @param Miguel_Request $request
  */
-function wc_wosa_get_file_download_url( $file, $request ) {
+function miguel_get_file_download_url( $file, $request ) {
   global $wpdb;
 
   return $wpdb->get_row( $wpdb->prepare("
-    SELECT * FROM {$wpdb->prefix}woocommerce_wosa_async_requests
+    SELECT * FROM {$wpdb->prefix}woocommerce_miguel_async_requests
     WHERE order_id = %d AND product_id = %d AND download_id = %d
   ", $request->get_order_id(), $file->get_product_id(), $file->get_download_id() ) );
 }
@@ -78,11 +78,11 @@ function wc_wosa_get_file_download_url( $file, $request ) {
  * @param int $guid
  * @return stdClass
  */
-function wc_wosa_get_async_request( $guid ) {
+function miguel_get_async_request( $guid ) {
   global $wpdb;
 
   return $wpdb->get_row( $wpdb->prepare("
-    SELECT * FROM {$wpdb->prefix}woocommerce_wosa_async_requests
+    SELECT * FROM {$wpdb->prefix}woocommerce_miguel_async_requests
     WHERE guid = %d
   ", absint( $guid ) ) );
 }
@@ -91,7 +91,7 @@ function wc_wosa_get_async_request( $guid ) {
  * @param array $args
  * @return int
  */
-function wc_wosa_insert_async_request( $args ) {
+function miguel_insert_async_request( $args ) {
   global $wpdb;
 
   $args = wp_parse_args( $args, array(
@@ -104,12 +104,12 @@ function wc_wosa_insert_async_request( $args ) {
   ) );
 
   $inserted = $wpdb->insert(
-    $wpdb->prefix . 'woocommerce_wosa_async_requests',
+    $wpdb->prefix . 'woocommerce_miguel_async_requests',
     $args
   );
 
   if ( ! $inserted ) {
-    return new WP_Error( 'inserting-failed', __( 'Inserting failed.', 'wc-wosa' ) );
+    return new WP_Error( 'inserting-failed', __( 'Inserting failed.', 'miguel' ) );
   }
 
   // Last inserted id
@@ -121,11 +121,11 @@ function wc_wosa_insert_async_request( $args ) {
  * @param array $args
  * @return int|false
  */
-function wc_wosa_update_async_request( $guid, $args ) {
+function miguel_update_async_request( $guid, $args ) {
   global $wpdb;
 
   return $wpdb->update(
-    $wpdb->prefix . 'woocommerce_wosa_async_requests',
+    $wpdb->prefix . 'woocommerce_miguel_async_requests',
     $args,
     array(
       'guid' => $guid
@@ -136,7 +136,7 @@ function wc_wosa_update_async_request( $guid, $args ) {
 /**
  * @param mixed
  */
-function wc_wosa_log( $data ) {
+function miguel_log( $data ) {
   if ( is_array( $data ) || is_object( $data ) ) {
     error_log( print_r( $data, true ) );
   } else {

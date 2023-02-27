@@ -2,9 +2,9 @@
 /**
  * Product helper for tests
  *
- * @package WC_Wosa\Tests
+ * @package Miguel\Tests
  */
-class WC_Wosa_Helper_Product {
+class Miguel_Helper_Product {
 
   /**
    * @return WC_Product_Simple
@@ -26,7 +26,7 @@ class WC_Wosa_Helper_Product {
     $files = array(
       md5( 'Dummy e-book' ) => array(
         'name' => 'Dummy e-book',
-        'file' => '[wosa book="dummy-name" format="epub"]'
+        'file' => '[miguel book="dummy-name" format="epub"]'
       )
     );
 

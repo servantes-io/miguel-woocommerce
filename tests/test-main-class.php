@@ -2,9 +2,9 @@
 /**
  * Test the main class
  *
- * @package WC_Wosa\Tests 
+ * @package Miguel\Tests
  */
-class WC_Wosa_Test_Main_Class extends WP_UnitTestCase {
+class Miguel_Test_Main_Class extends WP_UnitTestCase {
 
   /**
    * Setup test.
@@ -12,27 +12,27 @@ class WC_Wosa_Test_Main_Class extends WP_UnitTestCase {
   public function setUp() {
     parent::setUp();
 
-    $this->wosa = WC_Wosa();
+    $this->miguel = Miguel();
   }
 
   /**
    * Test instance.
    */
   public function test_instance() {
-    $this->assertClassHasStaticAttribute( 'instance', 'WC_Wosa' );
+    $this->assertClassHasStaticAttribute( 'instance', 'Miguel' );
   }
 
   /**
    * Test version.
    */
   public function test_version() {
-    $this->assertEquals( '0.1.0', $this->wosa->version );
+    $this->assertEquals( '0.1.0', $this->miguel->version );
   }
 
   /**
    * Test class instances.
    */
   public function test_class_instances() {
-    $this->assertInstanceOf( 'WC_Wosa_API', $this->wosa->api() );
+    $this->assertInstanceOf( 'Miguel_API', $this->miguel->api() );
   }
 }

@@ -6,16 +6,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Actions
  *
- * @package WC_Wosa
+ * @package Miguel
  */
-class WC_Wosa_Actions {
+class Miguel_Actions {
 
   /**
    * Adds hooks.
    */
   public function __construct() {
     $actions = array(
-      'wc_wosa_process_notify' => true
+      'miguel_process_notify' => true
     );
 
     foreach( $actions as $action => $nopriv ) {
@@ -27,7 +27,7 @@ class WC_Wosa_Actions {
   }
 
   /**
-   * Processes notify from WOSA server.
+   * Processes notify from MIGUEL server.
    */
   public function process_notify() {
     $body = file_get_contents( 'php://input' );
@@ -40,7 +40,7 @@ class WC_Wosa_Actions {
       return;
     }
 
-    $req = wc_wosa_get_async_request( $json->id );
+    $req = miguel_get_async_request( $json->id );
     if ( ! $req ) {
       return;
     }
@@ -49,14 +49,14 @@ class WC_Wosa_Actions {
       case 'succeeded':
         // + 7 days
         $expires = current_time( 'timestamp' ) + 7 * 24 * 60 * 60;
-        wc_wosa_update_async_request( $req->guid, array(
+        miguel_update_async_request( $req->guid, array(
           'status' => 'completed',
           'download_url' => $json->download_url,
           'download_url_expires' => get_date_from_gmt( $json->download_expires, 'Y-m-d H:i:s' )
         ) );
         break;
       case 'failed':
-        wc_wosa_update_async_request( $req->guid, array(
+        miguel_update_async_request( $req->guid, array(
           'status' => 'failed'
         ) );
         break;
@@ -66,4 +66,4 @@ class WC_Wosa_Actions {
   }
 }
 
-return new WC_Wosa_Actions();
+return new Miguel_Actions();

@@ -6,9 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Request
  *
- * @package WC_Wosa
+ * @package Miguel
  */
-class WC_Wosa_Request {
+class Miguel_Request {
 
   /**
    * @var WC_Order

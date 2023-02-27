@@ -4,7 +4,7 @@
   var tim = null;
   var now = new Date().getTime();
   var timer = document.getElementById('timer');
-  var deadline = now + wc_wosa_duration * 1000;
+  var deadline = now + miguel_duration * 1000;
 
   function countDown() {
     var current = new Date().getTime();

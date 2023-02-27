@@ -2,9 +2,9 @@
 /**
  * Mock HTTP response
  *
- * @package WC_Wosa\Tests
+ * @package Miguel\Tests
  */
-class WC_Wosa_Helper_HTTP {
+class Miguel_Helper_HTTP {
 
   /**
    * @var string
@@ -17,7 +17,7 @@ class WC_Wosa_Helper_HTTP {
   public static function mock_server_response( $what ) {
     self::$what = $what;
 
-    add_filter( 'pre_http_request', array( __CLASS__, 'response' ), 10, 3 ); 
+    add_filter( 'pre_http_request', array( __CLASS__, 'response' ), 10, 3 );
   }
 
   /**
@@ -30,13 +30,13 @@ class WC_Wosa_Helper_HTTP {
     switch( self::$what ) {
       case '__return__url':
         $response = $url;
-        break;  
+        break;
       case '__return__headers':
         $response = $args['headers'];
         break;
       case '__return__body':
         $response = $args['body'];
-        break;  
+        break;
     }
 
     return array(

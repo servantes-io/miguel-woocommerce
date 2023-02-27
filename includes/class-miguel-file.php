@@ -6,9 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * File entity
  *
- * @package WC_Wosa
+ * @package Miguel
  */
-class WC_Wosa_File {
+class Miguel_File {
 
   /**
    * @var WC_Product
@@ -27,16 +27,16 @@ class WC_Wosa_File {
   public function __construct( $product_id, $download_id ) {
     $product = wc_get_product( $product_id );
     if ( ! $product ) {
-      throw new Exception( __( 'Invalid product.', 'wc-wosa' ) ); 
+      throw new Exception( __( 'Invalid product.', 'miguel' ) );
     }
 
     $download_url = $product->get_file_download_path( $download_id );
     if ( ! $download_url ) {
-      throw new Exception( __( 'Invalid download url.', 'wc-wosa' ) ); 
+      throw new Exception( __( 'Invalid download url.', 'miguel' ) );
     }
 
-    if ( ! wc_wosa_starts_with( $download_url, '[wosa' ) ) {
-      throw new Exception( __( 'Invalid download url format.', 'wc-wosa' ) ); 
+    if ( ! miguel_starts_with( $download_url, '[miguel' ) ) {
+      throw new Exception( __( 'Invalid download url format.', 'miguel' ) );
     }
 
     $this->atts = $this->parse_shortcode_atts( $download_url );
@@ -93,7 +93,7 @@ class WC_Wosa_File {
    * @return array
    */
   protected function parse_shortcode_atts( $shortcode ) {
-    return wc_wosa_get_shortcode_atts( $shortcode, array(
+    return miguel_get_shortcode_atts( $shortcode, array(
       'book' => '',
       'format' => ''
     ) );

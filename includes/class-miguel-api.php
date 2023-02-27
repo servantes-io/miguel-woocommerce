@@ -6,9 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * API client
  *
- * @package WC_Wosa
+ * @package Miguel
  */
-class WC_Wosa_API {
+class Miguel_API {
 
   /**
    * @var string
@@ -24,7 +24,7 @@ class WC_Wosa_API {
    * @param string $url
    * @param string $token
    */
-  public function __construct( $url = 'https://wosa.melvil.cz/v1/', $token ) {
+  public function __construct( $url = 'https://miguel.servantes.cz/v1/', $token ) {
     $this->url = $url;
     $this->token = $token;
   }
@@ -41,7 +41,7 @@ class WC_Wosa_API {
    */
   public function get_callback_url() {
     return add_query_arg( array(
-      'action' => 'wc_wosa_process_notify'
+      'action' => 'miguel_process_notify'
     ), admin_url( 'admin-post.php' ) );
   }
 
@@ -53,7 +53,7 @@ class WC_Wosa_API {
    */
   public function generate( $book, $format, $args ) {
     if ( ! in_array( $format, array( 'epub', 'mobi', 'pdf', 'audio' ) ) ) {
-      return new WP_Error( 'wosa', __( 'Format is not allowed.', 'wc-wosa' ) );
+      return new WP_Error( 'miguel', __( 'Format is not allowed.', 'miguel' ) );
     }
 
     return $this->post( 'generate_' . $format . '/' . $book, $args );
@@ -68,7 +68,7 @@ class WC_Wosa_API {
   public function generate_async( $book, $format, $args ) {
     $args['callback_url'] = $this->get_callback_url();
 
-    wc_wosa_log( $args );
+    miguel_log( $args );
 
     $response = $this->post( 'generate_async_' . $format . '/' . $book, $args );
     if ( is_wp_error( $response ) ) {
@@ -77,12 +77,12 @@ class WC_Wosa_API {
 
     $body = wp_remote_retrieve_body( $response );
     if ( ! $body ) {
-      return new WP_Error( 'invalid-body', __( 'Invalid body response.', 'wc-wosa' ) );
+      return new WP_Error( 'invalid-body', __( 'Invalid body response.', 'miguel' ) );
     }
 
     $json = json_decode( $body );
     if ( ! $json ) {
-      return new WP_Error( 'invalid-json', __( 'Invalid JSON.', 'wc-wosa' ) );
+      return new WP_Error( 'invalid-json', __( 'Invalid JSON.', 'miguel' ) );
     }
 
     if ( property_exists( $json, 'error' ) ) {

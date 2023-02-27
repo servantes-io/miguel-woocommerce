@@ -6,9 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Download handler
  *
- * @package WC_Wosa
+ * @package Miguel
  */
-class WC_Wosa_Download {
+class Miguel_Download {
 
   /**
    * Add action.
@@ -26,35 +26,35 @@ class WC_Wosa_Download {
    * @param int $order_id
    */
   public function download( $email, $order_key, $product_id, $user_id, $download_id, $order_id ) {
-    $file = wc_wosa_get_file( $product_id, $download_id );
+    $file = miguel_get_file( $product_id, $download_id );
     if ( is_wp_error( $file ) ) {
       return;
     }
 
     if ( ! $file->is_valid() ) {
-      wp_die( __( 'Invalid shortcode params.', 'wc-wosa' ) );
+      wp_die( __( 'Invalid shortcode params.', 'miguel' ) );
     }
 
     $order = wc_get_order( $order_id );
     if ( ! $order ) {
-      wp_die( __( 'Invalid order.', 'wc-wosa' ) );
+      wp_die( __( 'Invalid order.', 'miguel' ) );
     }
 
     $this->serve( $file, $order );
   }
 
   /**
-   * @param WC_Wosa_File $file
+   * @param Miguel_File $file
    * @param WC_Order $order
    */
   public function serve( $file, $order ) {
-    $request = new WC_Wosa_Request( $order );
+    $request = new Miguel_Request( $order );
     if ( ! $request->is_valid() ) {
-      wp_die( __( 'Invalid request.', 'wc-wosa' ) );
+      wp_die( __( 'Invalid request.', 'miguel' ) );
     }
 
     // Async generation
-    if ( 'yes' === get_option( 'wc_wosa_async_gen' ) ) {
+    if ( 'yes' === get_option( 'miguel_async_gen' ) ) {
       $this->serve_async_file( $file, $request );
     } else {
       $this->serve_file( $file, $request );
@@ -62,11 +62,11 @@ class WC_Wosa_Download {
   }
 
   /**
-   * @param WC_Wosa_File $file
-   * @param WC_Wosa_Request $request
+   * @param Miguel_File $file
+   * @param Miguel_Request $request
    */
   public function serve_file( $file, $request ) {
-    $response = WC_Wosa()->api()->generate( $file->get_name(), $file->get_format(), $request->to_array() );
+    $response = Miguel()->api()->generate( $file->get_name(), $file->get_format(), $request->to_array() );
     if ( is_wp_error( $response ) ) {
       wp_die( $response->get_error_message() );
     }
@@ -89,22 +89,22 @@ class WC_Wosa_Download {
   }
 
   /**
-   * @param WC_Wosa_File $file
-   * @param WC_Wosa_Request $request
+   * @param Miguel_File $file
+   * @param Miguel_Request $request
    */
   public function serve_async_file( $file, $request ) {
-    $exists = wc_wosa_get_file_download_url( $file, $request );
+    $exists = miguel_get_file_download_url( $file, $request );
     if ( ! $exists ) {
       $this->new_async_request( $file, $request );
     }
 
-    $content = __( 'Something went wrong.', 'wc-wosa' );
+    $content = __( 'Something went wrong.', 'miguel' );
 
     switch( $exists->status ) {
       case 'awaiting':
         $content = sprintf(
           '<p>%s</p>',
-          __( 'Please be patient, your book is being prepared. Try downloading the file later.', 'wc-wosa' )
+          __( 'Please be patient, your book is being prepared. Try downloading the file later.', 'miguel' )
         );
         break;
       case 'completed':
@@ -115,28 +115,28 @@ class WC_Wosa_Download {
         } else {
           $content = sprintf(
             '<p>%s</p><p><a class="btn" href="%s">%s</a></p>',
-            __( 'Your book is ready to download.', 'wc-wosa' ),
+            __( 'Your book is ready to download.', 'miguel' ),
             esc_url( $exists->download_url ),
-            __( 'Download a file', 'wc-wosa' )
+            __( 'Download a file', 'miguel' )
           );
         }
         break;
     }
 
-    $this->wosa_die( $content );
+    $this->miguel_die( $content );
   }
 
   /**
-   * @param WC_Wosa_File $file
-   * @param WC_Wosa_Request $request
+   * @param Miguel_File $file
+   * @param Miguel_Request $request
    */
   public function new_async_request( $file, $request ) {
-    $response = WC_Wosa()->api()->generate_async( $file->get_name(), $file->get_format(), $request->to_array() );
+    $response = Miguel()->api()->generate_async( $file->get_name(), $file->get_format(), $request->to_array() );
     if ( is_wp_error( $response ) ) {
       wp_die( $response->get_error_message() );
     }
 
-    wc_wosa_insert_async_request( array(
+    miguel_insert_async_request( array(
       'guid' => $response->id,
       'order_id' => $request->get_order_id(),
       'product_id' => $file->get_product_id(),
@@ -144,7 +144,7 @@ class WC_Wosa_Download {
       'expected_duration' => $response->expected_duration
     ) );
 
-    $this->wosa_die( wc_wosa_get_template( 'timer', array(
+    $this->miguel_die( miguel_get_template( 'timer', array(
       'time' => $response->expected_duration + 10
     ) ) );
   }
@@ -152,12 +152,12 @@ class WC_Wosa_Download {
   /**
    * @param string $content
    */
-  public function wosa_die( $content ) {
-    echo wc_wosa_get_template( 'die', array(
+  public function miguel_die( $content ) {
+    echo miguel_get_template( 'die', array(
       'content' => $content
     ) );
     die();
   }
 }
 
-return new WC_Wosa_Download();
+return new Miguel_Download();

@@ -2,15 +2,15 @@
 /**
  * Order helper for tests
  *
- * @package WC_Wosa\Tests
+ * @package Miguel\Tests
  */
-class WC_Wosa_Helper_Order {
+class Miguel_Helper_Order {
 
   /**
    * @return WC_Order
    */
   public static function create_order() {
-    $product = WC_Wosa_Helper_Product::create_virtual_product();
+    $product = Miguel_Helper_Product::create_virtual_product();
 
     $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
@@ -24,8 +24,8 @@ class WC_Wosa_Helper_Order {
     $billing_address = array(
       'country' => 'CZ',
       'first_name' => 'Jan',
-      'last_name' => 'Wosa',
-      'company' => 'Jan Wosa Publishing',
+      'last_name' => 'Miguel',
+      'company' => 'Jan Miguel Publishing',
       'address_1' => 'Roubalova',
       'address_2' => '',
       'postcode' => '60200',
@@ -47,14 +47,14 @@ class WC_Wosa_Helper_Order {
    * @return array
    */
   public static function create_order_downloadable() {
-    $product = WC_Wosa_Helper_Product::create_downloadable_product(); 
+    $product = Miguel_Helper_Product::create_downloadable_product();
     $order = self::create_order();
 
     $item_id = $order->add_product( $product, 1 );
     $order->payment_complete();
     $order->save();
 
-    $item = $order->get_item( $item_id ); 
+    $item = $order->get_item( $item_id );
     $downloads = $item->get_item_downloads();
     $download = reset( $downloads );
 

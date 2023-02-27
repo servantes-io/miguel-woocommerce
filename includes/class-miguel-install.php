@@ -6,16 +6,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Installation
  *
- * @package WC_Wosa
+ * @package Miguel
  */
-class WC_Wosa_Install {
+class Miguel_Install {
 
   /**
    * Update plugin version.
    */
   public static function update_version() {
-    delete_option( 'wc_wosa_version' );
-    add_option( 'wc_wosa_version', WC_Wosa()->version );
+    delete_option( 'miguel_version' );
+    add_option( 'miguel_version', Miguel()->version );
   }
 
   /**
@@ -43,7 +43,7 @@ class WC_Wosa_Install {
     }
 
     $schema = "
-      CREATE TABLE {$wpdb->prefix}woocommerce_wosa_async_requests (
+      CREATE TABLE {$wpdb->prefix}miguel_async_requests (
         id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         guid BIGINT(20) UNSIGNED NOT NULL,
         status VARCHAR(100) NOT NULL,
@@ -55,7 +55,7 @@ class WC_Wosa_Install {
         download_url TEXT,
         download_url_expires DATETIME,
         PRIMARY KEY (id)
-      ) $collate; 
+      ) $collate;
     ";
 
     return $schema;

@@ -4,11 +4,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * The main admin class. 
+ * The main admin class.
  *
- * @package WC_Wosa
+ * @package Miguel
  */
-class WC_Wosa_Admin {
+class Miguel_Admin {
 
   /**
    * Initialize.
@@ -28,9 +28,9 @@ class WC_Wosa_Admin {
    * Adds settings pages
    */
   public function add_settings_pages( $pages ) {
-    $pages[] = include( dirname( WC_WOSA_PLUGIN_FILE ) . '/includes/admin/class-wc-wosa-settings.php' );
+    $pages[] = include( dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php' );
     return $pages;
   }
 }
 
-return new WC_Wosa_Admin();
+return new Miguel_Admin();
