@@ -2,6 +2,6 @@
   "name": "servantes/miguel",
   "author": "Servantes, s.r.o.",
   "require-dev": {
-    "phpunit/phpunit": "6.*"
+    "phpunit/phpunit": "8.*"
   }
 }

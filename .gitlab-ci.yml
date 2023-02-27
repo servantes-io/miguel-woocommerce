@@ -1,0 +1,40 @@
+variables:
+  WP_CLI_ALLOW_ROOT: 'true'
+
+default:
+  interruptible: true
+  before_script:
+    - apt-get update -yqq
+    - apt-get install git wget unzip -yqq
+    # Install composer
+    - wget https://composer.github.io/installer.sig -O - -q | tr -d '\n' > installer.sig
+    - php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    - php -r "if (hash_file('SHA384', 'composer-setup.php') === file_get_contents('installer.sig')) { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+    - php composer-setup.php
+    - php -r "unlink('composer-setup.php'); unlink('installer.sig');"
+    - php composer.phar install
+    - mv composer.phar /usr/local/bin/composer
+    # Install WP cli
+    - curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+    - chmod +x wp-cli.phar
+    - mv wp-cli.phar /usr/local/bin/wp
+    - wp core download
+
+  # Composer stores all downloaded packages in the vendor/ directory.
+  # Do not use the following if the vendor/ directory is committed to
+  # your git repository.
+  cache:
+    paths:
+      - vendor/
+
+test:8.2:
+  image: php:8.2
+  script:
+    - make install
+    - make test
+
+test:7.4:
+  image: php:7.4
+  script:
+    - make install
+    - make test
