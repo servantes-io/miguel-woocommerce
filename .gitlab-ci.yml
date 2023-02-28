@@ -3,6 +3,8 @@ release:
   only:
     - tags
   script:
+    - apt-get update
+    - apt-get install zip gettext -y
     - make pack
   artifacts:
     untracked: false
