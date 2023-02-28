@@ -1,3 +1,6 @@
+languages = $(wildcard languages/*.po)
+static_langs = $(patsubst %.po, %.mo, $(wildcard languages/*.po))
+
 include .dbconfig
 
 make:
@@ -15,3 +18,11 @@ install:
 
 test:
 	vendor/bin/phpunit
+
+pack: $(static_langs)
+	zip -r miguel.zip assets/ includes/ languages/ composer.json miguel.php readme.md
+
+
+# Rule to convert .po files into .mo
+%.mo: %.po
+	msgfmt -o $@ $^
