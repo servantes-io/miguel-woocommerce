@@ -48,7 +48,7 @@ class Miguel_File {
    * @return string
    */
   public function get_name() {
-    return $this->atts['book'];
+    return $this->atts['id'];
   }
 
   /**
@@ -83,7 +83,7 @@ class Miguel_File {
    * @return bool
    */
   public function is_valid() {
-    return isset( $this->atts['book'] ) && isset( $this->atts['format'] );
+    return isset( $this->atts['id'] ) && isset( $this->atts['format'] );
   }
 
   /**
@@ -94,7 +94,7 @@ class Miguel_File {
    */
   protected function parse_shortcode_atts( $shortcode ) {
     return miguel_get_shortcode_atts( $shortcode, array(
-      'book' => '',
+      'id' => '',
       'format' => ''
     ) );
   }
