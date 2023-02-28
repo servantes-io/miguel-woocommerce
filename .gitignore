@@ -5,3 +5,7 @@
 
 tests/bin
 vendor
+miguel.zip
+*.mo
+db_data/
+wordpress/
