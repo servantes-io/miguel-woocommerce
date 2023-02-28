@@ -1,0 +1,11 @@
+release:
+  image: php:8
+  only:
+    - tags
+  script:
+    - make pack
+  artifacts:
+    untracked: false
+    when: on_success
+    paths:
+      - "miguel-*.zip"

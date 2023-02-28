@@ -20,7 +20,7 @@ test:
 	vendor/bin/phpunit
 
 pack: $(static_langs)
-	zip -r miguel.zip assets/ includes/ languages/ composer.json miguel.php readme.md
+	zip -r miguel-$${CI_COMMIT_TAG:=dev}.zip assets/ includes/ languages/ composer.json miguel.php readme.md
 
 
 # Rule to convert .po files into .mo
