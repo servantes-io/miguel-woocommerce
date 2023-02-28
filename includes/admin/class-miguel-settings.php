@@ -32,7 +32,8 @@ class Miguel_Settings extends WC_Settings_Page {
       array(
         'id' => 'miguel_api_options',
         'type' => 'title',
-        'title' => __( 'API', 'miguel' )
+        'title' => __( 'Miguel API', 'miguel' ),
+        'desc' => __( 'miguel_settings_description', 'miguel' ),
       ),
       array(
         'id'       => 'miguel_api_env',
@@ -48,10 +49,10 @@ class Miguel_Settings extends WC_Settings_Page {
         ),
       ),
       array(
-        'id' => 'miguel_api_token',
+        'id' => 'miguel_api_key',
         'css' => 'min-width: 350px;',
         'type' => 'text',
-        'title' => __( 'Token', 'miguel' ),
+        'title' => __( 'API key', 'miguel' ),
         'desc' => __( 'To setup safe communication between your e-shop and our server.', 'miguel' ),
       ),
       array(
@@ -69,7 +70,7 @@ class Miguel_Settings extends WC_Settings_Page {
       array(
         'id' => 'miguel_api_options',
         'type' => 'sectionend'
-      )
+      ),
     );
 
     return $settings;
