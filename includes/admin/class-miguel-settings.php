@@ -62,12 +62,6 @@ class Miguel_Settings extends WC_Settings_Page {
         'desc' => __( 'Enable asynchronous generation', 'miguel' )
       ),
       array(
-        'id' => 'miguel_testmode',
-        'type' => 'checkbox',
-        'title' => __( 'Testmode', 'miguel' ),
-        'desc' => __( 'Enable testmode', 'miguel' )
-      ),
-      array(
         'id' => 'miguel_api_options',
         'type' => 'sectionend'
       ),

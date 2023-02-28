@@ -27,3 +27,6 @@ msgstr ""
 "• <a href=\"https://miguel.servantes.cz\">Get API token - Production</a>\n"
 "• <a href=\"https://miguel-staging.servantes.cz\">Get API token - Staging</a>\n"
 "• <a href=\"https://miguel-test.servantes.cz\">Get API token - Test</a>"
+
+msgid "Enable asynchronous generation"
+msgstr "Enable asynchronous generation. Async generation handles large load on Miguel side. This setting is not required to set, Miguel handles large loads very well nowadays."

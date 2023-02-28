@@ -46,15 +46,7 @@ msgstr "Asynchronní generování"
 
 #: includes/admin/class-miguel-settings.php:45
 msgid "Enable asynchronous generation"
-msgstr "Povolit asynchronní generování"
-
-#: includes/admin/class-miguel-settings.php:50
-msgid "Testmode"
-msgstr "Testovací režim"
-
-#: includes/admin/class-miguel-settings.php:51
-msgid "Enable testmode"
-msgstr "Povolit testovací režim"
+msgstr "Povolit asynchronní generování. Asynchronní generování lépe zvládá velké zatížení na straně Miguela. Není potřeba nastavovat, poslední verze Miguela zvládá velké zátěže i tak."
 
 msgid "Miguel environment"
 msgstr "Prostředí Miguel serveru"
