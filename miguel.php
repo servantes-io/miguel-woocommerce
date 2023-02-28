@@ -5,7 +5,7 @@
  * Description: Sell watermarked e-books and audiobook directly from WooCommerce e-shop via Miguel.
  * Author: Servantes, s.r.o.
  * Author URI: https://servantes.cz
- * Version: 0.1.0
+ * Version: 1.0.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
