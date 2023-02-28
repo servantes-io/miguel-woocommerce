@@ -16,10 +16,22 @@ class Miguel_Request {
   protected $order;
 
   /**
+   * @var WP_User|false
+   */
+  protected $user;
+
+  /**
    * @param WC_Order $order
    */
   public function __construct( $order ) {
     $this->order = $order;
+
+    $user_id = $order->get_user_id();
+    if ($user_id > 0) {
+      $this->user = get_user_by( 'id', $user_id );
+    } else {
+      $this->user = false;
+    }
   }
 
   /**
@@ -40,13 +52,11 @@ class Miguel_Request {
    * @return string
    */
   public function get_email() {
-    $user_id = $this->order->get_user_id();
-    if ( 0 < $user_id ) {
-      $user_data = get_user_by( 'id', $user_id );
-      return $user_data->user_email;
+    if ($this->user) {
+      return $this->user->user_email;
+    } else {
+      return $this->order->get_billing_email();
     }
-
-    return $this->order->get_billing_email();
   }
 
   /**
@@ -82,6 +92,13 @@ class Miguel_Request {
   }
 
   /**
+   * @return string
+   */
+  public function get_language() {
+    return get_user_locale($this->user);
+  }
+
+  /**
    * @return bool
    */
   public function is_valid() {
@@ -89,7 +106,6 @@ class Miguel_Request {
   }
 
   /**
-   * @param WC_Order $order
    * @return array
    */
   public function to_array() {
@@ -98,7 +114,8 @@ class Miguel_Request {
         'id' => $this->get_id(),
         'email' => $this->get_email(),
         'address' => $this->get_address(),
-        'full_name' => $this->get_full_name()
+        'full_name' => $this->get_full_name(),
+        'lang' => $this->get_language(),
       ),
       'purchase_date' => $this->get_purchase_date()
     );

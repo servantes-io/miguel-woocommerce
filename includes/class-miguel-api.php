@@ -103,7 +103,8 @@ class Miguel_API {
       'timeout' => 180,
       'headers' => array(
         'Content-Type' => 'application/json',
-        'Authorization' => 'Bearer ' . $this->token
+        'Authorization' => 'Bearer ' . $this->token,
+        'Accept-Language' => get_user_locale(),
       ),
       'body' => json_encode( $body )
     );
