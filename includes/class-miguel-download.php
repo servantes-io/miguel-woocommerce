@@ -68,27 +68,26 @@ class Miguel_Download {
    * @param Miguel_File $file
    * @param Miguel_Request $request
    */
-  public function serve_file( $file, $request ) {
-    $response = Miguel()->api()->generate( $file->get_name(), $file->get_format(), $request->to_array() );
-    if ( is_wp_error( $response ) ) {
-      wp_die( $response->get_error_message() );
+  public function serve_file($file, $request) {
+    $response = Miguel()->api()->generate($file->get_name(), $file->get_format(), $request->to_array());
+    if (is_wp_error($response)) {
+      wp_die($response->get_error_message());
     }
 
-    $json = json_decode( $response['body'] );
-    if ( $json && property_exists( $json, 'error' ) && $json->error ) {
-      wp_die( $json->reason );
+    $json = json_decode($response['body']);
+    if (!$json) {
+      wp_die(__('Something went wrong.', 'miguel'));
     }
 
-    header( 'Content-Description: File Transfer' );
-    header( 'Content-Type: application/octet-stream' );
-    header( 'Content-Disposition: attachment; filename=' . $file->get_filename() );
-    header( 'Content-Transfer-Encoding: binary' );
-    header( 'Expires: 0' );
-    header( 'Cache-Control: must-revalidate' );
-    header( 'Pragma: public' );
-    header( 'Content-Length: ' . $response['headers']['content-length'] );
-    echo $response['body'];
-    exit;
+    if (property_exists( $json, 'error' ) && $json->error) {
+      wp_die($json->reason);
+    } else if (property_exists($json, 'download_url')) {
+      $url = $json->download_url;
+      wp_redirect($url);
+      exit;
+    } else {
+      wp_die(__('Something went wrong.', 'miguel'));
+    }
   }
 
   /**

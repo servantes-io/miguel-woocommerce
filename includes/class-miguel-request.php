@@ -128,6 +128,7 @@ class Miguel_Request {
       'sold_price' => $this->order->get_item_total($this->item, false, false), // calculate price after discounts, before tax
       'currency_code' => $this->order->get_currency(),
       'purchase_date' => $this->get_purchase_date(),
+      'result' => 'download_link',
     );
   }
 }
