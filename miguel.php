@@ -3,6 +3,8 @@
  * Plugin Name: Miguel for WooCommerce
  * Plugin URI: https://www.servantes.cz/miguel
  * Description: Sell watermarked e-books and audiobook directly from WooCommerce e-shop via Miguel.
+ * Requires at least: 4.9
+ * Text Domain: miguel
  * Author: Servantes, s.r.o.
  * Author URI: https://servantes.cz
  * Version: 1.0.0

@@ -21,10 +21,17 @@ class Miguel_Request {
   protected $user;
 
   /**
-   * @param WC_Order $order
+   * @var WC_Order_Item_Product
    */
-  public function __construct( $order ) {
+  protected $item;
+
+  /**
+   * @param WC_Order $order
+   * @param WC_Order_Item_Product $item
+   */
+  public function __construct( $order, $item ) {
     $this->order = $order;
+    $this->item = $item;
 
     $user_id = $order->get_user_id();
     if ($user_id > 0) {
@@ -88,7 +95,7 @@ class Miguel_Request {
       return;
     }
 
-    return $paid_date->format( 'Y-m-d' );
+    return $paid_date->format(DateTimeInterface::ISO8601);
   }
 
   /**
@@ -117,7 +124,10 @@ class Miguel_Request {
         'full_name' => $this->get_full_name(),
         'lang' => $this->get_language(),
       ),
-      'purchase_date' => $this->get_purchase_date()
+      'order_code' => strval($this->get_order_id()),
+      'sold_price' => $this->order->get_item_total($this->item, false, false), // calculate price after discounts, before tax
+      'currency_code' => $this->order->get_currency(),
+      'purchase_date' => $this->get_purchase_date(),
     );
   }
 }
