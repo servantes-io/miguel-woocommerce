@@ -72,6 +72,9 @@ class Miguel {
   public function init_hooks() {
     register_activation_hook( MIGUEL_PLUGIN_FILE, array( 'Miguel_Install', 'install' ) );
     add_action( 'init', array( $this, 'init' ) );
+
+    // add links to plugins page
+    add_filter('plugin_action_links_miguel/miguel.php', array($this, 'settings_link'));
   }
 
   /**
@@ -110,5 +113,24 @@ class Miguel {
       self::$log = new WC_Logger();
     }
     self::$log->add( 'miguel', strtoupper( $type ) . ' ' . $message );
+  }
+
+  /**
+   * Add links to plugins page
+   */
+  public function settings_link($links) {
+    // Build and escape the URL.
+    $url = esc_url(add_query_arg([
+      'page' => 'wc-settings',
+      'tab' => 'miguel',
+    ], get_admin_url() . 'admin.php'));
+
+    // Create the link.
+    $settings_link = "<a href='$url'>" . __( 'Settings' ) . '</a>';
+
+    // Adds the link to the end of the array.
+    array_unshift($links, $settings_link);
+
+    return $links;
   }
 }
