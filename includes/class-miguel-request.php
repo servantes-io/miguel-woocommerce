@@ -95,7 +95,7 @@ class Miguel_Request {
       return;
     }
 
-    return $paid_date->format(DateTimeInterface::ISO8601);
+    return $paid_date->format(DateTime::ISO8601);
   }
 
   /**
