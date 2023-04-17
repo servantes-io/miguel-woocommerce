@@ -3,6 +3,7 @@
 ## v1.1.2
 
 - Add support for `/` in book ID
+- Fix parsing of error message from Miguel
 
 ## v1.1.1
 

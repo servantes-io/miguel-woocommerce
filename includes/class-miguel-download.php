@@ -79,8 +79,10 @@ class Miguel_Download {
       wp_die(__('Something went wrong.', 'miguel'));
     }
 
-    if (property_exists( $json, 'error' ) && $json->error) {
+    if (property_exists( $json, 'reason' ) && $json->reason) {
       wp_die($json->reason);
+    } else if (property_exists( $json, 'error' ) && $json->error) {
+      wp_die($json->error . ': ' . $json->message);
     } else if (property_exists($json, 'download_url')) {
       $url = $json->download_url;
       wp_redirect($url);
