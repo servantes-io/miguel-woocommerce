@@ -56,7 +56,7 @@ class Miguel_API {
       return new WP_Error( 'miguel', __( 'Format is not allowed.', 'miguel' ) );
     }
 
-    return $this->post( 'generate_' . $format . '/' . $book, $args );
+    return $this->post( 'generate_' . $format . '/' . urlencode($book), $args );
   }
 
   /**

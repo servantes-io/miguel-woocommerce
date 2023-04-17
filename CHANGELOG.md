@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.1.2
+
+- Add support for `/` in book ID
+
 ## v1.1.1
 
 - Fixed usage of `DateTimeInterface::ISO8601` on older versions of PHP
