@@ -36,11 +36,11 @@ class Miguel_Download {
     }
 
     $order = wc_get_order( $order_id );
-    $item = $this->get_item($order, $download_id);
-
-    if ( ! $order ) {
+    if (!$order) {
       wp_die( __( 'Invalid order.', 'miguel' ) );
     }
+
+    $item = $this->get_item($order, $download_id);
 
     $this->serve($file, $order, $item);
   }
