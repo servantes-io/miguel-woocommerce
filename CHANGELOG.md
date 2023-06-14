@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.1.3
+
+- Add backward compatibility for old shortcode `[wosa book="" format=""]`
+
 ## v1.1.2
 
 - Add support for `/` in book ID

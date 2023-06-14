@@ -21,6 +21,11 @@ class Miguel_File {
   protected $atts;
 
   /**
+   * @var int
+   */
+  protected $download_id;
+
+  /**
    * @param int $product_id
    * @param int $download_id
    */
@@ -35,7 +40,7 @@ class Miguel_File {
       throw new Exception( __( 'Invalid download url.', 'miguel' ) );
     }
 
-    if ( ! miguel_starts_with( $download_url, '[miguel' ) ) {
+    if ( !miguel_starts_with($download_url, '[miguel') || !miguel_starts_with($download_url, '[wosa') ) {
       throw new Exception( __( 'Invalid download url format.', 'miguel' ) );
     }
 
@@ -92,10 +97,19 @@ class Miguel_File {
    * @param string $shortcode
    * @return array
    */
-  protected function parse_shortcode_atts( $shortcode ) {
-    return miguel_get_shortcode_atts( $shortcode, array(
-      'id' => '',
-      'format' => ''
-    ) );
+  protected function parse_shortcode_atts($shortcode) {
+    if (miguel_starts_with($shortcode, '[miguel')) {
+      return miguel_get_shortcode_atts($shortcode, array(
+        'id' => '',
+        'format' => '',
+      ));
+    } else if (miguel_starts_with($shortcode, '[wosa')) {
+      $atts = miguel_get_shortcode_atts($shortcode, array(
+        'book' => '',
+        'format' => '',
+      ));
+      $atts['id'] = $atts['book'];
+      return $atts;
+    }
   }
 }
