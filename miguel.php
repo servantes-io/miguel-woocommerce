@@ -7,7 +7,7 @@
  * Text Domain: miguel
  * Author: Servantes, s.r.o.
  * Author URI: https://servantes.cz
- * Version: 1.1.2
+ * Version: 1.1.3
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

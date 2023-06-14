@@ -4,7 +4,7 @@ Sell watermarked e-books and audiobook directly from WooCommerce e-shop via Migu
 
 - __Requires at least:__ WooCommerce 3.0
 - __Tested up to:__ WooCommerce 7.4
-- __Version:__ 1.1.2
+- __Version:__ 1.1.3
 
 # Setup
 
