@@ -1,6 +1,6 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) {
-  exit; // Exit if accessed directly
+	exit; // Exit if accessed directly
 }
 
 /**
@@ -10,14 +10,16 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 
 ?>
-<p><?php _e( 'Your e-book is being prepared for download.', 'miguel' ); ?></p>
+<p><?php esc_html_e( 'Your e-book is being prepared for download.', 'miguel' ); ?></p>
 <p>
-  <?php
-    printf(
-      __( 'The e-book will be generated in %s.', 'miguel' ),
-      '<span id="timer">3 min 0 s</span>'
-    );
-  ?>
+	<?php
+	/* translators: %s: time */
+		printf(
+			esc_html( 'The e-book will be generated in %s.', 'miguel' ),
+			'<span id="timer">3 min 0 s</span>'
+		);
+	?>
 </p>
 <script>var miguel_duration = <?php echo esc_js( $time ); ?>;</script>
-<script src="<?php echo plugins_url( '/assets/js/timer.js', MIGUEL_PLUGIN_FILE ); ?>"></script><?php
+<?php wp_enqueue_script( 'miguel-script', plugins_url( '/assets/js/timer.js', MIGUEL_PLUGIN_FILE ) ); ?>
+<?php
