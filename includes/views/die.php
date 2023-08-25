@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @package Miguel
  */
 
-$miguel_title = isset( $miguel_title ) ? $miguel_title : __( 'MIGUEL', 'miguel' );
+$miguel_title = isset( $title ) ? $title : __( 'MIGUEL', 'miguel' );
 $content = isset( $content ) ? $content : '';
 
 ?>
