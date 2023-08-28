@@ -32,9 +32,7 @@ msgid "miguel_settings_description"
 msgstr ""
 "Prozkoumejte následující informace pro nastavení modulu:\n"
 "• <a href=\"https://docs.miguel.servantes.cz/\">Dokumentace</a>\n"
-"• <a href=\"https://miguel.servantes.cz\">Získat API klíč pro server - Produkce</a>\n"
-"• <a href=\"https://miguel-staging.servantes.cz\">Získat API klíč pro server - Staging</a>\n"
-"• <a href=\"https://miguel-test.servantes.cz\">Získat API klíč pro server - Test</a>"
+"• <a href=\"https://miguel.servantes.cz\">Získat API klíč pro server</a>"
 
 #: includes/admin/class-miguel-settings.php:39
 msgid "API key"
