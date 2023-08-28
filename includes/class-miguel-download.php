@@ -1,6 +1,12 @@
 <?php
+/**
+ * Download handler
+ *
+ * @package Miguel
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
 /**
@@ -75,9 +81,9 @@ class Miguel_Download {
 	 * @param Miguel_Request $request
 	 */
 	public function serve_file( $file, $request ) {
-		$response = Miguel()->api()->generate( $file->get_name(), $file->get_format(), $request->to_array() );
+		$response = miguel()->api()->generate( $file->get_name(), $file->get_format(), $request->to_array() );
 		if ( is_wp_error( $response ) ) {
-			wp_die( $response->get_error_message() );
+			wp_die( esc_html( $response->get_error_message() ) );
 		}
 
 		$json = json_decode( $response['body'] );
@@ -86,10 +92,10 @@ class Miguel_Download {
 		}
 
 		if ( property_exists( $json, 'reason' ) && $json->reason ) {
-			wp_die( esc_html__( $json->reason ) );
-		} else if ( property_exists( $json, 'error' ) && $json->error ) {
-			wp_die( esc_html__( $json->error . ': ' . $json->message ) );
-		} else if ( property_exists( $json, 'download_url' ) ) {
+			wp_die( esc_html( $json->reason ) );
+		} elseif ( property_exists( $json, 'error' ) && $json->error ) {
+			wp_die( esc_html( $json->error . ': ' . $json->message ) );
+		} elseif ( property_exists( $json, 'download_url' ) ) {
 			$url = $json->download_url;
 			wp_redirect( $url );
 			exit;
@@ -145,9 +151,9 @@ class Miguel_Download {
 	 * @param Miguel_Request $request
 	 */
 	public function new_async_request( $file, $request ) {
-		$response = Miguel()->api()->generate_async( $file->get_name(), $file->get_format(), $request->to_array() );
+		$response = miguel()->api()->generate_async( $file->get_name(), $file->get_format(), $request->to_array() );
 		if ( is_wp_error( $response ) ) {
-			wp_die( esc_html__( $response->get_error_message() ) );
+			wp_die( esc_html( $response->get_error_message() ) );
 		}
 
 		miguel_insert_async_request(
@@ -176,7 +182,7 @@ class Miguel_Download {
 	 * @param string $content
 	 */
 	public function miguel_die( $content ) {
-		echo esc_html__(
+		echo esc_html(
 			miguel_get_template(
 				'die',
 				array(
@@ -190,8 +196,9 @@ class Miguel_Download {
 	/**
 	 * Get item
 	 *
-	 * @param WC_Order order
-	 * @param int download_id
+	 * @param WC_Order $order
+	 * @param int      $download_id
+	 *
 	 * @return WC_Order_Item_Product|null
 	 */
 	protected function get_item( $order, $download_id ) {

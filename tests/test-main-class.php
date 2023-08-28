@@ -12,7 +12,7 @@ class Miguel_Test_Main_Class extends WP_UnitTestCase {
 	public function setUp() {
 		parent::setUp();
 
-		$this->miguel = Miguel();
+		$this->miguel = miguel();
 	}
 
 	/**

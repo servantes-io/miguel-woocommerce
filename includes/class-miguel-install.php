@@ -15,7 +15,7 @@ class Miguel_Install {
 	 */
 	public static function update_version() {
 		delete_option( 'miguel_version' );
-		add_option( 'miguel_version', Miguel()->version );
+		add_option( 'miguel_version', miguel()->version );
 	}
 
 	/**

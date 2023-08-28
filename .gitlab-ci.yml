@@ -12,7 +12,7 @@ lint:
     - bin/ci/install_composer.sh
     - composer install
     # run lint
-    - composer exec -- phpcs --standard=WordPress --warning-severity=0 --report=code --ignore-annotations --extensions=php,html --ignore=vendor .
+    - make lint
 
 release:
   image: php:8

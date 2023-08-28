@@ -22,6 +22,8 @@ test:
 pack: $(static_langs)
 	zip -r miguel-$${CI_COMMIT_TAG:=dev}.zip assets/ includes/ languages/ composer.json miguel.php readme.md
 
+lint:
+	composer exec -- phpcs --standard=./phpcs.xml --warning-severity=0 --report=code --ignore-annotations --extensions=php,html -s .
 
 # Rule to convert .po files into .mo
 %.mo: %.po

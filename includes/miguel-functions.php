@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @param string $haystack
  * @param string $needle
+ *
  * @return boolean
  */
 function miguel_starts_with( $haystack, $needle ) {
@@ -25,7 +26,6 @@ function miguel_starts_with( $haystack, $needle ) {
  *
  * @param string $shortcode
  * @param array  $defaults
- * @param array
  */
 function miguel_get_shortcode_atts( $shortcode, $defaults = array() ) {
 	return shortcode_atts( $defaults, shortcode_parse_atts( trim( $shortcode, '[]' ) ) );
@@ -36,21 +36,12 @@ function miguel_get_shortcode_atts( $shortcode, $defaults = array() ) {
  *
  * @param string $tpl
  * @param array  $data
+ *
  * @return string
  */
 function miguel_get_template( $tpl, $data = array() ) {
 	$path = dirname( MIGUEL_PLUGIN_FILE ) . '/includes/views/' . $tpl . '.php';
-	if ( ! file_exists( $path ) ) {
-		return;
-	}
-
-	extract( $data );
-
-	ob_start();
-
-	include $path;
-
-	return ob_get_clean();
+	return load_template( $path, false, $data );
 }
 
 /**
@@ -59,6 +50,7 @@ function miguel_get_template( $tpl, $data = array() ) {
  *
  * @param int $product_id
  * @param int $download_id
+ *
  * @return Miguel_File|WP_Error
  */
 function miguel_get_file( $product_id, $download_id ) {
@@ -116,6 +108,7 @@ function miguel_get_async_request( $guid ) {
  * Get_async_requests
  *
  * @param array $args
+ *
  * @return int
  */
 function miguel_insert_async_request( $args ) {
@@ -151,6 +144,7 @@ function miguel_insert_async_request( $args ) {
  *
  * @param int   $guid
  * @param array $args
+ *
  * @return int|false
  */
 function miguel_update_async_request( $guid, $args ) {
@@ -168,7 +162,7 @@ function miguel_update_async_request( $guid, $args ) {
 /**
  * Log
  *
- * @param mixed
+ * @param mixed $data
  */
 function miguel_log( $data ) {
 	if ( is_array( $data ) || is_object( $data ) ) {

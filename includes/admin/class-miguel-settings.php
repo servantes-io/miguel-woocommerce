@@ -25,6 +25,8 @@ class Miguel_Settings extends WC_Settings_Page {
 	}
 
 	/**
+	 * Get settings config for WooCommerce Settings page.
+	 *
 	 * @return array
 	 */
 	public function get_settings() {

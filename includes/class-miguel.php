@@ -1,6 +1,6 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
 /**
@@ -8,7 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @package Miguel
  */
-
 class Miguel {
 
 	/**
@@ -83,7 +82,7 @@ class Miguel {
 		register_activation_hook( MIGUEL_PLUGIN_FILE, array( 'Miguel_Install', 'install' ) );
 		add_action( 'init', array( $this, 'init' ) );
 
-		// add links to plugins page
+		// Add links to plugins page.
 		add_filter( 'plugin_action_links_miguel/miguel.php', array( $this, 'settings_link' ) );
 	}
 
@@ -103,13 +102,13 @@ class Miguel {
 		if ( is_null( $this->api ) ) {
 			$env = get_option( 'miguel_api_env' );
 			$url = 'https://miguel.servantes.cz/v1/';
-			if ( 'staging' == $env ) {
+			if ( 'staging' === $env ) {
 				$url = 'https://miguel-staging.servantes.cz/v1/';
-			} else if ( 'test' == $env ) {
+			} elseif ( 'test' === $env ) {
 				$url = 'https://miguel-test.servantes.cz/v1/';
 			}
 
-			$token = get_option( 'miguel_api_key' );
+			$token     = get_option( 'miguel_api_key' );
 			$this->api = new Miguel_API( $url, $token );
 		}
 		return $this->api;
@@ -118,7 +117,8 @@ class Miguel {
 	/**
 	 * Log.
 	 *
-	 * @param string $message
+	 * @param string $message Message.
+	 * @param string $type    Type.
 	 */
 	public static function log( $message, $type = 'info' ) {
 		if ( is_null( self::$log ) ) {
@@ -129,6 +129,8 @@ class Miguel {
 
 	/**
 	 * Add links to plugins page
+	 *
+	 * @param array $links Links.
 	 */
 	public function settings_link( $links ) {
 		// Build and escape the URL.
@@ -143,7 +145,7 @@ class Miguel {
 		);
 
 		// Create the link.
-		$settings_link = "<a href='$url'>" . __( 'Settings' ) . '</a>';
+		$settings_link = "<a href='$url'>" . esc_html__( 'Settings', 'miguel' ) . '</a>';
 
 		// Adds the link to the end of the array.
 		array_unshift( $links, $settings_link );

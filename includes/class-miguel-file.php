@@ -1,6 +1,12 @@
 <?php
+/**
+ * File entity
+ *
+ * @package Miguel
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
 /**
@@ -34,22 +40,24 @@ class Miguel_File {
 	/**
 	 * Constructor
 	 *
-	 * @param int $product_id
-	 * @param int $download_id
+	 * @param int $product_id Product ID.
+	 * @param int $download_id Download ID.
+	 *
+	 * @throws Exception If invalid product or any other issue.
 	 */
 	public function __construct( $product_id, $download_id ) {
 		$product = wc_get_product( $product_id );
 		if ( ! $product ) {
-			throw new Exception( __( 'Invalid product.', 'miguel' ) );
+			throw new Exception( esc_html__( 'Invalid product.', 'miguel' ) );
 		}
 
 		$download_url = $product->get_file_download_path( $download_id );
 		if ( ! $download_url ) {
-			throw new Exception( __( 'Invalid download url.', 'miguel' ) );
+			throw new Exception( esc_html__( 'Invalid download url.', 'miguel' ) );
 		}
 
 		if ( ! miguel_starts_with( $download_url, '[miguel' ) || ! miguel_starts_with( $download_url, '[wosa' ) ) {
-			throw new Exception( __( 'Invalid download url format.', 'miguel' ) );
+			throw new Exception( esc_html__( 'Invalid download url format.', 'miguel' ) );
 		}
 
 		$this->atts = $this->parse_shortcode_atts( $download_url );

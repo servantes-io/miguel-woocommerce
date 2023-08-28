@@ -138,3 +138,6 @@ msgstr "E-kniha bude vygenerována za %s."
 #: includes/miguel-functions.php:112
 msgid "Inserting failed."
 msgstr "Vložení se nezdařilo."
+
+msgid "Settings"
+msgstr "Nastavení"

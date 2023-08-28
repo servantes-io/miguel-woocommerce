@@ -1,16 +1,16 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
-}
-
 /**
  * Die page
  *
  * @package Miguel
  */
 
-$miguel_title = isset( $title ) ? $title : __( 'MIGUEL', 'miguel' );
-$content = isset( $content ) ? $content : '';
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
+$miguel_title = isset( $args['title'] ) ? $args['title'] : esc_html__( 'MIGUEL', 'miguel' );
+$content      = isset( $args['content'] ) ? $args['content'] : '';
 
 ?>
 <!doctype html>
