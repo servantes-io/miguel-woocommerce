@@ -1,6 +1,7 @@
 <?php
 /**
  * Functions
+ *
  * @package Miguel
  */
 
@@ -10,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Starts_with
+ *
  * @param string $haystack
  * @param string $needle
  * @return boolean
@@ -20,8 +22,9 @@ function miguel_starts_with( $haystack, $needle ) {
 
 /**
  * Get_shortcode_atts
+ *
  * @param string $shortcode
- * @param array $defaults
+ * @param array  $defaults
  * @param array
  */
 function miguel_get_shortcode_atts( $shortcode, $defaults = array() ) {
@@ -30,8 +33,9 @@ function miguel_get_shortcode_atts( $shortcode, $defaults = array() ) {
 
 /**
  * Get_template
+ *
  * @param string $tpl
- * @param array $data
+ * @param array  $data
  * @return string
  */
 function miguel_get_template( $tpl, $data = array() ) {
@@ -44,7 +48,7 @@ function miguel_get_template( $tpl, $data = array() ) {
 
 	ob_start();
 
-	include( $path );
+	include $path;
 
 	return ob_get_clean();
 }
@@ -52,6 +56,7 @@ function miguel_get_template( $tpl, $data = array() ) {
 /**
  *
  * Get_file
+ *
  * @param int $product_id
  * @param int $download_id
  * @return Miguel_File|WP_Error
@@ -67,48 +72,66 @@ function miguel_get_file( $product_id, $download_id ) {
 
 /**
  * Get_file_download_url
- * @param Miguel_File $file
+ *
+ * @param Miguel_File    $file
  * @param Miguel_Request $request
  */
 function miguel_get_file_download_url( $file, $request ) {
 	global $wpdb;
 
-	return $wpdb->get_row( $wpdb->prepare("
+	return $wpdb->get_row(
+		$wpdb->prepare(
+			"
 		SELECT * FROM {$wpdb->prefix}woocommerce_miguel_async_requests
 		WHERE order_id = %d AND product_id = %d AND download_id = %d
-	", $request->get_order_id(), $file->get_product_id(), $file->get_download_id() ) );
+	",
+			$request->get_order_id(),
+			$file->get_product_id(),
+			$file->get_download_id()
+		)
+	);
 }
 
 /**
  * Get_async_request
+ *
  * @param int $guid
  * @return stdClass
  */
 function miguel_get_async_request( $guid ) {
 	global $wpdb;
 
-	return $wpdb->get_row( $wpdb->prepare("
+	return $wpdb->get_row(
+		$wpdb->prepare(
+			"
 		SELECT * FROM {$wpdb->prefix}woocommerce_miguel_async_requests
 		WHERE guid = %d
-	", absint( $guid ) ) );
+	",
+			absint( $guid )
+		)
+	);
 }
 
 /**
  * Get_async_requests
+ *
  * @param array $args
  * @return int
  */
 function miguel_insert_async_request( $args ) {
 	global $wpdb;
 
-	$args = wp_parse_args( $args, array(
-		'status' => 'awaiting',
-		'created' => current_time( 'mysql' ),
-		'order_id' => '',
-		'product_id' => '',
-		'download_id' => '',
-		'expected_duration' => ''
-	) );
+	$args = wp_parse_args(
+		$args,
+		array(
+			'status' => 'awaiting',
+			'created' => current_time( 'mysql' ),
+			'order_id' => '',
+			'product_id' => '',
+			'download_id' => '',
+			'expected_duration' => '',
+		)
+	);
 
 	$inserted = $wpdb->insert(
 		$wpdb->prefix . 'woocommerce_miguel_async_requests',
@@ -125,7 +148,8 @@ function miguel_insert_async_request( $args ) {
 
 /**
  * Update_async_request
- * @param int $guid
+ *
+ * @param int   $guid
  * @param array $args
  * @return int|false
  */
@@ -136,13 +160,14 @@ function miguel_update_async_request( $guid, $args ) {
 		$wpdb->prefix . 'woocommerce_miguel_async_requests',
 		$args,
 		array(
-			'guid' => $guid
+			'guid' => $guid,
 		)
 	);
 }
 
 /**
  * Log
+ *
  * @param mixed
  */
 function miguel_log( $data ) {

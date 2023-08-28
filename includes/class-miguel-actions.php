@@ -15,7 +15,7 @@ class Miguel_Actions {
 	 */
 	public function __construct() {
 		$actions = array(
-			'miguel_process_notify' => true
+			'miguel_process_notify' => true,
 		);
 
 		foreach ( $actions as $action => $nopriv ) {
@@ -49,17 +49,23 @@ class Miguel_Actions {
 			case 'succeeded':
 				// + 7 days
 				$expires = current_time( 'timestamp' ) + 7 * 24 * 60 * 60;
-				miguel_update_async_request( $req->guid, array(
-					'status' => 'completed',
-					'download_url' => $json->download_url,
-					'download_url_expires' => get_date_from_gmt( $json->download_expires, 'Y-m-d H:i:s' )
-				) );
-			break;
+				miguel_update_async_request(
+					$req->guid,
+					array(
+						'status' => 'completed',
+						'download_url' => $json->download_url,
+						'download_url_expires' => get_date_from_gmt( $json->download_expires, 'Y-m-d H:i:s' ),
+					)
+				);
+				break;
 			case 'failed':
-				miguel_update_async_request( $req->guid, array(
-					'status' => 'failed'
-				) );
-			break;
+				miguel_update_async_request(
+					$req->guid,
+					array(
+						'status' => 'failed',
+					)
+				);
+				break;
 		}
 
 		wp_send_json_success();

@@ -12,24 +12,28 @@ class Miguel_File {
 
 	/**
 	 * Product
+	 *
 	 * @var WC_Product
 	 */
 	protected $product;
 
 	/**
 	 * Attributes
+	 *
 	 * @var array
 	 */
 	protected $atts;
 
 	/**
 	 * Download id
+	 *
 	 * @var int
 	 */
 	protected $download_id;
 
 	/**
 	 * Constructor
+	 *
 	 * @param int $product_id
 	 * @param int $download_id
 	 */
@@ -44,7 +48,7 @@ class Miguel_File {
 			throw new Exception( __( 'Invalid download url.', 'miguel' ) );
 		}
 
-		if ( !miguel_starts_with($download_url, '[miguel') || !miguel_starts_with($download_url, '[wosa') ) {
+		if ( ! miguel_starts_with( $download_url, '[miguel' ) || ! miguel_starts_with( $download_url, '[wosa' ) ) {
 			throw new Exception( __( 'Invalid download url format.', 'miguel' ) );
 		}
 
@@ -55,6 +59,7 @@ class Miguel_File {
 
 	/**
 	 * Get name
+	 *
 	 * @return string
 	 */
 	public function get_name() {
@@ -63,6 +68,7 @@ class Miguel_File {
 
 	/**
 	 * Get format
+	 *
 	 * @return string
 	 */
 	public function get_format() {
@@ -71,6 +77,7 @@ class Miguel_File {
 
 	/**
 	 * Get filename
+	 *
 	 * @return string
 	 */
 	public function get_filename() {
@@ -79,6 +86,7 @@ class Miguel_File {
 
 	/**
 	 * Get product id
+	 *
 	 * @return int
 	 */
 	public function get_product_id() {
@@ -87,6 +95,7 @@ class Miguel_File {
 
 	/**
 	 * Get download id
+	 *
 	 * @return int
 	 */
 	public function get_download_id() {
@@ -95,6 +104,7 @@ class Miguel_File {
 
 	/**
 	 * Is valid
+	 *
 	 * @return bool
 	 */
 	public function is_valid() {
@@ -107,17 +117,23 @@ class Miguel_File {
 	 * @param string $shortcode
 	 * @return array
 	 */
-	protected function parse_shortcode_atts($shortcode) {
-		if (miguel_starts_with($shortcode, '[miguel')) {
-			return miguel_get_shortcode_atts($shortcode, array(
-				'id' => '',
-				'format' => '',
-			));
-		} else if (miguel_starts_with($shortcode, '[wosa')) {
-			$atts = miguel_get_shortcode_atts($shortcode, array(
-				'book' => '',
-				'format' => '',
-			));
+	protected function parse_shortcode_atts( $shortcode ) {
+		if ( miguel_starts_with( $shortcode, '[miguel' ) ) {
+			return miguel_get_shortcode_atts(
+				$shortcode,
+				array(
+					'id' => '',
+					'format' => '',
+				)
+			);
+		} else if ( miguel_starts_with( $shortcode, '[wosa' ) ) {
+			$atts = miguel_get_shortcode_atts(
+				$shortcode,
+				array(
+					'book' => '',
+					'format' => '',
+				)
+			);
 			$atts['id'] = $atts['book'];
 			return $atts;
 		}

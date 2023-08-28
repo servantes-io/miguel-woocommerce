@@ -11,22 +11,22 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-  exit; // Exit if accessed directly
+	exit; // Exit if accessed directly
 }
 
 if ( ! defined( 'MIGUEL_PLUGIN_FILE' ) ) {
-  define( 'MIGUEL_PLUGIN_FILE', __FILE__ );
+	define( 'MIGUEL_PLUGIN_FILE', __FILE__ );
 }
 
 if ( ! class_exists( 'Miguel' ) ) {
-  include_once dirname( __FILE__ ) . '/includes/class-miguel.php';
+	include_once __DIR__ . '/includes/class-miguel.php';
 }
 
 function Miguel() {
-  return Miguel::instance();
+	return Miguel::instance();
 }
 
 $active_plugins = apply_filters( 'active_plugins', get_option( 'active_plugins' ) );
 if ( in_array( 'woocommerce/woocommerce.php', $active_plugins ) || class_exists( 'WooCommerce' ) ) {
-  Miguel();
+	Miguel();
 }

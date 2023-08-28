@@ -13,30 +13,35 @@ class Miguel {
 
 	/**
 	 * Version
+	 *
 	 * @var string
 	 */
 	public $version = '1.1.3';
 
 	/**
 	 * Instance
+	 *
 	 * @var Miguel
 	 */
 	protected static $instance = null;
 
 	/**
 	 * Api
+	 *
 	 * @var Miguel_API
 	 */
 	protected $api = null;
 
 	/**
 	 * Log
+	 *
 	 * @var WC_Logger
 	 */
 	public static $log = null;
 
 	/**
 	 * Get instance
+	 *
 	 * @return Miguel
 	 */
 	public static function instance() {
@@ -58,16 +63,16 @@ class Miguel {
 	 * Includes required files.
 	 */
 	public function includes() {
-		include_once( dirname( MIGUEL_PLUGIN_FILE ) . '/includes/miguel-functions.php' );
-		include_once( dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-api.php' );
-		include_once( dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-file.php' );
-		include_once( dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-actions.php' );
-		include_once( dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-install.php' );
-		include_once( dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-request.php' );
-		include_once( dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-download.php' );
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/miguel-functions.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-api.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-file.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-actions.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-install.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-request.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-download.php';
 
 		if ( is_admin() ) {
-			include_once( dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-admin.php' );
+			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-admin.php';
 		}
 	}
 
@@ -79,7 +84,7 @@ class Miguel {
 		add_action( 'init', array( $this, 'init' ) );
 
 		// add links to plugins page
-		add_filter('plugin_action_links_miguel/miguel.php', array($this, 'settings_link'));
+		add_filter( 'plugin_action_links_miguel/miguel.php', array( $this, 'settings_link' ) );
 	}
 
 	/**
@@ -90,16 +95,17 @@ class Miguel {
 	}
 
 	/**
-   * Get api
+	 * Get api
+	 *
 	 * @return Miguel_API
 	 */
 	public function api() {
 		if ( is_null( $this->api ) ) {
 			$env = get_option( 'miguel_api_env' );
 			$url = 'https://miguel.servantes.cz/v1/';
-			if ('staging' == $env) {
+			if ( 'staging' == $env ) {
 				$url = 'https://miguel-staging.servantes.cz/v1/';
-			} else if ('test' == $env) {
+			} else if ( 'test' == $env ) {
 				$url = 'https://miguel-test.servantes.cz/v1/';
 			}
 
@@ -124,12 +130,17 @@ class Miguel {
 	/**
 	 * Add links to plugins page
 	 */
-	public function settings_link($links) {
+	public function settings_link( $links ) {
 		// Build and escape the URL.
-		$url = esc_url( add_query_arg( [
-			'page' => 'wc-settings',
-			'tab' => 'miguel',
-		], get_admin_url() . 'admin.php') );
+		$url = esc_url(
+			add_query_arg(
+				array(
+					'page' => 'wc-settings',
+					'tab' => 'miguel',
+				),
+				get_admin_url() . 'admin.php'
+			)
+		);
 
 		// Create the link.
 		$settings_link = "<a href='$url'>" . __( 'Settings' ) . '</a>';

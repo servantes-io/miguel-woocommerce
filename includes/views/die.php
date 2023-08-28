@@ -19,8 +19,8 @@ $content = isset( $content ) ? $content : '';
 		<meta charset="utf-8">
 		<meta name="robots" content="noindex,follow">
 		<title><?php echo esc_html( $miguel_title ); ?></title>
-		<?php  wp_enqueue_style( 'miguel-stylesheet', plugins_url( '/assets/css/style.css', MIGUEL_PLUGIN_FILE ) ); ?>
+		<?php wp_enqueue_style( 'miguel-stylesheet', plugins_url( '/assets/css/style.css', MIGUEL_PLUGIN_FILE ) ); ?>
 	</head>
-	<body><?php echo esc_html($content); ?></body>
+	<body><?php echo esc_html( $content ); ?></body>
 </html>
 <?php
