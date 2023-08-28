@@ -11,16 +11,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Miguel_API {
 
   /**
+   * URL
    * @var string
    */
   protected $url;
 
   /**
+   * Token
    * @var string
    */
   protected $token;
 
   /**
+   * Constructor
    * @param string $url
    * @param string $token
    */
@@ -30,6 +33,7 @@ class Miguel_API {
   }
 
   /**
+   * Get URL
    * @return string
    */
   public function get_url() {
@@ -37,6 +41,7 @@ class Miguel_API {
   }
 
   /**
+   * Get callback URL
    * @return string
    */
   public function get_callback_url() {
@@ -46,6 +51,7 @@ class Miguel_API {
   }
 
   /**
+   * Generate
    * @param string $book
    * @param string $format
    * @param array $args
@@ -60,6 +66,7 @@ class Miguel_API {
   }
 
   /**
+   * Generate async
    * @param string $book
    * @param string $format
    * @param array $args
@@ -93,6 +100,7 @@ class Miguel_API {
   }
 
   /**
+   * Get
    * @param string $query
    * @param array $body
    * @return array|WP_Error
