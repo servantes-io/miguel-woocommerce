@@ -11,3 +11,4 @@ db_data/
 wordpress/
 /*.zip
 phpcs-report.xml
+run/
