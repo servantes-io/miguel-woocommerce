@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php
 	/* translators: %s: time */
 		printf(
-			esc_html( 'The e-book will be generated in %s.', 'miguel' ),
+			esc_html__( 'The e-book will be generated in %s.', 'miguel' ),
 			'<span id="timer">3 min 0 s</span>'
 		);
 	?>
