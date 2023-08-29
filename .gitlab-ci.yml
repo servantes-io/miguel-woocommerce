@@ -1,7 +1,7 @@
 default:
   image:
     name: php:8
-    entrypoint: ["/bin/bash", "-c"]
+    entrypoint: [""]
 
 stages:
   - test
