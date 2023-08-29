@@ -1,9 +1,13 @@
+default:
+  image:
+    name: php:8
+    entrypoint: ["/bin/bash", "-c"]
+
 stages:
   - test
   - release
 
 lint:
-  image: php:8
   stage: test
   script:
     # install dependencies
@@ -15,7 +19,6 @@ lint:
     - make lint
 
 release:
-  image: php:8
   stage: release
   only:
     - tags
