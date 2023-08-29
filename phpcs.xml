@@ -5,7 +5,7 @@
     <arg name="basepath" value="./"/>
 
     <config name="text_domain" value="miguel" />
-    <config name="minimum_supported_wp_version" value="4.7"/>
+    <config name="minimum_supported_wp_version" value="4.9"/>
 
     <exclude-pattern>vendor/</exclude-pattern>
 	<exclude-pattern>tmp/</exclude-pattern>
