@@ -19,10 +19,7 @@ test:
 	vendor/bin/phpunit
 
 pack: $(static_langs)
-	pushd src > /dev/null; \
-		zip -r ../miguel-$${CI_COMMIT_TAG:=dev}.zip *; \
-	popd > /dev/null; \
-	zip miguel-$${CI_COMMIT_TAG:=dev}.zip composer.json README.md CHANGELOG.md
+	bin/pack_plugin.sh
 
 lint:
 	composer exec -- phpcs --standard=./phpcs.xml --warning-severity=0 --report=code  --extensions=php,html -s src

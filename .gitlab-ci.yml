@@ -1,7 +1,11 @@
 default:
-  image:
-    name: php:8
-    entrypoint: [""]
+  image: php:8
+  before_script:
+    # install dependencies
+    - apt-get -yqq update
+    - apt-get -yqq install git zip unzip subversion default-mysql-client default-libmysqlclient-dev gettext --fix-missing
+    - bin/ci/install_composer.sh
+    - composer install
 
 stages:
   - test
@@ -10,21 +14,16 @@ stages:
 lint:
   stage: test
   script:
-    # install dependencies
-    - apt-get -yqq update
-    - apt-get -yqq install git zip unzip subversion default-mysql-client default-libmysqlclient-dev --fix-missing
-    - bin/ci/install_composer.sh
-    - composer install
     # run lint
     - make lint
+    # try to pack it
+    - make pack
 
 release:
   stage: release
   only:
     - tags
   script:
-    - apt-get update
-    - apt-get install zip gettext -y
     - make pack
   artifacts:
     untracked: false
