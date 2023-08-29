@@ -20,9 +20,9 @@ test:
 
 pack: $(static_langs)
 	pushd src > /dev/null; \
-		zip -r ../$${CI_COMMIT_TAG:=dev}.zip *; \
+		zip -r ../miguel-$${CI_COMMIT_TAG:=dev}.zip *; \
 	popd > /dev/null; \
-	zip $${CI_COMMIT_TAG:=dev}.zip composer.json README.md CHANGELOG.md
+	zip miguel-$${CI_COMMIT_TAG:=dev}.zip composer.json README.md CHANGELOG.md
 
 lint:
 	composer exec -- phpcs --standard=./phpcs.xml --warning-severity=0 --report=code  --extensions=php,html -s src
