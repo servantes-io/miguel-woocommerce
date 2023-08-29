@@ -20,6 +20,12 @@ msgstr ""
 "X-Poedit-SearchPathExcluded-1: apigen\n"
 "X-Poedit-SearchPathExcluded-2: tests\n"
 
+msgid "Miguel for WooCommerce"
+msgstr "Miguel pro WooCommerce"
+
+msgid "Sell watermarked e-books and audiobooks directly from WooCommerce e-shop via Miguel."
+msgstr "Prodávejte knihy a audioknihy s vodoznakem přímo z WooCommerce e-shopu pomocí Miguela."
+
 #: includes/admin/class-miguel-settings.php:18
 msgid "Miguel"
 msgstr "Miguel"
