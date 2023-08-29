@@ -7,7 +7,7 @@
  * Text Domain: miguel
  * Author: Servantes, s.r.o.
  * Author URI: https://servantes.cz
- * Version: 1.1.3
+ * Version: 1.2.0
  *
  * @package Miguel
  */

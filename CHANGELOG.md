@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.2.0
+
+- Code preparation for WordPress and WooCommerce
+- Changed code style to WordPress standard
+- Removed ability to connect to Staging or Test server
+
 ## v1.1.3
 
 - Add backward compatibility for old shortcode `[wosa book="" format=""]`
