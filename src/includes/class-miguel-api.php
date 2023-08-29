@@ -110,7 +110,7 @@ class Miguel_API {
 	}
 
 	/**
-	 * Get
+	 * Create POST request
 	 *
 	 * @param string $query
 	 * @param array  $body
@@ -120,7 +120,7 @@ class Miguel_API {
 		$data = array(
 			'method' => 'POST',
 			'timeout' => 180,
-			'user-agent' => 'MiguelForWooCommerce/' . miguel()->version . '; WordPress/' . get_bloginfo('version') . '; WooCommerce/' . WC()->version . '; ' . get_bloginfo( 'url' ),
+			'user-agent' => 'MiguelForWooCommerce/' . miguel()->version . '; WordPress/' . get_bloginfo( 'version' ) . '; WooCommerce/' . WC()->version . '; ' . get_bloginfo( 'url' ),
 			'headers' => array(
 				'Content-Type' => 'application/json; charset=utf-8',
 				'Authorization' => 'Bearer ' . $this->token,
