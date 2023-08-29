@@ -56,7 +56,8 @@ class Miguel_File {
 			throw new Exception( esc_html__( 'Invalid download url.', 'miguel' ) );
 		}
 
-		if ( ! miguel_starts_with( $download_url, '[miguel' ) || ! miguel_starts_with( $download_url, '[wosa' ) ) {
+		$is_valid_url = miguel_starts_with( $download_url, '[miguel' ) || miguel_starts_with( $download_url, '[wosa' );
+		if ( ! $is_valid_url ) {
 			throw new Exception( esc_html__( 'Invalid download url format.', 'miguel' ) );
 		}
 

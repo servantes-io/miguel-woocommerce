@@ -25,7 +25,7 @@ pack: $(static_langs)
 	zip $${CI_COMMIT_TAG:=dev}.zip composer.json README.md
 
 lint:
-	composer exec -- phpcs --standard=./phpcs.xml --warning-severity=0 --report=code --ignore-annotations --extensions=php,html -s src
+	composer exec -- phpcs --standard=./phpcs.xml --warning-severity=0 --report=code  --extensions=php,html -s src
 
 # Rule to convert .po files into .mo
 %.mo: %.po
