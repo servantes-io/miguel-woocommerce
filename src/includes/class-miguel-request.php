@@ -12,25 +12,29 @@ class Miguel_Request {
 
 	/**
 	 * Order
+	 *
 	 * @var WC_Order
 	 */
 	protected $order;
 
 	/**
 	 * User
+	 *
 	 * @var WP_User|false
 	 */
 	protected $user;
 
 	/**
 	 * Item
+	 *
 	 * @var WC_Order_Item_Product
 	 */
 	protected $item;
 
 	/**
 	 * Constructor
-	 * @param WC_Order $order
+	 *
+	 * @param WC_Order              $order
 	 * @param WC_Order_Item_Product $item
 	 */
 	public function __construct( $order, $item ) {
@@ -38,7 +42,7 @@ class Miguel_Request {
 		$this->item = $item;
 
 		$user_id = $order->get_user_id();
-		if ($user_id > 0) {
+		if ( $user_id > 0 ) {
 			$this->user = get_user_by( 'id', $user_id );
 		} else {
 			$this->user = false;
@@ -47,6 +51,7 @@ class Miguel_Request {
 
 	/**
 	 * Get id
+	 *
 	 * @return string
 	 */
 	public function get_id() {
@@ -55,6 +60,7 @@ class Miguel_Request {
 
 	/**
 	 * Get order id
+	 *
 	 * @return int
 	 */
 	public function get_order_id() {
@@ -63,10 +69,11 @@ class Miguel_Request {
 
 	/**
 	 * Get email
+	 *
 	 * @return string
 	 */
 	public function get_email() {
-		if ($this->user) {
+		if ( $this->user ) {
 			return $this->user->user_email;
 		} else {
 			return $this->order->get_billing_email();
@@ -75,28 +82,37 @@ class Miguel_Request {
 
 	/**
 	 * Get full name
+	 *
 	 * @return string
 	 */
 	public function get_full_name() {
-		return implode( ' ', array(
-			$this->order->get_billing_first_name(),
-			$this->order->get_billing_last_name()
-		) );
+		return implode(
+			' ',
+			array(
+				$this->order->get_billing_first_name(),
+				$this->order->get_billing_last_name(),
+			)
+		);
 	}
 
 	/**
 	 * Get address
+	 *
 	 * @return string
 	 */
 	public function get_address() {
-		return implode( ' ', array(
-			$this->order->get_billing_address_1(),
-			$this->order->get_billing_city()
-		) );
+		return implode(
+			' ',
+			array(
+				$this->order->get_billing_address_1(),
+				$this->order->get_billing_city(),
+			)
+		);
 	}
 
 	/**
 	 * Get purchase date
+	 *
 	 * @return string|null
 	 */
 	public function get_purchase_date() {
@@ -105,19 +121,21 @@ class Miguel_Request {
 			return;
 		}
 
-		return $paid_date->format(DateTime::ISO8601);
+		return $paid_date->format( DateTime::ISO8601 );
 	}
 
 	/**
 	 * Get language
+	 *
 	 * @return string
 	 */
 	public function get_language() {
-		return get_user_locale($this->user);
+		return get_user_locale( $this->user );
 	}
 
 	/**
 	 * Is valid
+	 *
 	 * @return bool
 	 */
 	public function is_valid() {
@@ -126,6 +144,7 @@ class Miguel_Request {
 
 	/**
 	 * To array
+	 *
 	 * @return array
 	 */
 	public function to_array() {
@@ -137,8 +156,8 @@ class Miguel_Request {
 				'full_name' => $this->get_full_name(),
 				'lang' => $this->get_language(),
 			),
-			'order_code' => strval($this->get_order_id()),
-			'sold_price' => $this->order->get_item_total($this->item, false, false), // calculate price after discounts, before tax
+			'order_code' => strval( $this->get_order_id() ),
+			'sold_price' => $this->order->get_item_total( $this->item, false, false ), // calculate price after discounts, before tax
 			'currency_code' => $this->order->get_currency(),
 			'purchase_date' => $this->get_purchase_date(),
 			'result' => 'download_link',

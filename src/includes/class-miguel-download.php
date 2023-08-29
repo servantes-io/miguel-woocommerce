@@ -1,6 +1,12 @@
 <?php
+/**
+ * Download handler
+ *
+ * @package Miguel
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
 /**
@@ -19,12 +25,13 @@ class Miguel_Download {
 
 	/**
 	 * Download
+	 *
 	 * @param string $email
 	 * @param string $order_key
-	 * @param int $product_id
-	 * @param int $user_id
-	 * @param int $download_id
-	 * @param int $order_id
+	 * @param int    $product_id
+	 * @param int    $user_id
+	 * @param int    $download_id
+	 * @param int    $order_id
 	 */
 	public function download( $email, $order_key, $product_id, $user_id, $download_id, $order_id ) {
 		$file = miguel_get_file( $product_id, $download_id );
@@ -33,29 +40,30 @@ class Miguel_Download {
 		}
 
 		if ( ! $file->is_valid() ) {
-			wp_die( esc_html__( 'Invalid shortcode params.', 'miguel' ) );
+			$this->miguel_die( esc_html__( 'Invalid shortcode params.', 'miguel' ) );
 		}
 
 		$order = wc_get_order( $order_id );
-		if (!$order) {
-			wp_die( esc_html__( 'Invalid order.', 'miguel' ) );
+		if ( ! $order ) {
+			$this->miguel_die( esc_html__( 'Invalid order.', 'miguel' ) );
 		}
 
-		$item = $this->get_item($order, $download_id);
+		$item = $this->get_item( $order, $download_id );
 
-		$this->serve($file, $order, $item);
+		$this->serve( $file, $order, $item );
 	}
 
 	/**
 	 * Serve
-	 * @param Miguel_File $file
-	 * @param WC_Order $order
+	 *
+	 * @param Miguel_File           $file
+	 * @param WC_Order              $order
 	 * @param WC_Order_Item_Product $item
 	 */
-	public function serve($file, $order, $item) {
-		$request = new Miguel_Request($order, $item);
+	public function serve( $file, $order, $item ) {
+		$request = new Miguel_Request( $order, $item );
 		if ( ! $request->is_valid() ) {
-			wp_die( esc_html__( 'Invalid request.', 'miguel' ) );
+			$this->miguel_die( esc_html__( 'Invalid request.', 'miguel' ) );
 		}
 
 		// Async generation
@@ -68,36 +76,38 @@ class Miguel_Download {
 
 	/**
 	 * Serve file
-	 * @param Miguel_File $file
+	 *
+	 * @param Miguel_File    $file
 	 * @param Miguel_Request $request
 	 */
 	public function serve_file( $file, $request ) {
-		$response = Miguel()->api()->generate( $file->get_name(), $file->get_format(), $request->to_array() );
-		if (is_wp_error( $response )) {
-			wp_die( $response->get_error_message() );
+		$response = miguel()->api()->generate( $file->get_name(), $file->get_format(), $request->to_array() );
+		if ( is_wp_error( $response ) ) {
+			$this->miguel_die( esc_html( $response->get_error_message() ) );
 		}
 
 		$json = json_decode( $response['body'] );
-		if (!$json) {
-			wp_die(esc_html__('Something went wrong.', 'miguel'));
+		if ( ! $json ) {
+			$this->miguel_die( esc_html__( 'Something went wrong.', 'miguel' ) );
 		}
 
-		if (property_exists( $json, 'reason' ) && $json->reason) {
-			wp_die(esc_html__($json->reason));
-		} else if (property_exists( $json, 'error' ) && $json->error ) {
-			wp_die(esc_html__($json->error . ': ' . $json->message));
-		} else if (property_exists( $json, 'download_url' ) ) {
+		if ( property_exists( $json, 'reason' ) && $json->reason ) {
+			$this->miguel_die( esc_html( $json->reason ) );
+		} elseif ( property_exists( $json, 'error' ) && $json->error ) {
+			$this->miguel_die( esc_html( $json->error . ': ' . $json->message ) );
+		} elseif ( property_exists( $json, 'download_url' ) ) {
 			$url = $json->download_url;
-			wp_redirect($url);
+			wp_redirect( $url );
 			exit;
 		} else {
-			wp_die(esc_html__('Something went wrong.', 'miguel'));
+			$this->miguel_die( esc_html__( 'Something went wrong.', 'miguel' ) );
 		}
 	}
 
 	/**
 	 * Serve async file
-	 * @param Miguel_File $file
+	 *
+	 * @param Miguel_File    $file
 	 * @param Miguel_Request $request
 	 */
 	public function serve_async_file( $file, $request ) {
@@ -114,7 +124,7 @@ class Miguel_Download {
 					'<p>%s</p>',
 					esc_html__( 'Please be patient, your book is being prepared. Try downloading the file later.', 'miguel' )
 				);
-			break;
+				break;
 			case 'completed':
 				$current = current_time( 'timestamp' );
 				// Expires url?
@@ -136,48 +146,59 @@ class Miguel_Download {
 
 	/**
 	 * New async request
-	 * @param Miguel_File $file
+	 *
+	 * @param Miguel_File    $file
 	 * @param Miguel_Request $request
 	 */
 	public function new_async_request( $file, $request ) {
-		$response = Miguel()->api()->generate_async( $file->get_name(), $file->get_format(), $request->to_array() );
+		$response = miguel()->api()->generate_async( $file->get_name(), $file->get_format(), $request->to_array() );
 		if ( is_wp_error( $response ) ) {
-			wp_die( esc_html__($response->get_error_message()) );
+			$this->miguel_die( esc_html( $response->get_error_message() ) );
 		}
 
-		miguel_insert_async_request( array(
-			'guid' => $response->id,
-			'order_id' => $request->get_order_id(),
-			'product_id' => $file->get_product_id(),
-			'download_id' => $file->get_download_id(),
-			'expected_duration' => $response->expected_duration
-		) );
+		miguel_insert_async_request(
+			array(
+				'guid' => $response->id,
+				'order_id' => $request->get_order_id(),
+				'product_id' => $file->get_product_id(),
+				'download_id' => $file->get_download_id(),
+				'expected_duration' => $response->expected_duration,
+			)
+		);
 
-		$this->miguel_die( miguel_get_template( 'timer', array(
-			'time' => $response->expected_duration + 10
-		) ) );
+		$this->miguel_die(
+			miguel_get_template(
+				'timer',
+				array(
+					'time' => $response->expected_duration + 10,
+				)
+			)
+		);
 	}
 
 	/**
 	 * Miguel die
+	 *
 	 * @param string $content
 	 */
 	public function miguel_die( $content ) {
-		echo esc_html__(miguel_get_template( 'die', array(
-			'content' => $content
-		) ));
-		die();
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		wp_die( $content );
 	}
 
 	/**
 	 * Get item
-	 * @param WC_Order order
-	 * @param int download_id
+	 *
+	 * @param WC_Order $order
+	 * @param int      $download_id
+	 *
 	 * @return WC_Order_Item_Product|null
 	 */
 	protected function get_item( $order, $download_id ) {
 		foreach ( $order->get_items() as $item_id => $item ) {
-			if (!($item instanceof WC_Order_Item_Product)) continue;
+			if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
+				continue;
+			}
 
 			// Get the downloads for each item
 			$downloads = $item->get_item_downloads();

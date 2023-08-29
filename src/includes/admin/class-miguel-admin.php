@@ -26,9 +26,11 @@ class Miguel_Admin {
 
 	/**
 	 * Adds settings pages
+	 *
+	 * @param array $pages
 	 */
 	public function add_settings_pages( $pages ) {
-		$pages[] = include( dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php' );
+		$pages[] = include dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php';
 		return $pages;
 	}
 }

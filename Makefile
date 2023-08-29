@@ -1,5 +1,4 @@
-languages = $(wildcard languages/*.po)
-static_langs = $(patsubst %.po, %.mo, $(wildcard languages/*.po))
+static_langs = $(patsubst %.po, %.mo, $(wildcard src/languages/*.po))
 
 include .dbconfig
 
@@ -20,8 +19,13 @@ test:
 	vendor/bin/phpunit
 
 pack: $(static_langs)
-	zip -r miguel-$${CI_COMMIT_TAG:=dev}.zip assets/ includes/ languages/ composer.json miguel.php readme.md
+	pushd src > /dev/null; \
+		zip -r ../$${CI_COMMIT_TAG:=dev}.zip *; \
+	popd > /dev/null; \
+	zip $${CI_COMMIT_TAG:=dev}.zip composer.json README.md
 
+lint:
+	composer exec -- phpcs --standard=./phpcs.xml --warning-severity=0 --report=code  --extensions=php,html -s src
 
 # Rule to convert .po files into .mo
 %.mo: %.po

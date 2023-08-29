@@ -15,7 +15,7 @@ class Miguel_Install {
 	 */
 	public static function update_version() {
 		delete_option( 'miguel_version' );
-		add_option( 'miguel_version', Miguel()->version );
+		add_option( 'miguel_version', miguel()->version );
 	}
 
 	/**
@@ -26,13 +26,14 @@ class Miguel_Install {
 
 		$wpdb->hide_errors();
 
-		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		dbDelta( self::get_table_schema() );
 	}
 
 	/**
 	 * Get table schema.
+	 *
 	 * @return string
 	 */
 	private static function get_table_schema() {

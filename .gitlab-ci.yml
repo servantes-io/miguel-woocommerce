@@ -1,5 +1,22 @@
+stages:
+  - test
+  - release
+
+lint:
+  image: php:8
+  stage: test
+  script:
+    # install dependencies
+    - apt-get -yqq update
+    - apt-get -yqq install git zip unzip subversion default-mysql-client default-libmysqlclient-dev --fix-missing
+    - bin/ci/install_composer.sh
+    - composer install
+    # run lint
+    - make lint
+
 release:
   image: php:8
+  stage: release
   only:
     - tags
   script:
