@@ -1,0 +1,21 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+    - name: Package
+      run: make pack
+    - uses: ncipollo/release-action@v1
+      with:
+        draft: true
+        generateReleaseNotes: true
+        artifacts: "miguel*.zip"
