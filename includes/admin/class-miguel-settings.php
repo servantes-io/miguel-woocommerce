@@ -75,7 +75,7 @@ class Miguel_Settings extends WC_Settings_Page {
 					'id' => 'miguel_api_options',
 					'type' => 'sectionend',
 				),
-			),
+			)
 		);
 
 		return $settings;

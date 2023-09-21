@@ -4,6 +4,12 @@
 
     <arg name="basepath" value="./"/>
 
+	<!--
+	Prevent errors caused by WordPress Coding Standards not supporting PHP 8.0+.
+	See https://github.com/WordPress/WordPress-Coding-Standards/issues/2035
+	-->
+	<ini name="error_reporting" value="E_ALL &#38; ~E_DEPRECATED" />
+
     <config name="text_domain" value="miguel" />
     <config name="minimum_supported_wp_version" value="4.9"/>
 
@@ -14,12 +20,16 @@
 	<exclude-pattern>node_modules/</exclude-pattern>
 	<exclude-pattern>tests/*.php</exclude-pattern>
 
-    <rule ref="WordPress">
-		<exclude name="Squiz.Commenting.ClassComment.Missing" />
-		<exclude name="Squiz.Commenting.FileComment.Missing" />
-		<exclude name="Squiz.Commenting.FunctionComment.Missing" />
-		<exclude name="Squiz.Commenting.FunctionComment.MissingParamComment" />
-		<exclude name="Squiz.Commenting.VariableComment.Missing" />
-        <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar" />
+	<!-- Rules -->
+	<rule ref="WooCommerce-Core" />
+
+    <rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array" value="miguel" />
+		</properties>
+	</rule>
+
+	<rule ref="PHPCompatibility">
+		<exclude-pattern>tests/</exclude-pattern>
 	</rule>
 </ruleset>

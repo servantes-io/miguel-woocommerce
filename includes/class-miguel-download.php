@@ -40,12 +40,12 @@ class Miguel_Download {
 		}
 
 		if ( ! $file->is_valid() ) {
-			$this->miguel_die( esc_html__( 'Invalid shortcode params.', 'miguel' ) );
+			wp_die( esc_html__( 'Invalid shortcode params.', 'miguel' ) );
 		}
 
 		$order = wc_get_order( $order_id );
 		if ( ! $order ) {
-			$this->miguel_die( esc_html__( 'Invalid order.', 'miguel' ) );
+			wp_die( esc_html__( 'Invalid order.', 'miguel' ) );
 		}
 
 		$item = $this->get_item( $order, $download_id );
@@ -63,7 +63,7 @@ class Miguel_Download {
 	public function serve( $file, $order, $item ) {
 		$request = new Miguel_Request( $order, $item );
 		if ( ! $request->is_valid() ) {
-			$this->miguel_die( esc_html__( 'Invalid request.', 'miguel' ) );
+			wp_die( esc_html__( 'Invalid request.', 'miguel' ) );
 		}
 
 		// Async generation
@@ -83,24 +83,24 @@ class Miguel_Download {
 	public function serve_file( $file, $request ) {
 		$response = miguel()->api()->generate( $file->get_name(), $file->get_format(), $request->to_array() );
 		if ( is_wp_error( $response ) ) {
-			$this->miguel_die( esc_html( $response->get_error_message() ) );
+			wp_die( esc_html( $response->get_error_message() ) );
 		}
 
 		$json = json_decode( $response['body'] );
 		if ( ! $json ) {
-			$this->miguel_die( esc_html__( 'Something went wrong.', 'miguel' ) );
+			wp_die( esc_html__( 'Something went wrong.', 'miguel' ) );
 		}
 
 		if ( property_exists( $json, 'reason' ) && $json->reason ) {
-			$this->miguel_die( esc_html( $json->reason ) );
+			wp_die( esc_html( $json->reason ) );
 		} elseif ( property_exists( $json, 'error' ) && $json->error ) {
-			$this->miguel_die( esc_html( $json->error . ': ' . $json->message ) );
+			wp_die( esc_html( $json->error . ': ' . $json->message ) );
 		} elseif ( property_exists( $json, 'download_url' ) ) {
 			$url = $json->download_url;
 			wp_redirect( $url );
 			exit;
 		} else {
-			$this->miguel_die( esc_html__( 'Something went wrong.', 'miguel' ) );
+			wp_die( esc_html__( 'Something went wrong.', 'miguel' ) );
 		}
 	}
 
@@ -141,7 +141,7 @@ class Miguel_Download {
 				break;
 		}
 
-		$this->miguel_die( $content );
+		wp_die( $content );
 	}
 
 	/**
@@ -153,7 +153,7 @@ class Miguel_Download {
 	public function new_async_request( $file, $request ) {
 		$response = miguel()->api()->generate_async( $file->get_name(), $file->get_format(), $request->to_array() );
 		if ( is_wp_error( $response ) ) {
-			$this->miguel_die( esc_html( $response->get_error_message() ) );
+			wp_die( esc_html( $response->get_error_message() ) );
 		}
 
 		miguel_insert_async_request(
@@ -166,7 +166,7 @@ class Miguel_Download {
 			)
 		);
 
-		$this->miguel_die(
+		wp_die(
 			miguel_get_template(
 				'timer',
 				array(
@@ -174,16 +174,6 @@ class Miguel_Download {
 				)
 			)
 		);
-	}
-
-	/**
-	 * Miguel die
-	 *
-	 * @param string $content
-	 */
-	public function miguel_die( $content ) {
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		wp_die( $content );
 	}
 
 	/**
