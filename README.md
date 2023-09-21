@@ -15,3 +15,5 @@ To setup Miguel plugin go to Wordpress Admin > WooCommerce > Settings > Miguel (
 Create products using WooCommerce UI, set it to _Downloadable_ and in _Downloadable files_ use shortcode `[miguel id="<book id>" format="<book format>"]` to set _File URL_. For example `[miguel id="book-id" format="epub"]`. Create multiple downloadable files for each format that you want to provide.
 
 Currently supported formats are: `epub`, `mobi`, `pdf` and `audio`.
+
+You can find more details on [our docs](https://docs.miguel.servantes.cz/en/docs/platforms/woocommerce/install/).
