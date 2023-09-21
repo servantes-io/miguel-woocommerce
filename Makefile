@@ -21,9 +21,6 @@ test:
 pack: $(static_langs)
 	bin/pack_plugin.sh
 
-lint:
-	composer exec -- phpcs --standard=./phpcs.xml --warning-severity=0 --report=code  --extensions=php,html -s src
-
 # Rule to convert .po files into .mo
 %.mo: %.po
 	msgfmt -o $@ $^

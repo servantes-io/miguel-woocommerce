@@ -1,12 +1,12 @@
-# Miguel
+# Miguel for WooCommerce
 
-Sell watermarked e-books and audiobook directly from WooCommerce e-shop via Miguel.
+Sell watermarked e-books and audiobooks directly from WooCommerce e-shop via [Miguel](https://servantes.cz/en/miguel).
 
 - __Requires at least:__ WooCommerce 3.0
 - __Tested up to:__ WooCommerce 7.4
 - __Version:__ 1.2.0
 
-# Setup
+## Setup
 
 To setup Miguel plugin go to Wordpress Admin > WooCommerce > Settings > Miguel (usually located on path `/wp-admin/admin.php?page=wc-settings&tab=miguel`). Then you need to paste API key from [App Servantes > Miguel Settings > API keys](https://app.servantes.cz/miguel/settings).
 
