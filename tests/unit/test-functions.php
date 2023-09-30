@@ -29,7 +29,7 @@ class Miguel_Test_Functions extends WP_UnitTestCase {
 	/**
 	 * Data provider for get_shortcode_atts()
 	 */
-	public function data_provider_test_get_shortcode_atts(): void {
+	public function data_provider_test_get_shortcode_atts() {
 		return array(
 			array(
 				array(),

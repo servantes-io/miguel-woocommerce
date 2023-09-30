@@ -78,3 +78,6 @@ jobs:
 
       - name: 'Install tests'
         run: bin/install-wp-tests.sh woocommerce_tests root woocommerce_test_password 127.0.0.1:3306 6.3.1 false
+
+      - name: 'Run phpunit'
+        run: vendor/bin/phpunit -c tests/phpunit.dist.xml
