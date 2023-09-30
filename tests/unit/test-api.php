@@ -9,7 +9,7 @@ class Miguel_Test_API extends WP_UnitTestCase {
 	/**
 	 * Setup.
 	 */
-	public function setUp() {
+	public function setUp(): void {
 		parent::setUp();
 
 		$this->token = '1a2b3c4d5e6f7g8h9';
@@ -19,14 +19,14 @@ class Miguel_Test_API extends WP_UnitTestCase {
 	/**
 	 * Test get_url().
 	 */
-	public function test_get_url() {
+	public function test_get_url(): void {
 		$this->assertEquals( 'https://miguel.servantes.cz/v1/', $this->miguel->get_url() );
 	}
 
 	/**
 	 * Test generate(), request url.
 	 */
-	public function test_generate__url() {
+	public function test_generate__url(): void {
 		Miguel_Helper_Http::mock_server_response( '__return__url' );
 
 		$response = $this->miguel->generate( 'dummy-book', 'epub', array() );
@@ -39,7 +39,7 @@ class Miguel_Test_API extends WP_UnitTestCase {
 	/**
 	 * Test generate(), request headers.
 	 */
-	public function test_generate__headers() {
+	public function test_generate__headers(): void {
 		Miguel_Helper_Http::mock_server_response( '__return__headers' );
 
 		$response = $this->miguel->generate( 'dummy-book', 'epub', array() );
@@ -57,7 +57,7 @@ class Miguel_Test_API extends WP_UnitTestCase {
 	/**
 	 * Test generate(), invalid format.
 	 */
-	public function test_generate__format() {
+	public function test_generate__format(): void {
 		$response = $this->miguel->generate( 'dummy-book', 'doc', null );
 
 		$this->assertEquals( true, is_wp_error( $response ) );

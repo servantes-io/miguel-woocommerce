@@ -9,7 +9,7 @@ class Miguel_Test_Request extends WP_UnitTestCase {
 	/**
 	 * Test get_args(), guest
 	 */
-	public function test_get_args() {
+	public function test_get_args(): void {
 		$order = Miguel_Helper_Order::create_order();
 
 		$want = array(
@@ -32,7 +32,7 @@ class Miguel_Test_Request extends WP_UnitTestCase {
 	/**
 	 * Test get_args(), customer exists
 	 */
-	public function test_get_args__customer() {
+	public function test_get_args__customer(): void {
 		$order = Miguel_Helper_Order::create_order();
 
 		$customer_id = $this->factory->user->create(
@@ -65,7 +65,7 @@ class Miguel_Test_Request extends WP_UnitTestCase {
 	/**
 	 * Test is_valid()
 	 */
-	public function test_is_valid() {
+	public function test_is_valid(): void {
 		$order = Miguel_Helper_Order::create_order();
 		$request = new Miguel_Request( $order );
 
