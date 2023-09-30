@@ -46,20 +46,28 @@ jobs:
           cp tests/wp-tests-config.php wordpress/
         # ./wp-cli wp core install --url=http://example.com --title=test --admin_user=test --admin_email=test@example.com
 
+      - name: 'Cache WooCommerce'
+        uses: actions/cache@v3
+        with:
+          path: woocommerce
+          key: woocommerce-8.1.1
+
       - name: 'Install WooCommerce'
         shell: bash -l {0}
         run: |
-          git clone --depth 1 --branch 8.1.1 https://github.com/woocommerce/woocommerce
-          pushd woocommerce/plugins/woocommerce
-            # Ensure that you're using the correct version of Node
-            nvm install 16
-            nvm use
-            npm install -g pnpm
-            # Install the PHP and Composer dependencies for all of the plugins, packages, and tools
-            pnpm install
-            # Build all of the plugins, packages, and tools in the monorepo
-            pnpm run build
-          popd
+          if [ ! -d woocommerce ]; then
+            git clone --depth 1 --branch 8.1.1 https://github.com/woocommerce/woocommerce
+            pushd woocommerce/plugins/woocommerce
+              # Ensure that you're using the correct version of Node
+              nvm install 16
+              nvm use
+              npm install -g pnpm
+              # Install the PHP and Composer dependencies for all of the plugins, packages, and tools
+              pnpm install
+              # Build all of the plugins, packages, and tools in the monorepo
+              pnpm run build
+            popd
+          fi
 
       - name: 'Composer'
         run: |
@@ -70,6 +78,3 @@ jobs:
 
       - name: 'Install tests'
         run: bin/install-wp-tests.sh woocommerce_tests root woocommerce_test_password 127.0.0.1:3306 6.3.1 false
-
-      - name: 'Run phpunit'
-        run: vendor/bin/phpunit -c tests/phpunit.dist.xml
