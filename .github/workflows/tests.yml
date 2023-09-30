@@ -1,0 +1,75 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+env:
+  TEMPDIR: ./tmp
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    services:
+      woocommerce_test_db:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: woocommerce_test_password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: gd, mysql[i], zip, exif, intl, mbstring, xml, xsl
+          ini-values: xdebug.mode=coverage
+          tools: composer:v2
+
+      - name: 'Setup NVM'
+        run: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+
+      - name: 'Setup wp-cli'
+        run: |
+          curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          mv wp-cli.phar wp-cli
+          chmod +x wp-cli
+
+      - name: 'Setup WordPress'
+        run: |
+          ./wp-cli core download --path=wordpress
+          echo 'path: wordpress/' > wp-cli.yml
+          cp tests/wp-tests-config.php wordpress/
+        # ./wp-cli wp core install --url=http://example.com --title=test --admin_user=test --admin_email=test@example.com
+
+      - name: 'Install WooCommerce'
+        shell: bash -l {0}
+        run: |
+          git clone --depth 1 --branch 8.1.1 https://github.com/woocommerce/woocommerce
+          pushd woocommerce/plugins/woocommerce
+            # Ensure that you're using the correct version of Node
+            nvm install 16
+            nvm use
+            npm install -g pnpm
+            # Install the PHP and Composer dependencies for all of the plugins, packages, and tools
+            pnpm install
+            # Build all of the plugins, packages, and tools in the monorepo
+            pnpm run build
+          popd
+
+      - name: 'Composer'
+        run: |
+          composer install --prefer-dist --no-progress --no-ansi --no-interaction
+          composer rm --dev phpunit/phpunit
+          composer require --dev phpunit/phpunit:^9
+          composer require --dev yoast/phpunit-polyfills
+
+      - name: 'Install tests'
+        run: bin/install-wp-tests.sh woocommerce_tests root woocommerce_test_password 127.0.0.1:3306 6.3.1 false
+
+      - name: 'Run phpunit'
+        run: vendor/bin/phpunit -c tests/phpunit.dist.xml
