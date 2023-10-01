@@ -45,8 +45,9 @@ class Miguel_Test_API extends WP_UnitTestCase {
 		$response = $this->miguel->generate( 'dummy-book', 'epub', array() );
 
 		$want = array(
-			'Content-Type' => 'application/json',
+			'Content-Type' => 'application/json; charset=utf-8',
 			'Authorization' => 'Bearer ' . $this->token,
+			'Accept-Language' => 'en_US',
 		);
 
 		$this->assertEquals( $want, $response['body'] );

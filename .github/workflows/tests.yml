@@ -64,7 +64,7 @@ jobs:
         run: |
           if [ ! -d woocommerce ]; then
             git clone --depth 1 --branch ${{ matrix.woocommerce-version }} https://github.com/woocommerce/woocommerce
-            pushd woocommerce/plugins/woocommerce
+            pushd woocommerce
               # Ensure that you're using the correct version of Node
               nvm install 16
               nvm use
