@@ -18,6 +18,13 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    strategy:
+      matrix:
+        include:
+          - woocommerce-version: 8.1.1
+            wordpress-version: 6.3.1
+            php-version: 8.1
+            phpunit-version: ^9
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +32,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: '${{ matrix.php-version }}'
           extensions: gd, mysql[i], zip, exif, intl, mbstring, xml, xsl
           ini-values: xdebug.mode=coverage
           tools: composer:v2
@@ -41,7 +48,7 @@ jobs:
 
       - name: 'Setup WordPress'
         run: |
-          ./wp-cli core download --path=wordpress
+          ./wp-cli core download --path=wordpress --version=${{ matrix.wordpress-version }}
           echo 'path: wordpress/' > wp-cli.yml
           cp tests/wp-tests-config.php wordpress/
         # ./wp-cli wp core install --url=http://example.com --title=test --admin_user=test --admin_email=test@example.com
@@ -50,13 +57,13 @@ jobs:
         uses: actions/cache@v3
         with:
           path: woocommerce
-          key: woocommerce-8.1.1
+          key: woocommerce-${{ matrix.woocommerce-version }}
 
       - name: 'Install WooCommerce'
         shell: bash -l {0}
         run: |
           if [ ! -d woocommerce ]; then
-            git clone --depth 1 --branch 8.1.1 https://github.com/woocommerce/woocommerce
+            git clone --depth 1 --branch ${{ matrix.woocommerce-version }} https://github.com/woocommerce/woocommerce
             pushd woocommerce/plugins/woocommerce
               # Ensure that you're using the correct version of Node
               nvm install 16
@@ -73,11 +80,11 @@ jobs:
         run: |
           composer install --prefer-dist --no-progress --no-ansi --no-interaction
           composer rm --dev phpunit/phpunit
-          composer require --dev phpunit/phpunit:^9
+          composer require --dev phpunit/phpunit:${{ matrix.phpunit-version }}
           composer require --dev yoast/phpunit-polyfills
 
       - name: 'Install tests'
-        run: bin/install-wp-tests.sh woocommerce_tests root woocommerce_test_password 127.0.0.1:3306 6.3.1 false
+        run: bin/install-wp-tests.sh woocommerce_tests root woocommerce_test_password 127.0.0.1:3306 ${{ matrix.wordpress-version }} false
 
       - name: 'Run phpunit'
         run: vendor/bin/phpunit -c tests/phpunit.dist.xml
