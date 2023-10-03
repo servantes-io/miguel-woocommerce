@@ -41,7 +41,11 @@ require_once MIGUEL_PROJECT_DIR . '/tests/helpers/class-miguel-helper-order.php'
 require_once MIGUEL_PROJECT_DIR . '/tests/helpers/class-miguel-helper-product.php';
 
 // WooCommerce helpers
-require_once MIGUEL_WC_DIR . '/tests/legacy/bootstrap.php';
+if ( file_exists(MIGUEL_WC_DIR . '/tests/legacy/bootstrap.php') ) {
+  require_once MIGUEL_WC_DIR . '/tests/legacy/bootstrap.php';
+} else {
+  require_once MIGUEL_WC_DIR . '/tests/bootstrap.php';
+}
 
 // Start up the WP testing environment.
 require_once $_tests_dir . '/includes/bootstrap.php';

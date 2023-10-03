@@ -44,6 +44,10 @@ jobs:
             wordpress-version: 6.3.1
             php-version: 7.2
             phpunit-version: 7.5.20
+          - woocommerce-version: 3.9.5
+            wordpress-version: 6.3.1
+            php-version: 7.2
+            phpunit-version: 7.5.20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
