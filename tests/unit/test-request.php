@@ -20,9 +20,9 @@ class Miguel_Test_Request extends WC_Unit_Test_Case {
 				'lang' => 'en_US'
 			),
 			'purchase_date' => $order->get_date_paid()->format( DateTime::ATOM ),
-			'order_code' => $order->get_id(),
+			'order_code' => strval($order->get_id()),
 			'sold_price' => 10.0,
-			'currency_code' => 'USD',
+			'currency_code' => $order->get_currency(),
 			'result' => 'download_link',
 		);
 
@@ -57,9 +57,9 @@ class Miguel_Test_Request extends WC_Unit_Test_Case {
 				'lang' => 'en_US'
 			),
 			'purchase_date' => $order->get_date_paid()->format( DateTime::ATOM ),
-			'order_code' => $order->get_id(),
+			'order_code' => strval($order->get_id()),
 			'sold_price' => 10.0,
-			'currency_code' => 'USD',
+			'currency_code' => $order->get_currency(),
 			'result' => 'download_link',
 		);
 
