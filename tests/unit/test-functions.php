@@ -22,7 +22,7 @@ class Miguel_Test_Functions extends WP_UnitTestCase {
 	 *
 	 * @dataProvider data_provider_test_starts_with
 	 */
-	public function test_starts_with( $assert, $values ) {
+	public function test_starts_with( $assert, $values ): void {
 		$this->assertEquals( $assert, $values );
 	}
 
@@ -69,7 +69,7 @@ class Miguel_Test_Functions extends WP_UnitTestCase {
 	 *
 	 * @dataProvider data_provider_test_get_shortcode_atts
 	 */
-	public function test_get_shortcode_atts( $assert, $values ) {
+	public function test_get_shortcode_atts( $assert, $values ): void {
 		$this->assertEquals( $assert, $values );
 	}
 }

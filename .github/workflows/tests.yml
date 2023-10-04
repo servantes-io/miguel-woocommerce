@@ -1,0 +1,123 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+env:
+  TEMPDIR: ./tmp
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    services:
+      woocommerce_test_db:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: woocommerce_test_password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    strategy:
+      matrix:
+        include:
+          - woocommerce-version: 8.1.1
+            wordpress-version: 6.3.1
+            php-version: 8.2
+            phpunit-version: ^9
+            pnpm-version: ^8
+          - woocommerce-version: 7.9.0
+            wordpress-version: 6.3.1
+            php-version: 8.2
+            phpunit-version: ^9
+            pnpm-version: ^8
+          - woocommerce-version: 6.9.4
+            wordpress-version: 6.3.1
+            php-version: 7.2
+            phpunit-version: 7.5.20
+            pnpm-version: ^6.24.2
+          - woocommerce-version: 5.9.1
+            wordpress-version: 6.3.1
+            php-version: 7.2
+            phpunit-version: 7.5.20
+          - woocommerce-version: 4.9.5
+            wordpress-version: 6.3.1
+            php-version: 7.2
+            phpunit-version: 7.5.20
+          - woocommerce-version: 3.9.5
+            wordpress-version: 6.3.1
+            php-version: 7.2
+            phpunit-version: 7.5.20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ matrix.php-version }}'
+          extensions: gd, mysql[i], zip, exif, intl, mbstring, xml, xsl
+          ini-values: xdebug.mode=coverage
+          tools: composer:v2
+
+      - name: 'Setup NVM'
+        run: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+
+      - name: 'Setup wp-cli'
+        run: |
+          curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          mv wp-cli.phar wp-cli
+          chmod +x wp-cli
+
+      - name: 'Setup WordPress'
+        run: |
+          ./wp-cli core download --path=wordpress --version=${{ matrix.wordpress-version }}
+          echo 'path: wordpress/' > wp-cli.yml
+          cp tests/wp-tests-config.php wordpress/
+        # ./wp-cli wp core install --url=http://example.com --title=test --admin_user=test --admin_email=test@example.com
+
+      - name: 'Cache WooCommerce'
+        uses: actions/cache@v3
+        with:
+          path: woocommerce
+          key: woocommerce-${{ matrix.woocommerce-version }}
+
+      - name: 'Install WooCommerce'
+        shell: bash -l {0}
+        run: |
+          if [ ! -d woocommerce ]; then
+            git clone --depth 1 --branch ${{ matrix.woocommerce-version }} https://github.com/woocommerce/woocommerce
+            pushd woocommerce
+              # Ensure that you're using the correct version of Node
+              if [ -f .nvmrc ]; then
+                nvm install $(cat .nvmrc)
+                nvm use
+              fi
+
+              if [ ! -z "${{ matrix.pnpm-version }}" ]; then
+                npm install -g pnpm@${{ matrix.pnpm-version }}
+
+                # Install the PHP and Composer dependencies for all of the plugins, packages, and tools
+                pnpm install
+                # Build all of the plugins, packages, and tools in the monorepo
+                pnpm run build
+              else
+                npm ci
+                npm run-script build
+              fi
+            popd
+          fi
+
+      - name: 'Composer'
+        run: |
+          composer install --no-dev --prefer-dist --no-progress --no-ansi --no-interaction
+          composer remove --dev phpunit/phpunit
+          composer require --dev phpunit/phpunit:${{ matrix.phpunit-version }}
+          composer require --dev yoast/phpunit-polyfills
+          composer install --prefer-dist --no-progress --no-ansi --no-interaction
+
+      - name: 'Install tests'
+        run: bin/install-wp-tests.sh woocommerce_tests root woocommerce_test_password 127.0.0.1:3306 ${{ matrix.wordpress-version }} false
+
+      - name: 'Run phpunit'
+        run: vendor/bin/phpunit -c tests/phpunit.dist.xml
