@@ -116,14 +116,12 @@ class Miguel_Download {
 			$this->new_async_request( $file, $request );
 		}
 
-		$content = esc_html__( 'Something went wrong.', 'miguel' );
-
 		switch ( $exists->status ) {
 			case 'awaiting':
-				$content = sprintf(
+				wp_die( sprintf(
 					'<p>%s</p>',
 					esc_html__( 'Please be patient, your book is being prepared. Try downloading the file later.', 'miguel' )
-				);
+				) );
 				break;
 			case 'completed':
 				$current = current_time( 'timestamp' );
@@ -131,17 +129,19 @@ class Miguel_Download {
 				if ( $current > strtotime( $exists->download_url_expires ) ) {
 					$this->new_async_request( $file, $request );
 				} else {
-					$content = sprintf(
+					wp_die( sprintf(
 						'<p>%s</p><p><a class="btn" href="%s">%s</a></p>',
 						esc_html__( 'Your book is ready to download.', 'miguel' ),
 						esc_url( $exists->download_url ),
 						esc_html__( 'Download a file', 'miguel' )
-					);
+					) );
 				}
 				break;
-		}
 
-		wp_die( $content );
+			default:
+				wp_die( esc_html__( 'Something went wrong.', 'miguel' ) );
+
+		}
 	}
 
 	/**
