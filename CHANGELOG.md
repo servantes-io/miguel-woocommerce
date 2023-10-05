@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.2.1
+
+- Fix sniff issues found by PHP CS and validation before sending to WooCommerce
+
 ## v1.2.0
 
 - Code preparation for WordPress and WooCommerce

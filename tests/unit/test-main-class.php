@@ -26,7 +26,7 @@ class Miguel_Test_Main_Class extends WP_UnitTestCase {
 	 * Test version.
 	 */
 	public function test_version(): void {
-		$this->assertEquals( '1.2.0', $this->miguel->version );
+		$this->assertEquals( '1.2.1', $this->miguel->version );
 	}
 
 	/**
