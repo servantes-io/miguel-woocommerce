@@ -21,5 +21,5 @@ if ( ! defined( 'ABSPATH' ) ) {
 		?>
 </p>
 <script>var miguel_duration = <?php echo esc_js( $args['time'] ); ?>;</script>
-<?php wp_enqueue_script( 'miguel-script', plugins_url( '/assets/js/timer.js', MIGUEL_PLUGIN_FILE ) ); ?>
+<?php wp_enqueue_script( 'miguel-script', plugins_url( '/assets/js/timer.js', MIGUEL_PLUGIN_FILE ), array(), '1.0' ); ?>
 <?php
