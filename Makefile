@@ -1,4 +1,4 @@
-static_langs = $(patsubst %.po, %.mo, $(wildcard src/languages/*.po))
+static_langs = $(patsubst %.po, %.mo, $(wildcard languages/*.po))
 
 include .dbconfig
 
@@ -19,7 +19,7 @@ test:
 	vendor/bin/phpunit
 
 pack: $(static_langs)
-	zip -r "miguel-$${GITHUB_REF_NAME}.zip" assets includes languages miguel.php composer.json README.md CHANGELOG.md
+	zip -r "miguel.zip" assets includes languages miguel.php composer.json README.md CHANGELOG.md
 
 # Rule to convert .po files into .mo
 %.mo: %.po

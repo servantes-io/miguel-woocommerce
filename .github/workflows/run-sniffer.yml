@@ -37,6 +37,11 @@ jobs:
           ini-values: xdebug.mode=coverage
           tools: composer:v2
 
+      - name: Install OS deps
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y gettext
+
       - name: 'Pack and unpack for linter'
         run: |
           make pack
@@ -48,7 +53,7 @@ jobs:
           composer require --prefer-dist --no-progress --no-ansi --no-interaction --dev \
             squizlabs/php_codesniffer:^3.6.0 \
             wp-coding-standards/wpcs:^3.0.0 \
-            wp-coding-standards/wpcs:^0.0.2 \
+            woocommerce/woocommerce-sniffs:^0.0.2 \
             phpcompatibility/phpcompatibility-wp
           cp ../phpcs-woocommerce.xml .
 
