@@ -167,10 +167,22 @@ class Miguel_Download {
 		);
 
 		wp_die(
-			miguel_get_template(
-				'timer',
+			wp_kses(
+				load_template(
+					miguel_template_path( 'timer' ),
+					false,
+					array(
+						'time' => $response->expected_duration + 10,
+					)
+				),
 				array(
-					'time' => $response->expected_duration + 10,
+					'p' => array(),
+					'script' => array(
+						'src' => array(),
+					),
+					'span' => array(
+						'id' => array(),
+					),
 				)
 			)
 		);
