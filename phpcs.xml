@@ -4,6 +4,12 @@
 
     <arg name="basepath" value="./"/>
 
+	<exclude-pattern>./vendor/*</exclude-pattern>
+	<exclude-pattern>./tmp/*</exclude-pattern>
+	<exclude-pattern>./run/*</exclude-pattern>
+	<exclude-pattern>./wordpress/*</exclude-pattern>
+	<exclude-pattern>./woocommerce/*</exclude-pattern>
+
 	<!--
 	Prevent errors caused by WordPress Coding Standards not supporting PHP 8.0+.
 	See https://github.com/WordPress/WordPress-Coding-Standards/issues/2035
@@ -12,13 +18,6 @@
 
     <config name="text_domain" value="miguel" />
     <config name="minimum_supported_wp_version" value="4.9"/>
-
-    <exclude-pattern>vendor/</exclude-pattern>
-	<exclude-pattern>tmp/</exclude-pattern>
-	<exclude-pattern>run/</exclude-pattern>
-	<exclude-pattern>build/</exclude-pattern>
-	<exclude-pattern>node_modules/</exclude-pattern>
-	<exclude-pattern>tests/*.php</exclude-pattern>
 
 	<!-- Rules -->
 	<rule ref="WooCommerce-Core" />

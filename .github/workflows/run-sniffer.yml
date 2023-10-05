@@ -8,5 +8,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: gd, mysql[i], zip, exif, intl, mbstring, xml, xsl
+          ini-values: xdebug.mode=coverage
+          tools: composer:v2
+
+      - name: 'Install composer dependencies'
+        run: composer install --prefer-dist --no-progress --no-ansi --no-interaction
+
       - name: Run sniffer
-        run: bash "${GITHUB_WORKSPACE}/.github/run-sniffer.sh"
+        run: vendor/bin/phpcs . -v
