@@ -23,8 +23,8 @@ msgstr ""
 msgid "Miguel for WooCommerce"
 msgstr "Miguel pro WooCommerce"
 
-msgid "Sell watermarked e-books and audiobooks directly from WooCommerce e-shop via Miguel."
-msgstr "Prodávejte knihy a audioknihy s vodoznakem přímo z WooCommerce e-shopu pomocí Miguela."
+msgid "Sell your e-books and audiobooks directly on your e-shop."
+msgstr "Prodávejte své e-knihy i audioknihy přímo na svém e-shopu."
 
 #: includes/admin/class-miguel-settings.php:18
 msgid "Miguel"
