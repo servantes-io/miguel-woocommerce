@@ -9,6 +9,9 @@
  * Author URI: https://servantes.cz
  * Version: 1.2.1
  *
+ * WC requires at least: 3.9
+ * WC tested up to: 8.1
+ *
  * @package Miguel
  */
 
