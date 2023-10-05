@@ -116,14 +116,12 @@ class Miguel_Download {
 			$this->new_async_request( $file, $request );
 		}
 
-		$content = esc_html__( 'Something went wrong.', 'miguel' );
-
 		switch ( $exists->status ) {
 			case 'awaiting':
-				$content = sprintf(
+				wp_die( sprintf(
 					'<p>%s</p>',
 					esc_html__( 'Please be patient, your book is being prepared. Try downloading the file later.', 'miguel' )
-				);
+				) );
 				break;
 			case 'completed':
 				$current = current_time( 'timestamp' );
@@ -131,17 +129,19 @@ class Miguel_Download {
 				if ( $current > strtotime( $exists->download_url_expires ) ) {
 					$this->new_async_request( $file, $request );
 				} else {
-					$content = sprintf(
+					wp_die( sprintf(
 						'<p>%s</p><p><a class="btn" href="%s">%s</a></p>',
 						esc_html__( 'Your book is ready to download.', 'miguel' ),
 						esc_url( $exists->download_url ),
 						esc_html__( 'Download a file', 'miguel' )
-					);
+					) );
 				}
 				break;
-		}
 
-		wp_die( $content );
+			default:
+				wp_die( esc_html__( 'Something went wrong.', 'miguel' ) );
+
+		}
 	}
 
 	/**
@@ -167,10 +167,22 @@ class Miguel_Download {
 		);
 
 		wp_die(
-			miguel_get_template(
-				'timer',
+			wp_kses(
+				load_template(
+					miguel_template_path( 'timer' ),
+					false,
+					array(
+						'time' => $response->expected_duration + 10,
+					)
+				),
 				array(
-					'time' => $response->expected_duration + 10,
+					'p' => array(),
+					'script' => array(
+						'src' => array(),
+					),
+					'span' => array(
+						'id' => array(),
+					),
 				)
 			)
 		);

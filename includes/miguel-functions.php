@@ -32,16 +32,14 @@ function miguel_get_shortcode_atts( $shortcode, $defaults = array() ) {
 }
 
 /**
- * Get_template
+ * Compose path to template file
  *
- * @param string $tpl
- * @param array  $data
+ * @param string $tpl Template file name (without extension)
  *
- * @return string
+ * @return string path
  */
-function miguel_get_template( $tpl, $data = array() ) {
-	$path = dirname( MIGUEL_PLUGIN_FILE ) . '/includes/views/' . $tpl . '.php';
-	return load_template( $path, false, $data );
+function miguel_template_path( $tpl ) {
+	return dirname( MIGUEL_PLUGIN_FILE ) . '/includes/views/' . $tpl . '.php';
 }
 
 /**
