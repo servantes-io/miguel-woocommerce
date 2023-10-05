@@ -22,3 +22,36 @@ jobs:
 
       - name: Run sniffer
         run: vendor/bin/phpcs . -v
+
+  wc-sniff:
+    name: Run WooCommerce sniffer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: gd, mysql[i], zip, exif, intl, mbstring, xml, xsl
+          ini-values: xdebug.mode=coverage
+          tools: composer:v2
+
+      - name: 'Pack and unpack for linter'
+        run: |
+          make pack
+          unzip miguel.zip -d miguel-lint
+
+      - name: 'Install composer dependencies'
+        working-directory: miguel-lint
+        run: |
+          composer require --prefer-dist --no-progress --no-ansi --no-interaction --dev \
+            squizlabs/php_codesniffer:^3.6.0 \
+            wp-coding-standards/wpcs:^3.0.0 \
+            wp-coding-standards/wpcs:^0.0.2 \
+            phpcompatibility/phpcompatibility-wp
+          cp ../phpcs-woocommerce.xml .
+
+      - name: Run sniffer
+        working-directory: miguel-lint
+        run: vendor/bin/phpcs --standard=phpcs-woocommerce.xml --warning-severity=0 --report-source --report-full=phpcs-report.txt --ignore-annotations --extensions=php,html . -v
