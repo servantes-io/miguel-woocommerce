@@ -19,7 +19,7 @@ test:
 	vendor/bin/phpunit
 
 pack: $(static_langs)
-	zip -r "miguel.zip" assets includes languages miguel.php composer.json README.md CHANGELOG.md
+	.github/scripts/build-zip.sh
 
 # Rule to convert .po files into .mo
 %.mo: %.po
