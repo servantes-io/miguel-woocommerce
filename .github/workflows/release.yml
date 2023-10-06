@@ -12,8 +12,10 @@ jobs:
       contents: write
     steps:
     - uses: actions/checkout@v4
+
     - name: Package
       run: make pack
+
     - uses: ncipollo/release-action@v1
       with:
         draft: true
