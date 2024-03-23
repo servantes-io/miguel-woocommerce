@@ -29,12 +29,14 @@ class Miguel_Test_API extends WP_UnitTestCase {
 	public function data_provider_test_generate__url() {
 		return array(
 			array( 'dummy-book', 'https://miguel.servantes.cz/v1/generate_epub/dummy-book' ),
-			array( 'dummy/book', 'https://miguel.servantes.cz/v1/generate_epub/dummy%20book' ),
+			array( 'dummy/book', 'https://miguel.servantes.cz/v1/generate_epub/dummy%2Fbook' ),
 		);
 	}
 
 	/**
 	 * Test generate(), request url.
+   *
+   * @dataProvider data_provider_test_generate__url
 	 */
 	public function test_generate__url( $id, $url ): void {
 		Miguel_Helper_Http::mock_server_response( '__return__url' );
