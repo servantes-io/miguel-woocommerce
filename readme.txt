@@ -2,7 +2,7 @@
 Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 4.9
-Tested up to: 6.3
+Tested up to: 6.4
 Stable tag: 1.2.1
 Requires PHP: 7.2
 License: MIT
@@ -28,6 +28,11 @@ Currently supported formats are: `epub`, `mobi`, `pdf` and `audio`.
 
 You can find more details on [our docs](https://docs.miguel.servantes.cz/en/docs/platforms/woocommerce/usage/).
 
+## Pricing ##
+
+Miguel is a paid service. You can find more details on [our page](https://servantes.io/miguel_woocommerce), look for Price.
+
+
 == Installation ==
 
 Install the plugin from the WordPress plugin directory or dwonload it from https://github.com/servantes-io/miguel-woocommerce/releases/latest/download/miguel.zip and upload it to your WordPress. Then activate it.
@@ -36,7 +41,24 @@ To setup Miguel plugin go to Wordpress Admin > WooCommerce > Settings > Miguel (
 
 You can find more details on [our docs](https://docs.miguel.servantes.cz/en/docs/platforms/woocommerce/install/).
 
+
 == Frequently Asked Questions ==
+
+= How does the delivery of audiobooks work? =
+
+Miguel also allows you to send out audiobooks to the customers. The zipped MP3 leave from a secure link, so there is no mass distribution of a public link, which could result in illegal downloads. DRM is not yet part of audiobooks but it is planned for the future.
+
+= What formats can be used? =
+
+The MOBI and PDF formats are automatically converted from the supplied ePUB. The system also automatically checks the validity of the ePUB. Miguel supports the most commonly used MP3 format for audiobooks.
+
+= How do we transfer our e-books and audiobooks to Miguel? =
+
+Uploading e-book files to Miguel is similar to what you're used to with other sellers. The latest uploaded version of the e-book is always the current version.
+
+= What does the "customizable" PDF mean? =
+
+The interactive wizard allows you to set the screen size for which the resulting PDF is generated. Then you can set the font size, font type and you are able to turn on margins for notes.
 
 
 == Changelog ==
@@ -44,20 +66,4 @@ You can find more details on [our docs](https://docs.miguel.servantes.cz/en/docs
 = 1.2.1 =
 * Fix sniff issues found by PHP CS and validation before sending to WooCommerce
 
-= 1.2.0 =
-* Code preparation for WordPress and WooCommerce
-* Changed code style to WordPress standard
-* Removed ability to connect to Staging or Test server
-
-= 1.1.2 =
-* Add support for `/` in book ID
-* Fix parsing of error message from Miguel
-
-= 1.1.1 =
-* Fixed usage of `DateTimeInterface::ISO8601` on older versions of PHP
-
-= 1.1 =
-* Added link to settings page from plugins page.
-
-= 1.0 =
-* Init version.
+[Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

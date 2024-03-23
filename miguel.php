@@ -4,6 +4,7 @@
  * Plugin URI: https://www.servantes.cz/en/miguel
  * Description: Sell your e-books and audiobooks directly on your e-shop.
  * Requires at least: 4.9
+ * Requires PHP: 7.2
  * Text Domain: miguel
  * Author: Servantes, s.r.o.
  * Author URI: https://servantes.cz
