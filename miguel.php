@@ -8,7 +8,7 @@
  * Text Domain: miguel
  * Author: Servantes, s.r.o.
  * Author URI: https://servantes.io
- * Version: 1.2.1
+ * Version: 1.2.2
  *
  * WC requires at least: 3.9
  * WC tested up to: 8.7

@@ -3,7 +3,7 @@ Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 4.9
 Tested up to: 6.4
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 Requires PHP: 7.2
 License: MIT
 
@@ -78,6 +78,10 @@ The interactive wizard allows you to set the screen size for which the resulting
 
 
 == Changelog ==
+
+= 1.2.2 =
+* Add support for [WooCommerce's new HPOS](https://github.com/woocommerce/woocommerce/wiki/High-Performance-Order-Storage-Upgrade-Recipe-Book)
+
 
 = 1.2.1 =
 * Fix sniff issues found by PHP CS and validation before sending to WooCommerce
