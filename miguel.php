@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name: Miguel for WooCommerce
- * Plugin URI: https://www.servantes.cz/en/miguel
+ * Plugin URI: https://servantes.io/miguel_woocommerce
  * Description: Sell your e-books and audiobooks directly on your e-shop.
  * Requires at least: 4.9
  * Requires PHP: 7.2
  * Text Domain: miguel
  * Author: Servantes, s.r.o.
- * Author URI: https://servantes.cz
+ * Author URI: https://servantes.io
  * Version: 1.2.1
  *
  * WC requires at least: 3.9
