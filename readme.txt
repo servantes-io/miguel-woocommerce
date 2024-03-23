@@ -35,7 +35,23 @@ Miguel is a paid service. You can find more details on [our page](https://servan
 
 == Installation ==
 
-Install the plugin from the WordPress plugin directory or dwonload it from https://github.com/servantes-io/miguel-woocommerce/releases/latest/download/miguel.zip and upload it to your WordPress. Then activate it.
+## Minimum Requirements ##
+
+- WooCommerce 3.9 or greater
+- WordPress 4.9 or greater
+
+## Automatic installation ##
+
+1. Log in to your WordPress dashboard.
+2. Navigate to the Plugins menu, and click “Add New”.
+3. Search and locate ‘Miguel for WooCommerce’ plugin.
+4. Click ‘Install Now’, and WordPress will take it from there.
+
+## Manual installation ##
+
+Manual installation method requires downloading the [Miguel for WooCommerce](https://github.com/servantes-io/miguel-woocommerce/releases/latest/download/miguel.zip) plugin and uploading it to your web server via your FTP application. The WordPress codex contains [instructions on how to do this here](https://wordpress.org/support/article/managing-plugins/#manual-plugin-installation).
+
+## Configuration after installation ##
 
 To setup Miguel plugin go to Wordpress Admin > WooCommerce > Settings > Miguel (usually located on path `/wp-admin/admin.php?page=wc-settings&tab=miguel`). Then you need to paste API key from [App Servantes > Miguel Settings > API keys](https://app.servantes.cz/miguel/settings).
 
