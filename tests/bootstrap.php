@@ -17,9 +17,9 @@ if ( ! file_exists( $_tests_dir . '/includes/functions.php' ) ) {
 }
 
 if ( file_exists(MIGUEL_PROJECT_DIR . '/woocommerce/plugins/woocommerce/woocommerce.php') ) {
-  define( 'MIGUEL_WC_DIR', MIGUEL_PROJECT_DIR . '/woocommerce/plugins/woocommerce/' );
+	define( 'MIGUEL_WC_DIR', MIGUEL_PROJECT_DIR . '/woocommerce/plugins/woocommerce/' );
 } else {
-  define( 'MIGUEL_WC_DIR', MIGUEL_PROJECT_DIR . '/woocommerce');
+	define( 'MIGUEL_WC_DIR', MIGUEL_PROJECT_DIR . '/woocommerce');
 }
 
 // Give access to tests_add_filter() function.
@@ -42,9 +42,9 @@ require_once MIGUEL_PROJECT_DIR . '/tests/helpers/class-miguel-helper-product.ph
 
 // WooCommerce helpers
 if ( file_exists(MIGUEL_WC_DIR . '/tests/legacy/bootstrap.php') ) {
-  require_once MIGUEL_WC_DIR . '/tests/legacy/bootstrap.php';
+	require_once MIGUEL_WC_DIR . '/tests/legacy/bootstrap.php';
 } else {
-  require_once MIGUEL_WC_DIR . '/tests/bootstrap.php';
+	require_once MIGUEL_WC_DIR . '/tests/bootstrap.php';
 }
 
 // Start up the WP testing environment.

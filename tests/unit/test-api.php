@@ -35,8 +35,8 @@ class Miguel_Test_API extends WP_UnitTestCase {
 
 	/**
 	 * Test generate(), request url.
-   *
-   * @dataProvider data_provider_test_generate__url
+	 *
+	 * @dataProvider data_provider_test_generate__url
 	 */
 	public function test_generate__url( $id, $url ): void {
 		Miguel_Helper_Http::mock_server_response( '__return__url' );
