@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.2
+
+Release 2024-03-23
+
+* Add support for [WooCommerce's new HPOS](https://github.com/woocommerce/woocommerce/wiki/High-Performance-Order-Storage-Upgrade-Recipe-Book)
+
 ## 1.2.1
 
 Released 2023-10-05
