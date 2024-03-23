@@ -77,7 +77,7 @@ jobs:
         # ./wp-cli wp core install --url=http://example.com --title=test --admin_user=test --admin_email=test@example.com
 
       - name: Cache WooCommerce
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: woocommerce
           key: woocommerce-${{ matrix.woocommerce-version }}
