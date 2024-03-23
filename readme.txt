@@ -21,6 +21,8 @@ Miguel is a system that allows you to sell **secured** e-books and audiobooks di
 - Increase your customers' **loyalty** by providing **everything in one place**
 - Allows distribution of **audiobooks**
 
+Processing is done on our servers, so you don't have to worry about it. You can focus on what you do best - selling books.
+
 ## Usage ##
 
 Create products using WooCommerce UI, set it to _Downloadable_ and in _Downloadable files_ use shortcode `[miguel id="<book id>" format="<book format>"]` to set _File URL_. For example `[miguel id="book-id" format="epub"]`. Create multiple downloadable files for each format that you want to provide. ID is the ID of the book in Miguel system.
