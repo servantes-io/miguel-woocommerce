@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - woocommerce-version: 8.1.1
+          - woocommerce-version: 8.7.0
             wordpress-version: 6.4.3
             php-version: 8.2
             phpunit-version: ^9
