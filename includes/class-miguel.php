@@ -86,7 +86,7 @@ class Miguel {
 		add_filter( 'plugin_action_links_miguel/miguel.php', array( $this, 'settings_link' ) );
 
 		// add support for WC's HPOS https://github.com/woocommerce/woocommerce/wiki/High-Performance-Order-Storage-Upgrade-Recipe-Book
-		add_action( 'before_woocommerce_init', function() {
+		add_action( 'before_woocommerce_init', function () {
 			if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
 				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', MIGUEL_PLUGIN_FILE, true );
 			}
