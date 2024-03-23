@@ -17,7 +17,7 @@ jobs:
           ini-values: xdebug.mode=coverage
           tools: composer:v2
 
-      - name: 'Install composer dependencies'
+      - name: Install composer dependencies
         run: composer install --prefer-dist --no-progress --no-ansi --no-interaction
 
       - name: Run sniffer
@@ -42,12 +42,12 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y gettext
 
-      - name: 'Pack and unpack for linter'
+      - name: Pack and unpack for linter
         run: |
           make pack
           unzip miguel.zip -d miguel-lint
 
-      - name: 'Install composer dependencies'
+      - name: Install composer dependencies
         working-directory: miguel-lint/miguel
         run: |
           echo '

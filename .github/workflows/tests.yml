@@ -21,31 +21,31 @@ jobs:
     strategy:
       matrix:
         include:
-          - woocommerce-version: 8.1.1
-            wordpress-version: 6.3.1
+          - woocommerce-version: 8.7.0
+            wordpress-version: 6.4.3
             php-version: 8.2
             phpunit-version: ^9
             pnpm-version: ^8
           - woocommerce-version: 7.9.0
-            wordpress-version: 6.3.1
+            wordpress-version: 6.4.3
             php-version: 8.2
             phpunit-version: ^9
             pnpm-version: ^8
           - woocommerce-version: 6.9.4
-            wordpress-version: 6.3.1
+            wordpress-version: 6.4.3
             php-version: 7.2
             phpunit-version: 7.5.20
             pnpm-version: ^6.24.2
           - woocommerce-version: 5.9.1
-            wordpress-version: 6.3.1
+            wordpress-version: 6.4.3
             php-version: 7.2
             phpunit-version: 7.5.20
           - woocommerce-version: 4.9.5
-            wordpress-version: 6.3.1
+            wordpress-version: 6.4.3
             php-version: 7.2
             phpunit-version: 7.5.20
           - woocommerce-version: 3.9.5
-            wordpress-version: 6.3.1
+            wordpress-version: 6.4.3
             php-version: 7.2
             phpunit-version: 7.5.20
     steps:
@@ -60,29 +60,29 @@ jobs:
           ini-values: xdebug.mode=coverage
           tools: composer:v2
 
-      - name: 'Setup NVM'
+      - name: Setup NVM
         run: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
 
-      - name: 'Setup wp-cli'
+      - name: Setup wp-cli
         run: |
           curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
           mv wp-cli.phar wp-cli
           chmod +x wp-cli
 
-      - name: 'Setup WordPress'
+      - name: Setup WordPress
         run: |
           ./wp-cli core download --path=wordpress --version=${{ matrix.wordpress-version }}
           echo 'path: wordpress/' > wp-cli.yml
           cp tests/wp-tests-config.php wordpress/
         # ./wp-cli wp core install --url=http://example.com --title=test --admin_user=test --admin_email=test@example.com
 
-      - name: 'Cache WooCommerce'
-        uses: actions/cache@v3
+      - name: Cache WooCommerce
+        uses: actions/cache@v4
         with:
           path: woocommerce
           key: woocommerce-${{ matrix.woocommerce-version }}
 
-      - name: 'Install WooCommerce'
+      - name: Install WooCommerce
         shell: bash -l {0}
         run: |
           if [ ! -d woocommerce ]; then
@@ -108,7 +108,7 @@ jobs:
             popd
           fi
 
-      - name: 'Composer'
+      - name: Composer install
         run: |
           composer install --no-dev --prefer-dist --no-progress --no-ansi --no-interaction
           composer remove --dev phpunit/phpunit
@@ -116,8 +116,8 @@ jobs:
           composer require --dev yoast/phpunit-polyfills
           composer install --prefer-dist --no-progress --no-ansi --no-interaction
 
-      - name: 'Install tests'
+      - name: Install tests
         run: bin/install-wp-tests.sh woocommerce_tests root woocommerce_test_password 127.0.0.1:3306 ${{ matrix.wordpress-version }} false
 
-      - name: 'Run phpunit'
+      - name: Run phpunit
         run: vendor/bin/phpunit -c tests/phpunit.dist.xml
