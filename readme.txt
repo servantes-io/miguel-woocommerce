@@ -35,6 +35,11 @@ You can find more details on [our docs](https://docs.miguel.servantes.cz/en/docs
 
 Miguel is a paid service. You can find more details on [our page](https://servantes.io/miguel_woocommerce), look for Price.
 
+## Usage of external services ##
+
+We use only our servers for processing data and keeping it secur. We don't use any external services.
+All servers are located in the EU and under our domain servantes.io and servantes.cz.
+
 
 == Installation ==
 
