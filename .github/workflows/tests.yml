@@ -21,31 +21,31 @@ jobs:
     strategy:
       matrix:
         include:
-          - woocommerce-version: 8.7.0
-            wordpress-version: 6.4.3
+          - woocommerce-version: 8.9.3
+            wordpress-version: 6.5.4
             php-version: 8.2
             phpunit-version: ^9
             pnpm-version: ^8
-          - woocommerce-version: 7.9.0
-            wordpress-version: 6.4.3
+          - woocommerce-version: 7.9.1
+            wordpress-version: 6.5.4
             php-version: 8.2
             phpunit-version: ^9
             pnpm-version: ^8
           - woocommerce-version: 6.9.4
-            wordpress-version: 6.4.3
+            wordpress-version: 6.5.4
             php-version: 7.2
             phpunit-version: 7.5.20
             pnpm-version: ^6.24.2
           - woocommerce-version: 5.9.1
-            wordpress-version: 6.4.3
+            wordpress-version: 6.5.4
             php-version: 7.2
             phpunit-version: 7.5.20
           - woocommerce-version: 4.9.5
-            wordpress-version: 6.4.3
+            wordpress-version: 6.5.4
             php-version: 7.2
             phpunit-version: 7.5.20
           - woocommerce-version: 3.9.5
-            wordpress-version: 6.4.3
+            wordpress-version: 6.5.4
             php-version: 7.2
             phpunit-version: 7.5.20
     steps:
