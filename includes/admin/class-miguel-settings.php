@@ -30,9 +30,6 @@ class Miguel_Settings extends WC_Settings_Page {
 	 * @return array
 	 */
 	public function get_settings() {
-		$show_environments = false;
-		$show_async_gen = false;
-
 		$settings = array_filter(
 			array(
 				array(
@@ -41,21 +38,6 @@ class Miguel_Settings extends WC_Settings_Page {
 					'title' => __( 'Miguel API', 'miguel' ),
 					'desc' => __( 'miguel_settings_description', 'miguel' ),
 				),
-				$show_environments
-					? array(
-						'id'       => 'miguel_api_env',
-						'title'    => __( 'Miguel environment', 'miguel' ),
-						'desc' => __( 'Select production for regular use', 'miguel' ),
-						'default'  => 'prod',
-						'type'     => 'select',
-						'class'    => 'wc-enhanced-select',
-						'options'  => array(
-							'prod' => __( 'Production', 'miguel' ),
-							'staging' => __( 'Staging', 'miguel' ),
-							'test' => __( 'Test', 'miguel' ),
-						),
-					)
-					: false,
 				array(
 					'id' => 'miguel_api_key',
 					'css' => 'min-width: 350px;',
@@ -63,14 +45,6 @@ class Miguel_Settings extends WC_Settings_Page {
 					'title' => __( 'API key', 'miguel' ),
 					'desc' => __( 'To setup safe communication between your e-shop and our server.', 'miguel' ),
 				),
-				$show_async_gen
-					? array(
-						'id' => 'miguel_async_gen',
-						'type' => 'checkbox',
-						'title' => __( 'Asynchronous generation', 'miguel' ),
-						'desc' => __( 'Enable asynchronous generation', 'miguel' ),
-					)
-					: false,
 				array(
 					'id' => 'miguel_api_options',
 					'type' => 'sectionend',
