@@ -77,7 +77,7 @@ class Miguel_API {
 				'Authorization' => 'Bearer ' . $this->token,
 				'Accept-Language' => get_user_locale(),
 			),
-			'body' => json_encode( $body ),
+			'body' => wp_json_encode( $body ),
 		);
 
 		return wp_remote_post( $this->get_url() . $query, $data );

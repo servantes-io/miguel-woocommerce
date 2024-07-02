@@ -130,15 +130,6 @@ msgstr "Neplatný formát odkazu."
 msgid "MIGUEL"
 msgstr "MIGUEL"
 
-#: includes/views/timer.php:13
-msgid "Your e-book is being prepared for download."
-msgstr "Vaše elektronická kniha se připravuje ke stažení."
-
-#: includes/views/timer.php:17
-#, php-format
-msgid "The e-book will be generated in %s."
-msgstr "E-kniha bude vygenerována za %s."
-
 #: includes/miguel-functions.php:112
 msgid "Inserting failed."
 msgstr "Vložení se nezdařilo."
