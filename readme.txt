@@ -3,7 +3,7 @@ Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 4.9
 Tested up to: 6.4
-Stable tag: 1.2.2
+Stable tag: 1.3.0
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -70,7 +70,7 @@ You can find more details on [our docs](https://docs.miguel.servantes.cz/en/docs
 
 = How does the delivery of audiobooks work? =
 
-Miguel also allows you to send out audiobooks to the customers. The zipped MP3 leave from a secure link, so there is no mass distribution of a public link, which could result in illegal downloads. DRM is not yet part of audiobooks but it is planned for the future.
+Miguel also allows you to send out audiobooks to the customers. The zipped MP3 leave from a secure link, so there is no mass distribution of a public link, which could result in illegal downloads. Audio files are also protected by watermark embedded in audio itself.
 
 = What formats can be used? =
 
@@ -87,11 +87,7 @@ The interactive wizard allows you to set the screen size for which the resulting
 
 == Changelog ==
 
-= 1.2.2 =
-* Add support for [WooCommerce's new HPOS](https://github.com/woocommerce/woocommerce/wiki/High-Performance-Order-Storage-Upgrade-Recipe-Book)
-
-
-= 1.2.1 =
-* Fix sniff issues found by PHP CS and validation before sending to WooCommerce
+= 1.3.0 =
+* Removed support for async watermarking (not needed anymore and we don't have to rewrite the whole plugin to push this plugin to WordPress Plugin Directory)
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

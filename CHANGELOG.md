@@ -1,8 +1,15 @@
 # Changelog
 
+## 1.3.0
+
+Released YYYY-MM-DD
+
+* Dropped support for async watermarking (so we can push this plugin to WordPress Plugin Directory and not rewriting
+half of the plugin)
+
 ## 1.2.2
 
-Release 2024-03-23
+Released 2024-03-23
 
 * Add support for [WooCommerce's new HPOS](https://github.com/woocommerce/woocommerce/wiki/High-Performance-Order-Storage-Upgrade-Recipe-Book)
 

@@ -66,12 +66,7 @@ class Miguel_Download {
 			wp_die( esc_html__( 'Invalid request.', 'miguel' ) );
 		}
 
-		// Async generation
-		if ( 'yes' === get_option( 'miguel_async_gen' ) ) {
-			$this->serve_async_file( $file, $request );
-		} else {
-			$this->serve_file( $file, $request );
-		}
+		$this->serve_file( $file, $request );
 	}
 
 	/**
@@ -102,90 +97,6 @@ class Miguel_Download {
 		} else {
 			wp_die( esc_html__( 'Something went wrong.', 'miguel' ) );
 		}
-	}
-
-	/**
-	 * Serve async file
-	 *
-	 * @param Miguel_File    $file
-	 * @param Miguel_Request $request
-	 */
-	public function serve_async_file( $file, $request ) {
-		$exists = miguel_get_file_download_url( $file, $request );
-		if ( ! $exists ) {
-			$this->new_async_request( $file, $request );
-		}
-
-		switch ( $exists->status ) {
-			case 'awaiting':
-				wp_die( sprintf(
-					'<p>%s</p>',
-					esc_html__( 'Please be patient, your book is being prepared. Try downloading the file later.', 'miguel' )
-				) );
-				break;
-			case 'completed':
-				$current = current_time( 'timestamp' );
-				// Expires url?
-				if ( $current > strtotime( $exists->download_url_expires ) ) {
-					$this->new_async_request( $file, $request );
-				} else {
-					wp_die( sprintf(
-						'<p>%s</p><p><a class="btn" href="%s">%s</a></p>',
-						esc_html__( 'Your book is ready to download.', 'miguel' ),
-						esc_url( $exists->download_url ),
-						esc_html__( 'Download a file', 'miguel' )
-					) );
-				}
-				break;
-
-			default:
-				wp_die( esc_html__( 'Something went wrong.', 'miguel' ) );
-
-		}
-	}
-
-	/**
-	 * New async request
-	 *
-	 * @param Miguel_File    $file
-	 * @param Miguel_Request $request
-	 */
-	public function new_async_request( $file, $request ) {
-		$response = miguel()->api()->generate_async( $file->get_name(), $file->get_format(), $request->to_array() );
-		if ( is_wp_error( $response ) ) {
-			wp_die( esc_html( $response->get_error_message() ) );
-		}
-
-		miguel_insert_async_request(
-			array(
-				'guid' => $response->id,
-				'order_id' => $request->get_order_id(),
-				'product_id' => $file->get_product_id(),
-				'download_id' => $file->get_download_id(),
-				'expected_duration' => $response->expected_duration,
-			)
-		);
-
-		wp_die(
-			wp_kses(
-				load_template(
-					miguel_template_path( 'timer' ),
-					false,
-					array(
-						'time' => $response->expected_duration + 10,
-					)
-				),
-				array(
-					'p' => array(),
-					'script' => array(
-						'src' => array(),
-					),
-					'span' => array(
-						'id' => array(),
-					),
-				)
-			)
-		);
 	}
 
 	/**

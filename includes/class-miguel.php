@@ -15,7 +15,7 @@ class Miguel {
 	 *
 	 * @var string
 	 */
-	public $version = '1.2.2';
+	public $version = '1.3.0';
 
 	/**
 	 * Instance
@@ -65,7 +65,6 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/miguel-functions.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-file.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-actions.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-install.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-request.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-download.php';
@@ -107,15 +106,8 @@ class Miguel {
 	 */
 	public function api() {
 		if ( is_null( $this->api ) ) {
-			$env = get_option( 'miguel_api_env' );
 			$url = 'https://miguel.servantes.cz/v1/';
-			if ( 'staging' === $env ) {
-				$url = 'https://miguel-staging.servantes.cz/v1/';
-			} elseif ( 'test' === $env ) {
-				$url = 'https://miguel-test.servantes.cz/v1/';
-			}
-
-			$token     = get_option( 'miguel_api_key' );
+			$token = get_option( 'miguel_api_key' );
 			$this->api = new Miguel_API( $url, $token );
 		}
 		return $this->api;
