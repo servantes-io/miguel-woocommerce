@@ -7,6 +7,7 @@ make:
 	@echo ""
 	@echo " install  Installs required packages"
 	@echo " test     Runs tests"
+	@echo " pack     Creates a zip file with the plugin"
 	@echo ""
 
 install:

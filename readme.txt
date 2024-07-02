@@ -37,7 +37,7 @@ Miguel is a paid service. You can find more details on [our page](https://servan
 
 ## Usage of external services ##
 
-We use only our servers for processing data and keeping it secur. We don't use any external services.
+We use only our servers for processing data and keeping it secure. We don't use any external services.
 All servers are located in the EU and under our domain servantes.io and servantes.cz.
 
 
