@@ -17,3 +17,5 @@ Create products using WooCommerce UI, set it to _Downloadable_ and in _Downloada
 Currently supported formats are: `epub`, `mobi`, `pdf` and `audio`.
 
 You can find more details on [our docs](https://docs.miguel.servantes.cz/en/docs/platforms/woocommerce/install/).
+
+By using this plugin (and therefore Miguel) you agree to the [terms of service](https://miguel.servantes.cz/assets/license-agreement-en.pdf).

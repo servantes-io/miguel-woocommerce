@@ -34,6 +34,7 @@ You can find more details on [our docs](https://docs.miguel.servantes.cz/en/docs
 ## Pricing ##
 
 Miguel is a paid service. You can find more details on [our page](https://servantes.io/miguel_woocommerce), look for Price.
+By using this plugin (and therefore Miguel) you agree to the [terms of service](https://miguel.servantes.cz/assets/license-agreement-en.pdf).
 
 ## Usage of external services ##
 
