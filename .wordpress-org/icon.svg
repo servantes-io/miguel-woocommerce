@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Vrstva_1" data-name="Vrstva 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 200.2 176.5">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#Nepojmenovaný_přechod);
+      }
+
+      .cls-1, .cls-2 {
+        stroke-width: 0px;
+      }
+
+      .cls-2 {
+        fill: #fff;
+      }
+    </style>
+    <linearGradient id="Nepojmenovaný_přechod" data-name="Nepojmenovaný přechod" x1="33.6" y1="239.3" x2="166.6" y2="106.3" gradientTransform="translate(0 256) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00ec00"/>
+      <stop offset="1" stop-color="#26c09a"/>
+    </linearGradient>
+  </defs>
+  <path class="cls-1" d="M161.1,50.3C155.6,21.6,130.4,0,100.1,0s-55.5,21.6-61,50.3H0l30.1,95.9,70,30.3,70-30.3,30.1-95.9h-39.1Z"/>
+  <path class="cls-2" d="M131,77v-15c0-17-13.8-30.9-30.9-30.9s-30.9,13.9-30.9,30.9v15h-11.6v58h85v-58h-11.6ZM84.2,62c0-8.8,7.1-15.9,15.9-15.9s15.9,7.1,15.9,15.9v15h-31.8v-15h0ZM127.6,119.9h-55v-28h55s0,28,0,28Z"/>
+</svg>
