@@ -19,7 +19,9 @@ install:
 test:
 	vendor/bin/phpunit
 
-pack: $(static_langs)
+build: $(static_langs)
+
+pack: build
 	.github/scripts/build-zip.sh
 
 # Rule to convert .po files into .mo
