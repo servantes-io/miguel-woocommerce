@@ -55,7 +55,11 @@ class Miguel_Request {
 	 * @return string
 	 */
 	public function get_id() {
-		return md5( $this->get_email() );
+		if ( $this->user ) {
+			return strval( $this->user->ID );
+		} else {
+			return md5( $this->get_email() );
+		}
 	}
 
 	/**
