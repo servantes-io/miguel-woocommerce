@@ -55,11 +55,7 @@ class Miguel_Request {
 	 * @return string
 	 */
 	public function get_id() {
-		if ( $this->user ) {
-			return strval( $this->user->ID );
-		} else {
-			return md5( $this->get_email() );
-		}
+		return Miguel_Order_Utils::get_user_id_for_order( $this->order );
 	}
 
 	/**
@@ -77,11 +73,7 @@ class Miguel_Request {
 	 * @return string
 	 */
 	public function get_email() {
-		if ( $this->user ) {
-			return $this->user->user_email;
-		} else {
-			return $this->order->get_billing_email();
-		}
+		return Miguel_Order_Utils::get_email_for_order( $this->order );
 	}
 
 	/**
@@ -90,13 +82,7 @@ class Miguel_Request {
 	 * @return string
 	 */
 	public function get_full_name() {
-		return implode(
-			' ',
-			array(
-				$this->order->get_billing_first_name(),
-				$this->order->get_billing_last_name(),
-			)
-		);
+		return Miguel_Order_Utils::get_full_name_for_order( $this->order );
 	}
 
 	/**
@@ -105,13 +91,7 @@ class Miguel_Request {
 	 * @return string
 	 */
 	public function get_address() {
-		return implode(
-			' ',
-			array(
-				$this->order->get_billing_address_1(),
-				$this->order->get_billing_city(),
-			)
-		);
+		return Miguel_Order_Utils::get_address_for_order( $this->order );
 	}
 
 	/**
@@ -122,7 +102,7 @@ class Miguel_Request {
 	public function get_purchase_date() {
 		$paid_date = $this->order->get_date_paid();
 		if ( ! $paid_date ) {
-			return;
+			return null;
 		}
 
 		return $paid_date->format( DateTime::ATOM );
@@ -134,7 +114,7 @@ class Miguel_Request {
 	 * @return string
 	 */
 	public function get_language() {
-		return get_user_locale( $this->user );
+		return Miguel_Order_Utils::get_language_for_order( $this->order );
 	}
 
 	/**
@@ -153,13 +133,7 @@ class Miguel_Request {
 	 */
 	public function to_array() {
 		return array(
-			'user' => array(
-				'id' => $this->get_id(),
-				'email' => $this->get_email(),
-				'address' => $this->get_address(),
-				'full_name' => $this->get_full_name(),
-				'lang' => $this->get_language(),
-			),
+			'user' => Miguel_Order_Utils::get_user_data_for_order( $this->order ),
 			'order_code' => strval( $this->get_order_id() ),
 			'sold_price' => $this->order->get_item_total( $this->item, false, false ), // calculate price after discounts, before tax
 			'currency_code' => $this->order->get_currency(),

@@ -61,6 +61,16 @@ class Miguel_API {
 	}
 
 	/**
+	 * Submit order to Miguel API
+	 *
+	 * @param array $order_data Order data array.
+	 * @return array|WP_Error
+	 */
+	public function submit_order( $order_data ) {
+		return $this->post( 'orders', $order_data );
+	}
+
+	/**
 	 * Create POST request
 	 *
 	 * @param string $query

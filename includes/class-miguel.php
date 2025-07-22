@@ -66,8 +66,10 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-file.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-install.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-utils.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-request.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-download.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-orders.php';
 
 		if ( is_admin() ) {
 			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-admin.php';
