@@ -116,6 +116,9 @@ jobs:
           composer require --dev yoast/phpunit-polyfills
           composer install --prefer-dist --no-progress --no-ansi --no-interaction
 
+      - name: Install SVN
+        run: sudo apt-get update && sudo apt-get install -y subversion
+
       - name: Install tests
         run: bin/install-wp-tests.sh woocommerce_tests root woocommerce_test_password 127.0.0.1:3306 ${{ matrix.wordpress-version }} false
 
