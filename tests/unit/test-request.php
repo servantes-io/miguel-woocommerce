@@ -50,7 +50,7 @@ class Miguel_Test_Request extends WC_Unit_Test_Case {
 
 		$want = array(
 			'user' => array(
-				'id' => md5( $customer->user_email ),
+				'id' => strval( $customer->ID ),
 				'email' => $customer->user_email,
 				'full_name' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
 				'address' => $order->get_billing_address_1() . ' ' . $order->get_billing_city(),
