@@ -25,7 +25,7 @@ jobs:
           - woocommerce-version: 9.4.3
             wordpress-version: 6.7.1
             php-version: 8.3
-            phpunit-version: ^11
+            phpunit-version: ^10
             pnpm-version: 10.13.1
           # Recent stable versions
           - woocommerce-version: 8.9.3
