@@ -12,7 +12,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           extensions: gd, mysql[i], zip, exif, intl, mbstring, xml, xsl
           ini-values: xdebug.mode=coverage
           tools: composer:v2
@@ -32,7 +32,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           extensions: gd, mysql[i], zip, exif, intl, mbstring, xml, xsl
           ini-values: xdebug.mode=coverage
           tools: composer:v2
