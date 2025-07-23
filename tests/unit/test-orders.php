@@ -95,59 +95,46 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		// Create a downloadable product with multiple unique Miguel codes
 		$product = Miguel_Helper_Product::create_downloadable_product();
 
-		// Temporarily disable WooCommerce's approved download directories validation for tests
-		$original_approved_directories = get_option( 'woocommerce_approved_download_directories', '' );
-		update_option( 'woocommerce_approved_download_directories', '' );
-
-		// Modify the product to have downloads with different codes
-		$download_book1_epub = new WC_Product_Download();
-		$download_book1_epub->set_name( 'Book 1' );
-		$download_book1_epub->set_file( '[miguel id="book-1" format="epub"]' );
-
-		$download_book1_pdf = new WC_Product_Download();
-		$download_book1_pdf->set_name( 'Book 1' );
-		$download_book1_pdf->set_file( '[miguel id="book-1" format="pdf"]' );
-
-		$download_book1_mobi = new WC_Product_Download();
-		$download_book1_mobi->set_name( 'Book 1' );
-		$download_book1_mobi->set_file( '[miguel id="book-1" format="mobi"]' );
-
+		// Set downloads directly via meta data to bypass WooCommerce validation
 		$downloads = array(
-			'book1_epub_' . wp_generate_uuid4() => $download_book1_epub,
-			'book1_pdf_' . wp_generate_uuid4() => $download_book1_pdf,
-			'book1_mobi_' . wp_generate_uuid4() => $download_book1_mobi,
+			'book1_epub_' . wp_generate_uuid4() => array(
+				'name' => 'Book 1',
+				'file' => '[miguel id="book-1" format="epub"]',
+			),
+			'book1_pdf_' . wp_generate_uuid4() => array(
+				'name' => 'Book 1',
+				'file' => '[miguel id="book-1" format="pdf"]',
+			),
+			'book1_mobi_' . wp_generate_uuid4() => array(
+				'name' => 'Book 1',
+				'file' => '[miguel id="book-1" format="mobi"]',
+			),
 		);
 
-		$product->set_downloads( $downloads );
-		$product->save();
+		// Bypass WooCommerce validation by setting meta directly
+		update_post_meta( $product->get_id(), '_downloadable_files', $downloads );
 
 		// Create a downloadable product with multiple unique Miguel codes
 		$product2 = Miguel_Helper_Product::create_downloadable_product();
 
-		// Modify the product to have downloads with different codes
-		$download_book2_epub = new WC_Product_Download();
-		$download_book2_epub->set_name( 'Book 2' );
-		$download_book2_epub->set_file( '[miguel id="book-2" format="epub"]' );
-
-		$download_book2_pdf = new WC_Product_Download();
-		$download_book2_pdf->set_name( 'Book 2' );
-		$download_book2_pdf->set_file( '[miguel id="book-2" format="pdf"]' );
-
-		$download_book2_mobi = new WC_Product_Download();
-		$download_book2_mobi->set_name( 'Book 2' );
-		$download_book2_mobi->set_file( '[miguel id="book-2" format="mobi"]' );
-
+		// Set downloads directly via meta data to bypass WooCommerce validation
 		$downloads2 = array(
-			'book2_epub_' . wp_generate_uuid4() => $download_book2_epub,
-			'book2_pdf_' . wp_generate_uuid4() => $download_book2_pdf,
-			'book2_mobi_' . wp_generate_uuid4() => $download_book2_mobi,
+			'book2_epub_' . wp_generate_uuid4() => array(
+				'name' => 'Book 2',
+				'file' => '[miguel id="book-2" format="epub"]',
+			),
+			'book2_pdf_' . wp_generate_uuid4() => array(
+				'name' => 'Book 2',
+				'file' => '[miguel id="book-2" format="pdf"]',
+			),
+			'book2_mobi_' . wp_generate_uuid4() => array(
+				'name' => 'Book 2',
+				'file' => '[miguel id="book-2" format="mobi"]',
+			),
 		);
 
-		$product2->set_downloads( $downloads2 );
-		$product2->save();
-
-		// Restore original approved directories setting
-		update_option( 'woocommerce_approved_download_directories', $original_approved_directories );
+		// Bypass WooCommerce validation by setting meta directly
+		update_post_meta( $product2->get_id(), '_downloadable_files', $downloads2 );
 
 		// Create order with the product
 		$order = Miguel_Helper_Order::create_order();
