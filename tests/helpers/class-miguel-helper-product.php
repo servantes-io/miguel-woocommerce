@@ -26,7 +26,7 @@ class Miguel_Helper_Product {
 		// Save product first with no downloads to avoid validation
 		$product->save();
 
-		// Set downloads directly via meta data to bypass WooCommerce validation
+		// Set up default downloads with Miguel shortcodes
 		$downloads = array(
 			'dummy_epub_' . wp_generate_uuid4() => array(
 				'name' => 'Dummy e-book',
@@ -38,10 +38,29 @@ class Miguel_Helper_Product {
 			),
 		);
 
-		// Bypass WooCommerce validation by setting meta directly
-		update_post_meta( $product->get_id(), '_downloadable_files', $downloads );
+		// Use our helper method to set downloads bypassing validation
+		self::set_product_downloads_bypass_validation( $product, $downloads );
 
 		return $product;
+	}
+
+	/**
+	 * Set product downloads while bypassing WooCommerce validation.
+	 *
+	 * This is needed for WooCommerce 6.9+ which validates downloadable file URLs
+	 * and blocks non-URL formats like Miguel shortcodes.
+	 *
+	 * @param WC_Product $product The product to set downloads for
+	 * @param array      $downloads Array of downloads in WooCommerce format
+	 */
+	public static function set_product_downloads_bypass_validation( $product, $downloads ) {
+		// Ensure product is saved first to avoid validation issues
+		if ( ! $product->get_id() ) {
+			$product->save();
+		}
+
+		// Bypass WooCommerce validation by setting meta directly
+		update_post_meta( $product->get_id(), '_downloadable_files', $downloads );
 	}
 
 	/**

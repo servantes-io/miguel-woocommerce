@@ -111,8 +111,8 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 			),
 		);
 
-		// Bypass WooCommerce validation by setting meta directly
-		update_post_meta( $product->get_id(), '_downloadable_files', $downloads );
+		// Use helper method to set downloads bypassing validation
+		Miguel_Helper_Product::set_product_downloads_bypass_validation( $product, $downloads );
 
 		// Create a downloadable product with multiple unique Miguel codes
 		$product2 = Miguel_Helper_Product::create_downloadable_product();
@@ -133,8 +133,8 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 			),
 		);
 
-		// Bypass WooCommerce validation by setting meta directly
-		update_post_meta( $product2->get_id(), '_downloadable_files', $downloads2 );
+		// Use helper method to set downloads bypassing validation
+		Miguel_Helper_Product::set_product_downloads_bypass_validation( $product2, $downloads2 );
 
 		// Create order with the product
 		$order = Miguel_Helper_Order::create_order();
