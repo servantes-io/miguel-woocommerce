@@ -96,19 +96,22 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$product = Miguel_Helper_Product::create_downloadable_product();
 
 		// Modify the product to have downloads with different codes
+		$download_book1_epub = new WC_Product_Download();
+		$download_book1_epub->set_name( 'Book 1' );
+		$download_book1_epub->set_file( '[miguel id="book-1" format="epub"]' );
+
+		$download_book1_pdf = new WC_Product_Download();
+		$download_book1_pdf->set_name( 'Book 1' );
+		$download_book1_pdf->set_file( '[miguel id="book-1" format="pdf"]' );
+
+		$download_book1_mobi = new WC_Product_Download();
+		$download_book1_mobi->set_name( 'Book 1' );
+		$download_book1_mobi->set_file( '[miguel id="book-1" format="mobi"]' );
+
 		$downloads = array(
-			'book1_epub_' . wp_generate_uuid4() => array(
-				'name' => 'Book 1',
-				'file' => '[miguel id="book-1" format="epub"]',
-			),
-			'book1_pdf_' . wp_generate_uuid4() => array(
-				'name' => 'Book 1',
-				'file' => '[miguel id="book-1" format="pdf"]',
-			),
-			'book1_mobi_' . wp_generate_uuid4() => array(
-				'name' => 'Book 1',
-				'file' => '[miguel id="book-1" format="mobi"]',
-			),
+			'book1_epub_' . wp_generate_uuid4() => $download_book1_epub,
+			'book1_pdf_' . wp_generate_uuid4() => $download_book1_pdf,
+			'book1_mobi_' . wp_generate_uuid4() => $download_book1_mobi,
 		);
 
 		$product->set_downloads( $downloads );
@@ -118,19 +121,22 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$product2 = Miguel_Helper_Product::create_downloadable_product();
 
 		// Modify the product to have downloads with different codes
+		$download_book2_epub = new WC_Product_Download();
+		$download_book2_epub->set_name( 'Book 2' );
+		$download_book2_epub->set_file( '[miguel id="book-2" format="epub"]' );
+
+		$download_book2_pdf = new WC_Product_Download();
+		$download_book2_pdf->set_name( 'Book 2' );
+		$download_book2_pdf->set_file( '[miguel id="book-2" format="pdf"]' );
+
+		$download_book2_mobi = new WC_Product_Download();
+		$download_book2_mobi->set_name( 'Book 2' );
+		$download_book2_mobi->set_file( '[miguel id="book-2" format="mobi"]' );
+
 		$downloads2 = array(
-			'book2_epub_' . wp_generate_uuid4() => array(
-				'name' => 'Book 2',
-				'file' => '[miguel id="book-2" format="epub"]',
-			),
-			'book2_pdf_' . wp_generate_uuid4() => array(
-				'name' => 'Book 2',
-				'file' => '[miguel id="book-2" format="pdf"]',
-			),
-			'book2_mobi_' . wp_generate_uuid4() => array(
-				'name' => 'Book 2',
-				'file' => '[miguel id="book-2" format="mobi"]',
-			),
+			'book2_epub_' . wp_generate_uuid4() => $download_book2_epub,
+			'book2_pdf_' . wp_generate_uuid4() => $download_book2_pdf,
+			'book2_mobi_' . wp_generate_uuid4() => $download_book2_mobi,
 		);
 
 		$product2->set_downloads( $downloads2 );
