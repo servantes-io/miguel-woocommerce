@@ -23,8 +23,9 @@ class Miguel_Helper_Product {
 		$product->set_virtual( 'yes' );
 		$product->set_downloadable( 'yes' );
 
-		// Temporarily disable download URL validation during tests
-		add_filter( 'woocommerce_downloadable_file_allowed', '__return_true' );
+		// Temporarily disable WooCommerce's approved download directories validation for tests
+		$original_approved_directories = get_option( 'woocommerce_approved_download_directories', '' );
+		update_option( 'woocommerce_approved_download_directories', '' );
 
 		$download_epub = new WC_Product_Download();
 		$download_epub->set_name( 'Dummy e-book' );
@@ -42,8 +43,8 @@ class Miguel_Helper_Product {
 		$product->set_downloads( $downloads );
 		$product->save();
 
-		// Re-enable download URL validation
-		remove_filter( 'woocommerce_downloadable_file_allowed', '__return_true' );
+		// Restore original approved directories setting
+		update_option( 'woocommerce_approved_download_directories', $original_approved_directories );
 
 		return $product;
 	}

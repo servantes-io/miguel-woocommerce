@@ -95,8 +95,9 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		// Create a downloadable product with multiple unique Miguel codes
 		$product = Miguel_Helper_Product::create_downloadable_product();
 
-		// Temporarily disable download URL validation during tests
-		add_filter( 'woocommerce_downloadable_file_allowed', '__return_true' );
+		// Temporarily disable WooCommerce's approved download directories validation for tests
+		$original_approved_directories = get_option( 'woocommerce_approved_download_directories', '' );
+		update_option( 'woocommerce_approved_download_directories', '' );
 
 		// Modify the product to have downloads with different codes
 		$download_book1_epub = new WC_Product_Download();
@@ -145,8 +146,8 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$product2->set_downloads( $downloads2 );
 		$product2->save();
 
-		// Re-enable download URL validation
-		remove_filter( 'woocommerce_downloadable_file_allowed', '__return_true' );
+		// Restore original approved directories setting
+		update_option( 'woocommerce_approved_download_directories', $original_approved_directories );
 
 		// Create order with the product
 		$order = Miguel_Helper_Order::create_order();
