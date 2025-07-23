@@ -23,6 +23,9 @@ class Miguel_Helper_Product {
 		$product->set_virtual( 'yes' );
 		$product->set_downloadable( 'yes' );
 
+		// Temporarily disable download URL validation during tests
+		add_filter( 'woocommerce_downloadable_file_allowed', '__return_true' );
+
 		$download_epub = new WC_Product_Download();
 		$download_epub->set_name( 'Dummy e-book' );
 		$download_epub->set_file( '[miguel id="dummy-name" format="epub"]' );
@@ -38,6 +41,9 @@ class Miguel_Helper_Product {
 
 		$product->set_downloads( $downloads );
 		$product->save();
+
+		// Re-enable download URL validation
+		remove_filter( 'woocommerce_downloadable_file_allowed', '__return_true' );
 
 		return $product;
 	}
