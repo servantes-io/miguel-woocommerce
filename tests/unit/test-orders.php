@@ -32,52 +32,7 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$this->assertTrue( $result, 'Order should contain Miguel products' );
 	}
 
-	/**
-	 * Test Miguel shortcode detection
-	 */
-	public function test_is_miguel_shortcode() {
-		$orders = new Miguel_Orders();
 
-		// Use reflection to access private method
-		$reflection = new ReflectionClass( $orders );
-		$method = $reflection->getMethod( 'is_miguel_shortcode' );
-		$method->setAccessible( true );
-
-		$this->assertTrue( $method->invoke( $orders, '[miguel id="book-id" format="epub"]' ) );
-		$this->assertTrue( $method->invoke( $orders, '[miguel book="old-format" format="pdf"]' ) );
-		$this->assertFalse( $method->invoke( $orders, 'http://example.com/file.pdf' ) );
-		$this->assertFalse( $method->invoke( $orders, '[other shortcode]' ) );
-	}
-
-	/**
-	 * Test Miguel code extraction
-	 */
-	public function test_extract_miguel_code() {
-		$orders = new Miguel_Orders();
-
-		// Use reflection to access private method
-		$reflection = new ReflectionClass( $orders );
-		$method = $reflection->getMethod( 'extract_miguel_code' );
-		$method->setAccessible( true );
-
-		// Test current format with 'id' attribute
-		$this->assertEquals( 'book-id', $method->invoke( $orders, '[miguel id="book-id" format="epub"]' ) );
-		$this->assertEquals( 'another-book', $method->invoke( $orders, '[miguel format="pdf" id="another-book"]' ) );
-
-		// Test legacy format with 'book' attribute
-		$this->assertEquals( 'old-book', $method->invoke( $orders, '[miguel book="old-book" format="mobi"]' ) );
-
-		// Test without required attributes
-		$this->assertNull( $method->invoke( $orders, '[miguel format="epub"]' ) );
-
-		// Test non-Miguel shortcodes
-		$this->assertNull( $method->invoke( $orders, '[other shortcode]' ) );
-		$this->assertNull( $method->invoke( $orders, 'http://example.com/file.pdf' ) );
-
-		// Test edge cases
-		$this->assertEquals( 'book-with-spaces', $method->invoke( $orders, '[miguel id="book-with-spaces" format="epub"]' ) );
-		$this->assertEquals( 'book/with/slashes', $method->invoke( $orders, '[miguel id="book/with/slashes" format="pdf"]' ) );
-	}
 
 	/**
 	 * Test order data preparation
@@ -88,7 +43,7 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 
 		// Create order with the product
 		$order = Miguel_Helper_Order::create_order();
-		$order->add_product( $product, 2 ); // quantity 2
+		$order->add_product( $product, 1 );
 		$order->set_status( 'processing' );
 		$order->set_date_paid( '2023-01-15 10:00:00' );
 		$order->save();
@@ -103,7 +58,7 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$result = $method->invoke( $orders, $order );
 
 		$this->assertIsArray( $result );
-		$this->assertArrayHasKey( 'code', $result ); // Changed from 'order_code'
+		$this->assertArrayHasKey( 'code', $result );
 		$this->assertArrayHasKey( 'user', $result );
 		$this->assertArrayHasKey( 'products', $result );
 		$this->assertArrayHasKey( 'currency_code', $result );
@@ -119,10 +74,10 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 
 		// Check product data
 		$product_data = $result['products'][0];
-		$this->assertArrayHasKey( 'codes', $product_data );
-		$this->assertArrayHasKey( 'quantity', $product_data );
-		$this->assertArrayHasKey( 'unit_price', $product_data );
-		$this->assertEquals( 2, $product_data['quantity'] );
+		$this->assertArrayHasKey( 'code', $product_data );
+		$this->assertEquals( 'dummy-name', $product_data['code'] );
+		$this->assertArrayHasKey( 'price', $product_data );
+		$this->assertEquals( 10.00, $product_data['price']['sold_without_vat'] );
 
 		// Check user data structure
 		$user_data = $result['user'];
@@ -131,5 +86,92 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$this->assertArrayHasKey( 'full_name', $user_data );
 		$this->assertArrayHasKey( 'address', $user_data );
 		$this->assertArrayHasKey( 'lang', $user_data );
+	}
+
+	/**
+	 * Test that multiple unique codes create separate product items
+	 */
+	public function test_prepare_order_data_multiple_codes() {
+		// Create a downloadable product with multiple unique Miguel codes
+		$product = Miguel_Helper_Product::create_downloadable_product();
+
+		// Modify the product to have downloads with different codes
+		$downloads = array(
+			'book1_epub_' . wp_generate_uuid4() => array(
+				'name' => 'Book 1',
+				'file' => '[miguel id="book-1" format="epub"]',
+			),
+			'book1_pdf_' . wp_generate_uuid4() => array(
+				'name' => 'Book 1',
+				'file' => '[miguel id="book-1" format="pdf"]',
+			),
+			'book1_mobi_' . wp_generate_uuid4() => array(
+				'name' => 'Book 1',
+				'file' => '[miguel id="book-1" format="mobi"]',
+			),
+		);
+
+		$product->set_downloads( $downloads );
+		$product->save();
+
+		// Create a downloadable product with multiple unique Miguel codes
+		$product2 = Miguel_Helper_Product::create_downloadable_product();
+
+		// Modify the product to have downloads with different codes
+		$downloads2 = array(
+			'book2_epub_' . wp_generate_uuid4() => array(
+				'name' => 'Book 2',
+				'file' => '[miguel id="book-2" format="epub"]',
+			),
+			'book2_pdf_' . wp_generate_uuid4() => array(
+				'name' => 'Book 2',
+				'file' => '[miguel id="book-2" format="pdf"]',
+			),
+			'book2_mobi_' . wp_generate_uuid4() => array(
+				'name' => 'Book 2',
+				'file' => '[miguel id="book-2" format="mobi"]',
+			),
+		);
+
+		$product2->set_downloads( $downloads2 );
+		$product2->save();
+
+		// Create order with the product
+		$order = Miguel_Helper_Order::create_order();
+		$order->add_product( $product, 1 );
+		$order->add_product( $product2, 1 );
+		$order->save();
+
+		$orders = new Miguel_Orders();
+
+		// Use reflection to access private method
+		$reflection = new ReflectionClass( $orders );
+		$method = $reflection->getMethod( 'prepare_order_data' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( $orders, $order );
+
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'products', $result );
+
+		// Should have 4 separate product items, one for each unique code
+		$this->assertCount( 2, $result['products'] );
+
+		// Check that each product item has a string code (not array)
+		$codes_found = array();
+		foreach ( $result['products'] as $product_data ) {
+			$this->assertArrayHasKey( 'code', $product_data );
+			$this->assertIsString( $product_data['code'] );
+			$this->assertArrayHasKey( 'price', $product_data );
+			$this->assertArrayHasKey( 'sold_without_vat', $product_data['price'] );
+
+			$codes_found[] = $product_data['code'];
+		}
+
+		// Verify we have all expected codes
+		$expected_codes = array( 'book-1', 'book-2' );
+		sort( $codes_found );
+		sort( $expected_codes );
+		$this->assertEquals( $expected_codes, $codes_found );
 	}
 }

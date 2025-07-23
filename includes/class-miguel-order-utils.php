@@ -48,7 +48,10 @@ class Miguel_Order_Utils {
 	 */
 	public static function get_address_for_order( $order, $enhanced = false ) {
 		if ( $enhanced ) {
-			$country_name = WC()->countries->countries[ $order->get_billing_country() ] ?? $order->get_billing_country();
+			$country_name = WC()->countries->countries[ $order->get_billing_country() ];
+			if ( ! $country_name ) {
+				$country_name = $order->get_billing_country();
+			}
 			return trim(
 				$order->get_billing_address_1() . ' ' .
 				$order->get_billing_city() . ' ' .
@@ -97,5 +100,63 @@ class Miguel_Order_Utils {
 			'address' => self::get_address_for_order( $order, $enhanced_address ),
 			'lang' => self::get_language_for_order( $order ),
 		);
+	}
+
+	/**
+	 * Parses shortcode attributes for both Miguel and Wosa shortcodes
+	 *
+	 * @param string $shortcode Shortcode string.
+	 * @return array|null Parsed attributes or null if not a valid shortcode.
+	 */
+	public static function parse_shortcode_atts( $shortcode ) {
+		if ( miguel_starts_with( $shortcode, '[miguel ' ) ) {
+			return miguel_get_shortcode_atts(
+				$shortcode,
+				array(
+					'id' => '',
+					'format' => '',
+				)
+			);
+		} else if ( miguel_starts_with( $shortcode, '[wosa ' ) ) {
+			$atts = miguel_get_shortcode_atts(
+				$shortcode,
+				array(
+					'book' => '',
+					'format' => '',
+				)
+			);
+			$atts['id'] = $atts['book'];
+			return $atts;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Check if file URL is a Miguel shortcode
+	 *
+	 * @param string $file_url File URL.
+	 * @return bool
+	 */
+	public static function is_miguel_shortcode( $file_url ) {
+		return miguel_starts_with( $file_url, '[miguel ' ) || miguel_starts_with( $file_url, '[wosa ' );
+	}
+
+	/**
+	 * Extract Miguel code from shortcode
+	 *
+	 * @param string $shortcode Shortcode string.
+	 * @return string|null
+	 */
+	public static function extract_miguel_code( $shortcode ) {
+		// Use the comprehensive shortcode parser
+		$atts = self::parse_shortcode_atts( $shortcode );
+
+		// Return the id if available (works for both miguel and wosa shortcodes)
+		if ( $atts && ! empty( $atts['id'] ) ) {
+			return $atts['id'];
+		}
+
+		return null;
 	}
 }

@@ -23,14 +23,18 @@ class Miguel_Helper_Product {
 		$product->set_virtual( 'yes' );
 		$product->set_downloadable( 'yes' );
 
-		$files = array(
-			md5( 'Dummy e-book' ) => array(
+		$downloads = array(
+			'dummy_epub_' . wp_generate_uuid4() => array(
 				'name' => 'Dummy e-book',
-				'file' => '[miguel book="dummy-name" format="epub"]',
+				'file' => '[miguel id="dummy-name" format="epub"]',
+			),
+			'dummy_mobi_' . wp_generate_uuid4() => array(
+				'name' => 'Dummy e-book',
+				'file' => '[miguel id="dummy-name" format="mobi"]',
 			),
 		);
 
-		$product->set_downloads( $files );
+		$product->set_downloads( $downloads );
 		$product->save();
 
 		return $product;

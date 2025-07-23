@@ -81,7 +81,7 @@ class Miguel_Orders {
 			// Check if any downloadable file contains a Miguel shortcode
 			$downloads = $product->get_downloads();
 			foreach ( $downloads as $download ) {
-				if ( $this->is_miguel_shortcode( $download['file'] ) ) {
+				if ( Miguel_Order_Utils::is_miguel_shortcode( $download['file'] ) ) {
 					return true;
 				}
 			}
@@ -90,15 +90,7 @@ class Miguel_Orders {
 		return false;
 	}
 
-	/**
-	 * Check if file URL is a Miguel shortcode
-	 *
-	 * @param string $file_url File URL.
-	 * @return bool
-	 */
-	private function is_miguel_shortcode( $file_url ) {
-		return strpos( $file_url, '[miguel ' ) === 0;
-	}
+
 
 	/**
 	 * Prepare order data for Miguel API
@@ -124,19 +116,21 @@ class Miguel_Orders {
 			$miguel_codes = array();
 
 			foreach ( $downloads as $download ) {
-				if ( $this->is_miguel_shortcode( $download['file'] ) ) {
-					$code = $this->extract_miguel_code( $download['file'] );
-					if ( $code ) {
+				if ( Miguel_Order_Utils::is_miguel_shortcode( $download['file'] ) ) {
+					$code = Miguel_Order_Utils::extract_miguel_code( $download['file'] );
+					if ( $code && ! in_array( $code, $miguel_codes ) ) {
 						$miguel_codes[] = $code;
 					}
 				}
 			}
 
-			if ( ! empty( $miguel_codes ) ) {
+			// Create separate product item for each unique code
+			foreach ( $miguel_codes as $code ) {
 				$products[] = array(
-					'codes' => $miguel_codes,
-					'quantity' => $item->get_quantity(),
-					'unit_price' => $order->get_item_total( $item, false, false ),
+					'code' => $code,
+					'price' => array(
+						'sold_without_vat' => $order->get_item_total( $item, false, false ),
+					),
 				);
 			}
 		}
@@ -147,39 +141,13 @@ class Miguel_Orders {
 
 		return array(
 			'code' => strval( $order->get_id() ),
-			'user' => Miguel_Order_Utils::get_user_data_for_order( $order, true ), // Use enhanced address format
+			'eshop_id' => strval( $order->get_id() ),
+			'user' => Miguel_Order_Utils::get_user_data_for_order( $order, true ),
 			'products' => $products,
 			'currency_code' => $order->get_currency(),
 			'purchase_date' => Miguel_Order_Utils::get_purchase_date_for_order( $order ),
+			'send_email' => 'disable',
 		);
-	}
-
-	/**
-	 * Extract Miguel code from shortcode
-	 *
-	 * @param string $shortcode Shortcode string.
-	 * @return string|null
-	 */
-	private function extract_miguel_code( $shortcode ) {
-		// Check if it's a Miguel shortcode first
-		if ( ! $this->is_miguel_shortcode( $shortcode ) ) {
-			return null;
-		}
-
-		// Use the existing helper function to parse shortcode attributes
-		$atts = miguel_get_shortcode_atts( $shortcode );
-
-		// Check for 'id' attribute (current format)
-		if ( ! empty( $atts['id'] ) ) {
-			return $atts['id'];
-		}
-
-		// Check for 'book' attribute (legacy format)
-		if ( ! empty( $atts['book'] ) ) {
-			return $atts['book'];
-		}
-
-		return null;
 	}
 }
 

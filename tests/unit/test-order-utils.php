@@ -131,4 +131,86 @@ class Test_Miguel_Order_Utils extends WC_Unit_Test_Case {
 		$this->assertEquals( 'Jane Smith', $result['full_name'] );
 		$this->assertStringContainsString( '456 Oak Ave', $result['address'] );
 	}
+
+	/**
+	 * Test shortcode attributes parsing
+	 */
+	public function test_parse_shortcode_atts() {
+		// Test Miguel shortcodes
+		$result = Miguel_Order_Utils::parse_shortcode_atts( '[miguel id="book-id" format="epub"]' );
+		$this->assertIsArray( $result );
+		$this->assertEquals( 'book-id', $result['id'] );
+		$this->assertEquals( 'epub', $result['format'] );
+
+		$result = Miguel_Order_Utils::parse_shortcode_atts( '[miguel format="pdf" id="another-book"]' );
+		$this->assertEquals( 'another-book', $result['id'] );
+		$this->assertEquals( 'pdf', $result['format'] );
+
+		// Test Wosa shortcodes (book attribute should be mapped to id)
+		$result = Miguel_Order_Utils::parse_shortcode_atts( '[wosa book="wosa-book" format="mobi"]' );
+		$this->assertIsArray( $result );
+		$this->assertEquals( 'wosa-book', $result['id'] );
+		$this->assertEquals( 'wosa-book', $result['book'] );
+		$this->assertEquals( 'mobi', $result['format'] );
+
+		$result = Miguel_Order_Utils::parse_shortcode_atts( '[wosa format="epub" book="another-wosa"]' );
+		$this->assertEquals( 'another-wosa', $result['id'] );
+		$this->assertEquals( 'another-wosa', $result['book'] );
+		$this->assertEquals( 'epub', $result['format'] );
+
+		// Test invalid shortcodes
+		$this->assertNull( Miguel_Order_Utils::parse_shortcode_atts( '[other shortcode]' ) );
+		$this->assertNull( Miguel_Order_Utils::parse_shortcode_atts( 'http://example.com/file.pdf' ) );
+		$this->assertNull( Miguel_Order_Utils::parse_shortcode_atts( '[miguelx id="test"]' ) );
+		$this->assertNull( Miguel_Order_Utils::parse_shortcode_atts( '[wosax book="test"]' ) );
+
+		// Test edge cases
+		$result = Miguel_Order_Utils::parse_shortcode_atts( '[miguel id="book with spaces" format="pdf"]' );
+		$this->assertEquals( 'book with spaces', $result['id'] );
+
+		$result = Miguel_Order_Utils::parse_shortcode_atts( '[wosa book="book/with/slashes" format="epub"]' );
+		$this->assertEquals( 'book/with/slashes', $result['id'] );
+	}
+
+	/**
+	 * Test Miguel shortcode detection
+	 */
+	public function test_is_miguel_shortcode() {
+		// Test Miguel shortcodes
+		$this->assertTrue( Miguel_Order_Utils::is_miguel_shortcode( '[miguel id="book-id" format="epub"]' ) );
+		$this->assertTrue( Miguel_Order_Utils::is_miguel_shortcode( '[miguel book="old-format" format="pdf"]' ) );
+
+		// Test Wosa shortcodes (new functionality)
+		$this->assertTrue( Miguel_Order_Utils::is_miguel_shortcode( '[wosa id="book-id" format="epub"]' ) );
+		$this->assertTrue( Miguel_Order_Utils::is_miguel_shortcode( '[wosa book="old-format" format="pdf"]' ) );
+
+		// Test non-matching strings
+		$this->assertFalse( Miguel_Order_Utils::is_miguel_shortcode( 'http://example.com/file.pdf' ) );
+		$this->assertFalse( Miguel_Order_Utils::is_miguel_shortcode( '[other shortcode]' ) );
+		$this->assertFalse( Miguel_Order_Utils::is_miguel_shortcode( '[miguelx id="test"]' ) );
+		$this->assertFalse( Miguel_Order_Utils::is_miguel_shortcode( '[wosax id="test"]' ) );
+	}
+
+	/**
+	 * Test Miguel code extraction
+	 */
+	public function test_extract_miguel_code() {
+		// Test current format with 'id' attribute from Miguel shortcodes
+		$this->assertEquals( 'book-id', Miguel_Order_Utils::extract_miguel_code( '[miguel id="book-id" format="epub"]' ) );
+		$this->assertEquals( 'another-book', Miguel_Order_Utils::extract_miguel_code( '[miguel format="pdf" id="another-book"]' ) );
+
+		// Test without required attributes
+		$this->assertNull( Miguel_Order_Utils::extract_miguel_code( '[miguel format="epub"]' ) );
+		$this->assertNull( Miguel_Order_Utils::extract_miguel_code( '[wosa format="epub"]' ) );
+
+		// Test non-Miguel/Wosa shortcodes
+		$this->assertNull( Miguel_Order_Utils::extract_miguel_code( '[other shortcode]' ) );
+		$this->assertNull( Miguel_Order_Utils::extract_miguel_code( 'http://example.com/file.pdf' ) );
+
+		// Test edge cases
+		$this->assertEquals( 'book-with-spaces', Miguel_Order_Utils::extract_miguel_code( '[miguel id="book-with-spaces" format="epub"]' ) );
+		$this->assertEquals( 'book/with/slashes', Miguel_Order_Utils::extract_miguel_code( '[miguel id="book/with/slashes" format="pdf"]' ) );
+		$this->assertEquals( 'wosa-with-spaces', Miguel_Order_Utils::extract_miguel_code( '[wosa book="wosa-with-spaces" format="epub"]' ) );
+		$this->assertEquals( 'wosa/with/slashes', Miguel_Order_Utils::extract_miguel_code( '[wosa book="wosa/with/slashes" format="pdf"]' ) );
+	}
 }
