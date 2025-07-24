@@ -35,8 +35,7 @@ class Miguel_Orders {
 	 * @param WC_Order $order Order object.
 	 */
 	public function sync_order( $order_id, $from_state, $to_state, $order ) {
-		$order_status = $order->get_status();
-		if ( $order->get_id() === 0 || in_array( $order_status, array( 'trash', 'refunded', 'cancelled', 'failed' ) ) ) {
+		if ( $order->get_id() == 0 || in_array( $to_state, array( 'trash', 'refunded', 'cancelled', 'failed' ) ) ) {
 			$response = miguel()->api()->delete_order( strval( $order_id ) );
 
 			if ( is_wp_error( $response ) ) {

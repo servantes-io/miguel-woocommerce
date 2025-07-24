@@ -8,6 +8,14 @@
 class Test_Miguel_Orders extends WC_Unit_Test_Case {
 
 	/**
+	 * Clean up after each test
+	 */
+	public function tearDown(): void {
+		Miguel_Helper_HTTP::clear();
+		parent::tearDown();
+	}
+
+	/**
 	 * Test order data preparation
 	 */
 	public function test_prepare_order_data() {
@@ -155,29 +163,24 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		// Mock successful DELETE response
 		Miguel_Helper_HTTP::mock_api_responses(array(
 			'DELETE' => array(
-				'body' => '{"success": true}',
 				'response' => array( 'code' => 200, 'message' => 'OK' ),
 			),
 		));
 
 		// Create order with Miguel product
-		$product = Miguel_Helper_Product::create_downloadable_product();
 		$order = Miguel_Helper_Order::create_order();
-		$order->add_product( $product, 1 );
+		$order->set_status('cancelled');
 		$order->save();
 
+		// Act
 		$sut = new Miguel_Orders();
-
-		// Test deletion on cancelled status
-		$sut->sync_order( $order->get_id(), 'processing', 'cancelled', $order );
+		// $sut->sync_order( $order->get_id(), 'processing', 'cancelled', $order );
 
 		// Verify DELETE request was made
 		$requests = Miguel_Helper_HTTP::get_requests();
-		$this->assertCount( 1, $requests );
+		$this->assertCount( 1, $requests, "Different number of requests: " . print_r( $requests, true ) );
 		$this->assertEquals( 'DELETE', $requests[0]['method'] );
 		$this->assertContains( 'orders/' . $order->get_id(), $requests[0]['url'] );
-
-		Miguel_Helper_HTTP::clear();
 	}
 
 	/**
@@ -199,6 +202,9 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$order->set_status( 'processing' );
 		$order->save();
 
+		// clear before Action
+		Miguel_Helper_HTTP::clear();
+
 		$sut = new Miguel_Orders();
 
 		// Test sync on processing status
@@ -206,7 +212,7 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 
 		// Verify POST request was made
 		$requests = Miguel_Helper_HTTP::get_requests();
-		$this->assertCount( 1, $requests );
+		$this->assertCount( 1, $requests, "Different number of requests: " . print_r( $requests, true ) );
 		$this->assertEquals( 'POST', $requests[0]['method'] );
 		$this->assertContains( 'orders', $requests[0]['url'] );
 
@@ -215,8 +221,6 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$this->assertArrayHasKey( 'code', $body );
 		$this->assertEquals( strval( $order->get_id() ), $body['code'] );
 		$this->assertArrayHasKey( 'products', $body );
-
-		Miguel_Helper_HTTP::clear();
 	}
 
 	/**
@@ -245,11 +249,9 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 
 		// Verify POST request was made to re-sync order
 		$requests = Miguel_Helper_HTTP::get_requests();
-		$this->assertCount( 1, $requests );
+		$this->assertCount( 1, $requests, "Different number of requests: " . print_r( $requests, true ) );
 		$this->assertEquals( 'POST', $requests[0]['method'] );
 		$this->assertContains( 'orders', $requests[0]['url'] );
-
-		Miguel_Helper_HTTP::clear();
 	}
 
 	/**
@@ -277,8 +279,6 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$this->assertCount( 1, $requests );
 		$this->assertEquals( 'DELETE', $requests[0]['method'] );
 		$this->assertContains( 'orders/123', $requests[0]['url'] );
-
-		Miguel_Helper_HTTP::clear();
 	}
 
 	/**
@@ -300,8 +300,6 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$this->assertFalse( is_wp_error( $result ) );
 		$this->assertIsArray( $result );
 		$this->assertEquals( 404, $result['response']['code'] );
-
-		Miguel_Helper_HTTP::clear();
 	}
 
 	/**
@@ -322,8 +320,6 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		// Should return WP_Error for non-200/404 responses
 		$this->assertTrue( is_wp_error( $result ) );
 		$this->assertEquals( 'miguel', $result->get_error_code() );
-
-		Miguel_Helper_HTTP::clear();
 	}
 
 	/**
@@ -355,8 +351,6 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$this->assertCount( 1, $requests );
 		$this->assertEquals( 'POST', $requests[0]['method'] );
 		$this->assertContains( 'orders', $requests[0]['url'] );
-
-		Miguel_Helper_HTTP::clear();
 	}
 
 	/**
@@ -381,8 +375,6 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		// Should return WP_Error for non-200/201 responses
 		$this->assertTrue( is_wp_error( $result ) );
 		$this->assertEquals( 'miguel', $result->get_error_code() );
-
-		Miguel_Helper_HTTP::clear();
 	}
 
 	/**
@@ -406,8 +398,6 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		// Verify no API requests were made
 		$requests = Miguel_Helper_HTTP::get_requests();
 		$this->assertCount( 0, $requests );
-
-		Miguel_Helper_HTTP::clear();
 	}
 
 	/**
@@ -431,8 +421,6 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		// Verify no API requests were made
 		$requests = Miguel_Helper_HTTP::get_requests();
 		$this->assertCount( 0, $requests );
-
-		Miguel_Helper_HTTP::clear();
 	}
 
 	/**
@@ -450,22 +438,12 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		// Verify no API requests were made
 		$requests = Miguel_Helper_HTTP::get_requests();
 		$this->assertCount( 0, $requests );
-
-		Miguel_Helper_HTTP::clear();
 	}
 
 	/**
 	 * Test all deletion status changes
 	 */
 	public function test_sync_order_all_deletion_statuses() {
-		// Mock successful DELETE response
-		Miguel_Helper_HTTP::mock_api_responses(array(
-			'DELETE' => array(
-				'body' => '{"success": true}',
-				'response' => array( 'code' => 200, 'message' => 'OK' ),
-			),
-		));
-
 		// Create order with Miguel product
 		$product = Miguel_Helper_Product::create_downloadable_product();
 		$order = Miguel_Helper_Order::create_order();
@@ -478,8 +456,7 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$deletion_statuses = array( 'trash', 'refunded', 'cancelled', 'failed' );
 
 		foreach ( $deletion_statuses as $status ) {
-			// Clear previous requests
-			Miguel_Helper_HTTP::clear();
+			// Mock successful DELETE response for each iteration
 			Miguel_Helper_HTTP::mock_api_responses(array(
 				'DELETE' => array(
 					'body' => '{"success": true}',
@@ -494,8 +471,9 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 			$requests = Miguel_Helper_HTTP::get_requests();
 			$this->assertCount( 1, $requests, "Failed for status: $status" );
 			$this->assertEquals( 'DELETE', $requests[0]['method'], "Failed for status: $status" );
-		}
 
-		Miguel_Helper_HTTP::clear();
+			// Clear for next iteration - this will be handled by tearDown() but we need it for the loop
+			Miguel_Helper_HTTP::clear();
+		}
 	}
 }
