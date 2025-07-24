@@ -26,6 +26,11 @@ class Miguel_Orders {
 		add_action( 'woocommerce_update_order', array( $this, 'handle_order_update' ), 10, 1 );
 	}
 
+	public function deconstruct() {
+		remove_action( 'woocommerce_order_status_changed', array( $this, 'sync_order' ), 10 );
+		remove_action( 'woocommerce_update_order', array( $this, 'handle_order_update' ), 10 );
+	}
+
 	/**
 	 * Sync order with Miguel API
 	 *
@@ -129,7 +134,7 @@ class Miguel_Orders {
 		}
 
 		// Re-sync the order with updated data
-		$this->sync_order( $order_id, '', '', $order );
+		$this->sync_order( $order_id, '', $order->get_status(), $order );
 	}
 }
 

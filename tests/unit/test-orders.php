@@ -8,11 +8,28 @@
 class Test_Miguel_Orders extends Miguel_Test_Case {
 
 	/**
+	 * The system under test
+	 *
+	 * @var Miguel_Orders
+	 */
+	private $sut = null;
+
+	/**
 	 * Clean up after each test
 	 */
 	public function tearDown(): void {
-		Miguel_Helper_HTTP::clear();
+		if ( $this->sut ) {
+			$this->sut->deconstruct();
+		}
+
 		parent::tearDown();
+	}
+
+	private function get_sut() {
+		if ( null === $this->sut ) {
+			$this->sut = new Miguel_Orders();
+		}
+		return $this->sut;
 	}
 
 	/**
@@ -29,7 +46,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$order->set_date_paid( '2023-01-15 10:00:00' );
 		$order->save();
 
-		$sut = new Miguel_Orders();
+		$sut = $this->get_sut();
 
 		// Use reflection to access private method
 		$reflection = new ReflectionClass( $sut );
@@ -123,7 +140,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$order->add_product( $product2, 1 );
 		$order->save();
 
-		$sut = new Miguel_Orders();
+		$sut = $this->get_sut();
 
 		// Use reflection to access private method
 		$reflection = new ReflectionClass( $sut );
@@ -172,10 +189,6 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$order->set_status('cancelled');
 		$order->save();
 
-		// Act
-		$sut = new Miguel_Orders();
-		// $sut->sync_order( $order->get_id(), 'processing', 'cancelled', $order );
-
 		// Verify DELETE request was made
 		$requests = Miguel_Helper_HTTP::get_requests();
 		$this->assertCount( 1, $requests, "Different number of requests: " . print_r( $requests, true ) );
@@ -201,14 +214,6 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$order->add_product( $product, 1 );
 		$order->set_status( 'processing' );
 		$order->save();
-
-		// clear before Action
-		Miguel_Helper_HTTP::clear();
-
-		$sut = new Miguel_Orders();
-
-		// Test sync on processing status
-		$sut->sync_order( $order->get_id(), 'pending', 'processing', $order );
 
 		// Verify POST request was made
 		$requests = Miguel_Helper_HTTP::get_requests();
@@ -242,7 +247,10 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$order->set_status( 'processing' );
 		$order->save();
 
-		$sut = new Miguel_Orders();
+		// clear before Action
+		Miguel_Helper_HTTP::clear();
+
+		$sut = $this->get_sut();
 
 		// Trigger order update
 		$sut->handle_order_update( $order->get_id() );
@@ -390,7 +398,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$order->add_product( $product, 1 );
 		$order->save();
 
-		$sut = new Miguel_Orders();
+		$sut = $this->get_sut();
 
 		// Trigger sync - should be ignored
 		$sut->sync_order( $order->get_id(), 'pending', 'processing', $order );
@@ -413,7 +421,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$order->add_product( $product, 1 );
 		$order->save();
 
-		$sut = new Miguel_Orders();
+		$sut = $this->get_sut();
 
 		// Trigger order update - should be ignored
 		$sut->handle_order_update( $order->get_id() );
@@ -430,7 +438,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		// Mock API responses (should not be called)
 		Miguel_Helper_HTTP::mock_api_responses(array());
 
-		$sut = new Miguel_Orders();
+		$sut = $this->get_sut();
 
 		// This should not cause errors and should not make API calls
 		$sut->handle_order_update( 99999 );
@@ -450,7 +458,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$order->add_product( $product, 1 );
 		$order->save();
 
-		$sut = new Miguel_Orders();
+		$sut = $this->get_sut();
 
 		// Test all statuses that should trigger deletion
 		$deletion_statuses = array( 'trash', 'refunded', 'cancelled', 'failed' );
