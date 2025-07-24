@@ -20,12 +20,8 @@ class Miguel_Orders {
 	 * Add WooCommerce hooks.
 	 */
 	public function __construct() {
-		// Hook into order status changes
-		add_action( 'woocommerce_new_order', array( $this, 'sync_order' ), 10, 1 );
+		// Hook into order status changes - this covers all status transitions including new orders
 		add_action( 'woocommerce_order_status_changed', array( $this, 'sync_order' ), 10, 1 );
-		add_action( 'woocommerce_payment_complete', array( $this, 'sync_order' ), 10, 1 );
-		add_action( 'woocommerce_order_status_processing', array( $this, 'sync_order' ), 10, 1 );
-		add_action( 'woocommerce_order_status_completed', array( $this, 'sync_order' ), 10, 1 );
 	}
 
 	/**

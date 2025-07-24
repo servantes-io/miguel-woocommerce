@@ -108,7 +108,7 @@ class Miguel {
 	 */
 	public function api() {
 		if ( is_null( $this->api ) ) {
-			$url = 'https://miguel.servantes.cz/v1/';
+			$url = get_option( 'miguel_api_url', 'https://miguel.servantes.cz/v1/' );
 			$token = get_option( 'miguel_api_key' );
 			$this->api = new Miguel_API( $url, $token );
 		}
