@@ -66,8 +66,10 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-file.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-install.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-utils.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-request.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-download.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-orders.php';
 
 		if ( is_admin() ) {
 			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-admin.php';
@@ -106,7 +108,7 @@ class Miguel {
 	 */
 	public function api() {
 		if ( is_null( $this->api ) ) {
-			$url = 'https://miguel.servantes.cz/v1/';
+			$url = get_option( 'miguel_api_url', 'https://miguel.servantes.cz/v1/' );
 			$token = get_option( 'miguel_api_key' );
 			$this->api = new Miguel_API( $url, $token );
 		}

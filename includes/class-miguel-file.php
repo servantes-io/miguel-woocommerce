@@ -61,7 +61,7 @@ class Miguel_File {
 			throw new Exception( esc_html__( 'Invalid download url format.', 'miguel' ) );
 		}
 
-		$this->atts = $this->parse_shortcode_atts( $download_url );
+		$this->atts = Miguel_Order_Utils::parse_shortcode_atts( $download_url );
 		$this->product = $product;
 		$this->download_id = $download_id;
 	}
@@ -118,33 +118,5 @@ class Miguel_File {
 	 */
 	public function is_valid() {
 		return isset( $this->atts['id'] ) && isset( $this->atts['format'] );
-	}
-
-	/**
-	 * Parses shortcode attributes.
-	 *
-	 * @param string $shortcode
-	 * @return array
-	 */
-	protected function parse_shortcode_atts( $shortcode ) {
-		if ( miguel_starts_with( $shortcode, '[miguel' ) ) {
-			return miguel_get_shortcode_atts(
-				$shortcode,
-				array(
-					'id' => '',
-					'format' => '',
-				)
-			);
-		} else if ( miguel_starts_with( $shortcode, '[wosa' ) ) {
-			$atts = miguel_get_shortcode_atts(
-				$shortcode,
-				array(
-					'book' => '',
-					'format' => '',
-				)
-			);
-			$atts['id'] = $atts['book'];
-			return $atts;
-		}
 	}
 }

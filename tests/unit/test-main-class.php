@@ -12,7 +12,7 @@ class Miguel_Test_Main_Class extends WP_UnitTestCase {
 	public function setUp(): void {
 		parent::setUp();
 
-		$this->miguel = miguel();
+		$this->sut = miguel();
 	}
 
 	/**
@@ -26,13 +26,13 @@ class Miguel_Test_Main_Class extends WP_UnitTestCase {
 	 * Test version.
 	 */
 	public function test_version(): void {
-		$this->assertEquals( '1.3.0', $this->miguel->version );
+		$this->assertEquals( '1.3.0', $this->sut->version );
 	}
 
 	/**
 	 * Test class instances.
 	 */
 	public function test_class_instances(): void {
-		$this->assertInstanceOf( 'Miguel_API', $this->miguel->api() );
+		$this->assertInstanceOf( 'Miguel_API', $this->sut->api() );
 	}
 }

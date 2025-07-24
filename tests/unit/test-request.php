@@ -4,7 +4,7 @@
  *
  * @package Miguel\Tests
  */
-class Miguel_Test_Request extends WC_Unit_Test_Case {
+class Miguel_Test_Request extends Miguel_Test_Case {
 	/**
 	 * Test get_args(), guest
 	 */
@@ -26,9 +26,9 @@ class Miguel_Test_Request extends WC_Unit_Test_Case {
 			'result' => 'download_link',
 		);
 
-		$request = new Miguel_Request( $order, array_values($order->get_items())[0] );
+		$sut = new Miguel_Request( $order, array_values($order->get_items())[0] );
 
-		$this->assertEquals( $want, $request->to_array() );
+		$this->assertEquals( $want, $sut->to_array() );
 
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 	}
@@ -51,7 +51,7 @@ class Miguel_Test_Request extends WC_Unit_Test_Case {
 		$want = array(
 			'user' => array(
 				'id' => strval( $customer->ID ),
-				'email' => $customer->user_email,
+				'email' => $order->get_billing_email(),
 				'full_name' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
 				'address' => $order->get_billing_address_1() . ' ' . $order->get_billing_city(),
 				'lang' => 'en_US'
@@ -63,9 +63,9 @@ class Miguel_Test_Request extends WC_Unit_Test_Case {
 			'result' => 'download_link',
 		);
 
-		$request = new Miguel_Request( $order, array_values($order->get_items())[0] );
+		$sut = new Miguel_Request( $order, array_values($order->get_items())[0] );
 
-		$this->assertEquals( $want, $request->to_array() );
+		$this->assertEquals( $want, $sut->to_array() );
 
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 		wp_delete_user( $customer_id );
@@ -76,14 +76,14 @@ class Miguel_Test_Request extends WC_Unit_Test_Case {
 	 */
 	public function test_is_valid(): void {
 		$order = Miguel_Helper_Order::create_order();
-		$request = new Miguel_Request( $order, array_values($order->get_items())[0] );
+		$sut = new Miguel_Request( $order, array_values($order->get_items())[0] );
 
-		$this->assertEquals( true, $request->is_valid() );
+		$this->assertEquals( true, $sut->is_valid() );
 
 		$order->set_date_paid( null );
 		$order->save();
 
-		$this->assertEquals( false, $request->is_valid() );
+		$this->assertEquals( false, $sut->is_valid() );
 
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 	}

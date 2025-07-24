@@ -18,4 +18,44 @@ Currently supported formats are: `epub`, `mobi`, `pdf` and `audio`.
 
 You can find more details on [our docs](https://docs.miguel.servantes.cz/en/docs/platforms/woocommerce/install/).
 
+## Order Synchronization
+
+The plugin automatically synchronizes orders with the Miguel API whenever:
+
+- A new order is created
+- Order status changes (pending, processing, completed, etc.)
+- Payment is completed
+- Order is cancelled or refunded
+
+This ensures that Miguel has up-to-date information about all orders containing digital products, enabling better customer support and order tracking.
+
+### Synchronized Data
+
+For each order containing Miguel products, the following data is sent to the Miguel API:
+
+- Order code (WooCommerce order ID)
+- Customer information (email, name, address, language)
+- Product codes and quantities
+- Pricing and currency information
+- Order status and purchase date
+
+Only orders containing products with Miguel shortcodes in their downloadable files are synchronized.
+
+## Architecture
+
+The plugin uses a clean, modular architecture:
+
+- **`Miguel_Orders`** - Handles automatic order synchronization with WooCommerce hooks
+- **`Miguel_Request`** - Manages individual product download requests
+- **`Miguel_Order_Utils`** - Shared utility class for consistent order/user data formatting
+- **`Miguel_API`** - Handles all communication with Miguel API endpoints
+
+### Code Quality Features
+
+- **DRY Principle**: Common formatting logic is centralized in `Miguel_Order_Utils`
+- **Consistent Data Format**: Both download and sync features use the same utility functions
+- **Enhanced Address Formatting**: Includes postcode and country for better customer identification
+- **Improved Shortcode Parsing**: Uses WordPress's built-in shortcode parsing instead of regex
+- **Comprehensive Testing**: Full test coverage for all utility functions
+
 By using this plugin (and therefore Miguel) you agree to the [terms of service](https://miguel.servantes.cz/assets/license-agreement-en.pdf).
