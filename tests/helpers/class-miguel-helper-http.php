@@ -53,12 +53,16 @@ class Miguel_Helper_HTTP {
 	 * @return array
 	 */
 	public static function mock_api_response( $response, $args, $url ) {
+		// Capture stacktrace to see what triggered this request
+		$stacktrace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS );
+
 		// Store the request for later verification
 		self::$requests[] = array(
 			'url' => $url,
 			'method' => isset( $args['method'] ) ? $args['method'] : 'GET',
 			'body' => isset( $args['body'] ) ? $args['body'] : '',
 			'headers' => isset( $args['headers'] ) ? $args['headers'] : array(),
+			'stacktrace' => $stacktrace,
 		);
 
 		$method = isset( $args['method'] ) ? $args['method'] : 'GET';
