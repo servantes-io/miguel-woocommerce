@@ -13,14 +13,14 @@ class Miguel_Test_API extends WP_UnitTestCase {
 		parent::setUp();
 
 		$this->token = '1a2b3c4d5e6f7g8h9';
-		$this->miguel = new Miguel_API( 'https://miguel.servantes.cz/v1/', $this->token );
+		$this->sut = new Miguel_API( 'https://miguel.servantes.cz/v1/', $this->token );
 	}
 
 	/**
 	 * Test get_url().
 	 */
 	public function test_get_url(): void {
-		$this->assertEquals( 'https://miguel.servantes.cz/v1/', $this->miguel->get_url() );
+		$this->assertEquals( 'https://miguel.servantes.cz/v1/', $this->sut->get_url() );
 	}
 
 	/**
@@ -41,7 +41,7 @@ class Miguel_Test_API extends WP_UnitTestCase {
 	public function test_generate__url( $id, $url ): void {
 		Miguel_Helper_Http::mock_server_response( '__return__url' );
 
-		$response = $this->miguel->generate( $id, 'epub', array() );
+		$response = $this->sut->generate( $id, 'epub', array() );
 
 		$this->assertEquals( $url, $response['body'] );
 
@@ -54,7 +54,7 @@ class Miguel_Test_API extends WP_UnitTestCase {
 	public function test_generate__headers(): void {
 		Miguel_Helper_Http::mock_server_response( '__return__headers' );
 
-		$response = $this->miguel->generate( 'dummy-book', 'epub', array() );
+		$response = $this->sut->generate( 'dummy-book', 'epub', array() );
 
 		$want = array(
 			'Content-Type' => 'application/json; charset=utf-8',
@@ -71,7 +71,7 @@ class Miguel_Test_API extends WP_UnitTestCase {
 	 * Test generate(), invalid format.
 	 */
 	public function test_generate__format(): void {
-		$response = $this->miguel->generate( 'dummy-book', 'doc', null );
+		$response = $this->sut->generate( 'dummy-book', 'doc', null );
 
 		$this->assertEquals( true, is_wp_error( $response ) );
 		$this->assertEquals( __( 'Format is not allowed.', 'miguel' ), $response->get_error_message() );

@@ -20,14 +20,14 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$order->save();
 
 		// Create orders instance
-		$orders = new Miguel_Orders();
+		$sut = new Miguel_Orders();
 
 		// Use reflection to access private method
-		$reflection = new ReflectionClass( $orders );
+		$reflection = new ReflectionClass( $sut );
 		$method = $reflection->getMethod( 'has_miguel_products' );
 		$method->setAccessible( true );
 
-		$result = $method->invoke( $orders, $order );
+		$result = $method->invoke( $sut, $order );
 
 		$this->assertTrue( $result, 'Order should contain Miguel products' );
 	}
@@ -48,14 +48,14 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$order->set_date_paid( '2023-01-15 10:00:00' );
 		$order->save();
 
-		$orders = new Miguel_Orders();
+		$sut = new Miguel_Orders();
 
 		// Use reflection to access private method
-		$reflection = new ReflectionClass( $orders );
+		$reflection = new ReflectionClass( $sut );
 		$method = $reflection->getMethod( 'prepare_order_data' );
 		$method->setAccessible( true );
 
-		$result = $method->invoke( $orders, $order );
+		$result = $method->invoke( $sut, $order );
 
 		$this->assertIsArray( $result );
 		$this->assertArrayHasKey( 'code', $result );
@@ -142,14 +142,14 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 		$order->add_product( $product2, 1 );
 		$order->save();
 
-		$orders = new Miguel_Orders();
+		$sut = new Miguel_Orders();
 
 		// Use reflection to access private method
-		$reflection = new ReflectionClass( $orders );
+		$reflection = new ReflectionClass( $sut );
 		$method = $reflection->getMethod( 'prepare_order_data' );
 		$method->setAccessible( true );
 
-		$result = $method->invoke( $orders, $order );
+		$result = $method->invoke( $sut, $order );
 
 		$this->assertIsArray( $result );
 		$this->assertArrayHasKey( 'products', $result );
