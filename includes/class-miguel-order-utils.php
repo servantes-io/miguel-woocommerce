@@ -69,6 +69,7 @@ class Miguel_Order_Utils {
 
 	/**
 	 * Get purchase date for order
+	 * @return string|null
 	 */
 	public static function get_purchase_date_for_order( $order ) {
 		$paid_date = $order->get_date_paid();

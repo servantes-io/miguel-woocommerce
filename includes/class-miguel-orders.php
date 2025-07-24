@@ -21,72 +21,45 @@ class Miguel_Orders {
 	 */
 	public function __construct() {
 		// Hook into order status changes - this covers all status transitions including new orders
-		add_action( 'woocommerce_order_status_changed', array( $this, 'sync_order' ), 10, 1 );
+		add_action( 'woocommerce_order_status_changed', array( $this, 'sync_order' ), 10, 4 );
+		// Hook into order updates (for item changes)
+		add_action( 'woocommerce_update_order', array( $this, 'handle_order_update' ), 10, 1 );
 	}
 
 	/**
 	 * Sync order with Miguel API
 	 *
 	 * @param int $order_id Order ID.
+	 * @param string $from_state Previous status.
+	 * @param string $to_state New status.
+	 * @param WC_Order $order Order object.
 	 */
-	public function sync_order( $order_id ) {
-		$order = wc_get_order( $order_id );
-		if ( ! $order ) {
-			Miguel::log( 'Invalid order ID: ' . $order_id, 'error' );
-			return;
-		}
-
-		// Only sync orders that have Miguel products
-		if ( ! $this->has_miguel_products( $order ) ) {
-			return;
-		}
-
+	public function sync_order( $order_id, $from_state, $to_state, $order ) {
 		// Prepare order data for Miguel API
 		$order_data = $this->prepare_order_data( $order );
 		if ( empty( $order_data ) ) {
 			return;
 		}
 
-		// Send order to Miguel API
-		$response = miguel()->api()->submit_order( $order_data );
+		$order_status = $order->get_status();
+		if ( $order->get_id() === 0 || in_array( $order_status, array( 'trash', 'refunded', 'cancelled', 'failed' ) ) ) {
+			$response = miguel()->api()->delete_order( strval( $order_id ) );
 
-		if ( is_wp_error( $response ) ) {
-			Miguel::log( 'Failed to sync order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
+			if ( is_wp_error( $response ) ) {
+				Miguel::log( 'Failed to delete order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
+			} else {
+				Miguel::log( 'Successfully deleted order ' . $order_id . ' from Miguel API', 'info' );
+			}
 		} else {
-			Miguel::log( 'Successfully synced order ' . $order_id . ' with Miguel API', 'info' );
-		}
-	}
+			$response = miguel()->api()->submit_order( $order_data );
 
-	/**
-	 * Check if order contains Miguel products
-	 *
-	 * @param WC_Order $order Order object.
-	 * @return bool
-	 */
-	private function has_miguel_products( $order ) {
-		foreach ( $order->get_items() as $item ) {
-			if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
-				continue;
-			}
-
-			$product = $item->get_product();
-			if ( ! $product || ! $product->is_downloadable() ) {
-				continue;
-			}
-
-			// Check if any downloadable file contains a Miguel shortcode
-			$downloads = $product->get_downloads();
-			foreach ( $downloads as $download ) {
-				if ( Miguel_Order_Utils::is_miguel_shortcode( $download['file'] ) ) {
-					return true;
-				}
+			if ( is_wp_error( $response ) ) {
+				Miguel::log( 'Failed to sync order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
+			} else {
+				Miguel::log( 'Successfully synced order ' . $order_id . ' with Miguel API', 'info' );
 			}
 		}
-
-		return false;
 	}
-
-
 
 	/**
 	 * Prepare order data for Miguel API
@@ -144,6 +117,21 @@ class Miguel_Orders {
 			'purchase_date' => Miguel_Order_Utils::get_purchase_date_for_order( $order ),
 			'send_email' => 'disable',
 		);
+	}
+
+	/**
+	 * Handle order updates (when items are added/removed)
+	 *
+	 * @param int $order_id Order ID.
+	 */
+	public function handle_order_update( $order_id ) {
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			return;
+		}
+
+		// Re-sync the order with updated data
+		$this->sync_order( $order_id, '', '', $order );
 	}
 }
 

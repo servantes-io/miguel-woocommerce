@@ -7,12 +7,6 @@ Released YYYY-MM-DD
 * Added automatic order synchronization with Miguel API
 * Orders are now automatically sent to Miguel when created, paid, or status changes
 * Only orders containing Miguel digital products are synchronized
-* Improved integration with WooCommerce order lifecycle
-* **REFACTORED**: Extracted common formatting logic into `Miguel_Order_Utils` class
-* **IMPROVED**: Enhanced address formatting with postcode and country information
-* **IMPROVED**: Replaced regex shortcode parsing with WordPress built-in functions
-* **DRY**: Eliminated code duplication between `Miguel_Request` and `Miguel_Orders`
-* Added comprehensive test coverage for utility functions
 
 ## 1.3.0
 

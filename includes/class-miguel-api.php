@@ -67,7 +67,41 @@ class Miguel_API {
 	 * @return array|WP_Error
 	 */
 	public function submit_order( $order_data ) {
-		return $this->post( 'orders', $order_data );
+		$res = $this->post( 'orders', $order_data );
+
+		if ( is_wp_error( $res ) ) {
+			return $res;
+		}
+
+		if ( $res['response']['code'] === 200 || $res['response']['code'] === 201 ) {
+			return $res;
+		}
+
+		Miguel::log( 'Failed to submit order: ' . $res['response']['code'] . ' ' . $res['response']['message'] . ' ' . $res['body'], 'error' );
+
+		return new WP_Error( 'miguel', __( 'Failed to delete order.', 'miguel' ) );
+	}
+
+	/**
+	 * Delete order from Miguel API
+	 *
+	 * @param string $order_code Order code/ID to delete.
+	 * @return array|WP_Error
+	 */
+	public function delete_order( $order_code ) {
+		$res = $this->delete( 'orders/' . urlencode( $order_code ) );
+
+		if ( is_wp_error( $res ) ) {
+			return $res;
+		}
+
+		if ( $res['response']['code'] === 200 || $res['response']['code'] === 404 ) {
+			return $res;
+		}
+
+		Miguel::log( 'Failed to delete order: ' . $res['response']['code'] . ' ' . $res['response']['message'] . ' ' . $res['body'], 'error' );
+
+		return new WP_Error( 'miguel', __( 'Failed to delete order.', 'miguel' ) );
 	}
 
 	/**
@@ -91,5 +125,25 @@ class Miguel_API {
 		);
 
 		return wp_remote_post( $this->get_url() . $query, $data );
+	}
+
+	/**
+	 * Create DELETE request
+	 *
+	 * @param string $query
+	 * @return array|WP_Error
+	 */
+	private function delete( $query ) {
+		$data = array(
+			'method' => 'DELETE',
+			'timeout' => 180,
+			'user-agent' => 'MiguelForWooCommerce/' . miguel()->version . '; WordPress/' . get_bloginfo( 'version' ) . '; WooCommerce/' . WC()->version . '; ' . get_bloginfo( 'url' ),
+			'headers' => array(
+				'Authorization' => 'Bearer ' . $this->token,
+				'Accept-Language' => get_user_locale(),
+			),
+		);
+
+		return wp_remote_request( $this->get_url() . $query, $data );
 	}
 }
