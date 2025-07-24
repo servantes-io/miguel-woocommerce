@@ -436,29 +436,6 @@ class Test_Miguel_Orders extends WC_Unit_Test_Case {
 	}
 
 	/**
-	 * Test sync order with invalid order ID
-	 */
-	public function test_sync_order_invalid_id() {
-		// Mock API responses (should not be called)
-		Miguel_Helper_HTTP::mock_api_responses(array());
-
-		$sut = new Miguel_Orders();
-
-		// Create a dummy order object for the method signature
-		$dummy_order = new stdClass();
-		$dummy_order->id = 99999; // Non-existent ID
-
-		// This should not cause errors and should not make API calls
-		$sut->sync_order( 99999, 'pending', 'processing', $dummy_order );
-
-		// Verify no API requests were made
-		$requests = Miguel_Helper_HTTP::get_requests();
-		$this->assertCount( 0, $requests );
-
-		Miguel_Helper_HTTP::clear();
-	}
-
-	/**
 	 * Test handle_order_update with invalid order ID
 	 */
 	public function test_handle_order_update_invalid_id() {

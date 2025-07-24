@@ -35,12 +35,6 @@ class Miguel_Orders {
 	 * @param WC_Order $order Order object.
 	 */
 	public function sync_order( $order_id, $from_state, $to_state, $order ) {
-		// Prepare order data for Miguel API
-		$order_data = $this->prepare_order_data( $order );
-		if ( empty( $order_data ) ) {
-			return;
-		}
-
 		$order_status = $order->get_status();
 		if ( $order->get_id() === 0 || in_array( $order_status, array( 'trash', 'refunded', 'cancelled', 'failed' ) ) ) {
 			$response = miguel()->api()->delete_order( strval( $order_id ) );
@@ -51,6 +45,11 @@ class Miguel_Orders {
 				Miguel::log( 'Successfully deleted order ' . $order_id . ' from Miguel API', 'info' );
 			}
 		} else {
+			$order_data = $this->prepare_order_data( $order );
+			if ( empty( $order_data ) ) {
+				return;
+			}
+
 			$response = miguel()->api()->submit_order( $order_data );
 
 			if ( is_wp_error( $response ) ) {
