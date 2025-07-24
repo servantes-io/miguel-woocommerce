@@ -32,6 +32,60 @@ class Miguel_Orders {
 	}
 
 	/**
+	 * Generate hash of order data for deduplication
+	 *
+	 * @param WC_Order $order Order object.
+	 * @param 'sync' | 'delete' $action Action type (sync or delete).
+	 * @return string
+	 */
+	private function generate_order_hash( $order, $action ) {
+		if ( $action === 'delete' ) {
+			// For deletions, just use order ID and action
+			$hash_data = array(
+				'action' => 'delete',
+				'order_id' => $order->get_id(),
+			);
+		} else {
+			// For sync operations, include all relevant order data
+			$order_data = $this->prepare_order_data( $order );
+			$hash_data = array(
+				'action' => 'sync',
+				'order_id' => $order->get_id(),
+				'status' => $order->get_status(),
+				'data' => $order_data,
+			);
+		}
+
+		return md5( wp_json_encode( $hash_data ) );
+	}
+
+	/**
+	 * Check if order data has changed since last sync
+	 *
+	 * @param WC_Order $order Order object.
+	 * @param 'sync' | 'delete' $action Action type (sync or delete).
+	 * @return bool True if data has changed or no previous hash exists.
+	 */
+	private function has_order_data_changed( $order, $action ) {
+		$current_hash = $this->generate_order_hash( $order, $action );
+		$stored_hash = $order->get_meta( '_miguel_last_sync_hash', true );
+
+		return $stored_hash !== $current_hash;
+	}
+
+	/**
+	 * Store the current order data hash
+	 *
+	 * @param WC_Order $order Order object.
+	 * @param 'sync' | 'delete' $action Action type (sync or delete).
+	 */
+	private function store_order_hash( $order, $action ) {
+		$current_hash = $this->generate_order_hash( $order, $action );
+		$order->update_meta_data( '_miguel_last_sync_hash', $current_hash );
+		$order->save_meta_data();
+	}
+
+	/**
 	 * Sync order with Miguel API
 	 *
 	 * @param int $order_id Order ID.
@@ -41,14 +95,25 @@ class Miguel_Orders {
 	 */
 	public function sync_order( $order_id, $from_state, $to_state, $order ) {
 		if ( $order->get_id() == 0 || in_array( $to_state, array( 'trash', 'refunded', 'cancelled', 'failed' ) ) ) {
+			// Check if we need to delete (avoid duplicate delete requests)
+			if ( ! $this->has_order_data_changed( $order, 'delete' ) ) {
+				return;
+			}
+
 			$response = miguel()->api()->delete_order( strval( $order_id ) );
 
 			if ( is_wp_error( $response ) ) {
 				Miguel::log( 'Failed to delete order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
 			} else {
 				Miguel::log( 'Successfully deleted order ' . $order_id . ' from Miguel API', 'info' );
+				$this->store_order_hash( $order, 'delete' );
 			}
 		} else {
+			// Check if order data has changed (avoid duplicate sync requests)
+			if ( ! $this->has_order_data_changed( $order, 'sync' ) ) {
+				return;
+			}
+
 			$order_data = $this->prepare_order_data( $order );
 			if ( empty( $order_data ) ) {
 				return;
@@ -60,6 +125,7 @@ class Miguel_Orders {
 				Miguel::log( 'Failed to sync order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
 			} else {
 				Miguel::log( 'Successfully synced order ' . $order_id . ' with Miguel API', 'info' );
+				$this->store_order_hash( $order, 'sync' );
 			}
 		}
 	}
