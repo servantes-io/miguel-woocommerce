@@ -5,7 +5,7 @@
  * @package Miguel\Tests
  */
 
-class Test_Miguel_Order_Utils extends WC_Unit_Test_Case {
+class Test_Miguel_Order_Utils extends Miguel_Test_Case {
 
 	/**
 	 * Test user ID extraction for registered user

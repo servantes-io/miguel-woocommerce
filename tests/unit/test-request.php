@@ -4,7 +4,7 @@
  *
  * @package Miguel\Tests
  */
-class Miguel_Test_Request extends WC_Unit_Test_Case {
+class Miguel_Test_Request extends Miguel_Test_Case {
 	/**
 	 * Test get_args(), guest
 	 */
