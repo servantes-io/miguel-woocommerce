@@ -115,7 +115,7 @@ class Miguel_API {
 		$data = array(
 			'method' => 'POST',
 			'timeout' => 180,
-			'user-agent' => 'MiguelForWooCommerce/' . miguel()->version . '; WordPress/' . get_bloginfo( 'version' ) . '; WooCommerce/' . WC()->version . '; ' . get_bloginfo( 'url' ),
+			'user-agent' => $this->user_agent(),
 			'headers' => array(
 				'Content-Type' => 'application/json; charset=utf-8',
 				'Authorization' => 'Bearer ' . $this->token,
@@ -137,7 +137,7 @@ class Miguel_API {
 		$data = array(
 			'method' => 'DELETE',
 			'timeout' => 180,
-			'user-agent' => 'MiguelForWooCommerce/' . miguel()->version . '; WordPress/' . get_bloginfo( 'version' ) . '; WooCommerce/' . WC()->version . '; ' . get_bloginfo( 'url' ),
+			'user-agent' => $this->user_agent(),
 			'headers' => array(
 				'Authorization' => 'Bearer ' . $this->token,
 				'Accept-Language' => get_user_locale(),
@@ -145,5 +145,9 @@ class Miguel_API {
 		);
 
 		return wp_remote_request( $this->get_url() . $query, $data );
+	}
+
+	private function user_agent() {
+		return 'MiguelForWooCommerce/' . miguel()->version . '; WordPress/' . get_bloginfo( 'version' ) . '; WooCommerce/' . WC()->version . '; PHP/' . phpversion() . '; ' . get_bloginfo( 'url' );
 	}
 }
