@@ -7,41 +7,16 @@
 
 class Miguel_Test_Case extends WC_Unit_Test_Case {
 
-	/**
-	 * Miguel instance for testing
-	 *
-	 * @var Miguel
-	 */
-	protected $miguel_instance;
-
-	/**
-	 * Original Miguel instance
-	 *
-	 * @var Miguel
-	 */
-	private $original_instance;
-
 	public function setUp(): void {
 		parent::setUp();
 
-		// Store original instance if it exists
-		$this->original_instance = Miguel::instance();
-
-		// Create fresh instance for testing with isolated hooks
 		Miguel::reset_instance();
-		$this->miguel_instance = Miguel::instance();
 
 		// Mock successful API responses
 		Miguel_Helper_HTTP::mock_api_responses( array() );
 	}
 
 	public function tearDown(): void {
-		// Clean up hooks and reset instance
-		if ( $this->miguel_instance ) {
-			$this->miguel_instance->get_hook_manager()->remove_all_hooks();
-		}
-		Miguel::reset_instance();
-
 		// Clear HTTP mocks
 		Miguel_Helper_HTTP::clear();
 
