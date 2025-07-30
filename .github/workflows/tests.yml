@@ -24,6 +24,11 @@ jobs:
       matrix:
         include:
           # Current versions
+          - woocommerce-version: 10.0.4
+            wordpress-version: 6.8.2
+            php-version: 8.3
+            phpunit-version: ^9
+            pnpm-version: 10.13.1
           - woocommerce-version: 9.9.5
             wordpress-version: 6.8.2
             php-version: 8.3
