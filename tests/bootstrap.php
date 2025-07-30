@@ -5,6 +5,7 @@
  * @package Miguel
  */
 
+define( 'MIGUEL_TESTS', true );
 define( 'MIGUEL_PROJECT_DIR', dirname( __DIR__ ));
 $_tests_dir = getenv( 'WP_TESTS_DIR' );
 

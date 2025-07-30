@@ -152,14 +152,16 @@ class Miguel {
 			}
 		} );
 
-		// Initialize services and register their hooks
-		$this->container->get( 'download' )->register_hooks();
-		$this->container->get( 'orders' )->register_hooks();
+		if ( ! defined( 'MIGUEL_TESTS' ) ) {
+			// Initialize services and register their hooks
+			$this->container->get( 'download' )->register_hooks();
+			$this->container->get( 'orders' )->register_hooks();
 
-		// Initialize admin services only in admin context
-		if ( is_admin() ) {
-			$this->container->get( 'settings' )->register_hooks();
-			$this->container->get( 'admin' )->register_hooks();
+			// Initialize admin services only in admin context
+			if ( is_admin() ) {
+				$this->container->get( 'settings' )->register_hooks();
+				$this->container->get( 'admin' )->register_hooks();
+			}
 		}
 	}
 

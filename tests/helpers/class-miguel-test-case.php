@@ -79,4 +79,12 @@ class Miguel_Test_Case extends WC_Unit_Test_Case {
 
 		return array_merge( $default_data, $data );
 	}
+
+	protected function assertStringContains( string $needle, string $haystack ) {
+		if ( method_exists( $this, 'assertStringContainsString' ) ) {
+			$this->assertStringContainsString( $needle, $haystack );
+		} else {
+			$this->assertContains( $needle, $haystack );
+		}
+	}
 }

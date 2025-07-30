@@ -152,8 +152,7 @@ class Miguel_Download {
 	 * @param Miguel_Request $request
 	 */
 	public function serve_file( $file, $request ) {
-		$api = $this->get_api();
-		$response = $api->generate( $file->get_name(), $file->get_format(), $request->to_array() );
+		$response = $this->api->generate( $file->get_name(), $file->get_format(), $request->to_array() );
 
 		if ( is_wp_error( $response ) ) {
 			call_user_func( $this->error_handler, esc_html( $response->get_error_message() ) );
@@ -180,15 +179,6 @@ class Miguel_Download {
 			call_user_func( $this->error_handler, esc_html__( 'Something went wrong.', 'miguel' ) );
 			return;
 		}
-	}
-
-	/**
-	 * Get API instance with fallback
-	 *
-	 * @return Miguel_API
-	 */
-	private function get_api() {
-		return $this->api ?: miguel()->api();
 	}
 
 	/**

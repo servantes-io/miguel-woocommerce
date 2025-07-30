@@ -7,7 +7,9 @@
 
 class Test_Miguel_Orders extends Miguel_Test_Case {
 	private function get_sut() {
-		return $this->create_service_with_mocks( 'Miguel_Orders' );
+		return $this->create_service_with_mocks( 'Miguel_Orders', [
+			'api' => new Miguel_API( 'https://example.com/api/', 'test-token' ),
+		] );
 	}
 
 	/**
@@ -167,11 +169,13 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$order->set_status('cancelled');
 		$order->save();
 
+		$this->get_sut()->sync_order( $order->get_id(), 'processing', 'cancelled', $order );
+
 		// Verify DELETE request was made
 		$requests = Miguel_Helper_HTTP::get_requests();
 		$this->assertCount( 1, $requests, "Different number of requests: " . print_r( $requests, true ) );
 		$this->assertEquals( 'DELETE', $requests[0]['method'] );
-		$this->assertContains( 'orders/' . $order->get_id(), $requests[0]['url'] );
+		$this->assertStringContains( 'orders/' . $order->get_id(), $requests[0]['url'] );
 	}
 
 	/**
@@ -193,11 +197,13 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$order->set_status( 'processing' );
 		$order->save();
 
+		$this->get_sut()->sync_order( $order->get_id(), 'new', 'processing', $order );
+
 		// Verify POST request was made
 		$requests = Miguel_Helper_HTTP::get_requests();
 		$this->assertCount( 1, $requests, "Different number of requests: " . print_r( $requests, true ) );
 		$this->assertEquals( 'POST', $requests[0]['method'] );
-		$this->assertContains( 'orders', $requests[0]['url'] );
+		$this->assertStringContains( 'orders', $requests[0]['url'] );
 
 		// Verify request body contains order data
 		$body = json_decode( $requests[0]['body'], true );
@@ -225,19 +231,14 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$order->set_status( 'processing' );
 		$order->save();
 
-		// clear before Action
-		Miguel_Helper_HTTP::clear();
-
-		$sut = $this->get_sut();
-
 		// Trigger order update
-		$sut->handle_order_update( $order->get_id() );
+		$this->get_sut()->handle_order_update( $order->get_id() );
 
 		// Verify POST request was made to re-sync order
 		$requests = Miguel_Helper_HTTP::get_requests();
 		$this->assertCount( 1, $requests, "Different number of requests: " . print_r( $requests, true ) );
 		$this->assertEquals( 'POST', $requests[0]['method'] );
-		$this->assertContains( 'orders', $requests[0]['url'] );
+		$this->assertStringContains( 'orders', $requests[0]['url'] );
 	}
 
 	/**
@@ -264,7 +265,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$requests = Miguel_Helper_HTTP::get_requests();
 		$this->assertCount( 1, $requests );
 		$this->assertEquals( 'DELETE', $requests[0]['method'] );
-		$this->assertContains( 'orders/123', $requests[0]['url'] );
+		$this->assertStringContains( 'orders/123', $requests[0]['url'] );
 	}
 
 	/**
@@ -336,7 +337,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$requests = Miguel_Helper_HTTP::get_requests();
 		$this->assertCount( 1, $requests );
 		$this->assertEquals( 'POST', $requests[0]['method'] );
-		$this->assertContains( 'orders', $requests[0]['url'] );
+		$this->assertStringContains( 'orders', $requests[0]['url'] );
 	}
 
 	/**
@@ -430,16 +431,10 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 	 * Test all deletion status changes
 	 */
 	public function test_sync_order_all_deletion_statuses() {
-		// Create order with Miguel product
-		$product = Miguel_Helper_Product::create_downloadable_product();
-		$order = Miguel_Helper_Order::create_order();
-		$order->add_product( $product, 1 );
-		$order->save();
 
-		$sut = $this->get_sut();
 
 		// Test all statuses that should trigger deletion
-		$deletion_statuses = array( 'trash', 'refunded', 'cancelled', 'failed' );
+		$deletion_statuses = array( 'refunded', 'cancelled', 'failed', 'trash' );
 
 		foreach ( $deletion_statuses as $status ) {
 			// Mock successful DELETE response for each iteration
@@ -450,8 +445,14 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 				),
 			));
 
+			// Create order with Miguel product
+			$product = Miguel_Helper_Product::create_downloadable_product();
+			$order = Miguel_Helper_Order::create_order();
+			$order->add_product( $product, 1 );
+			$order->save();
+
 			$order->set_status( $status );
-			$sut->sync_order( $order->get_id(), 'processing', $status, $order );
+			$this->get_sut()->sync_order( $order->get_id(), 'processing', $status, $order );
 
 			// Verify DELETE request was made
 			$requests = Miguel_Helper_HTTP::get_requests();
@@ -460,6 +461,9 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 
 			// Clear for next iteration - this will be handled by tearDown() but we need it for the loop
 			Miguel_Helper_HTTP::clear();
+
+			// Delete order
+			$order->delete();
 		}
 	}
 }

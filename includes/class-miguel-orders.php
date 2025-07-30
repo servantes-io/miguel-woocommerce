@@ -42,9 +42,9 @@ class Miguel_Orders {
 	 *
 	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager for registering actions.
 	 * @param Miguel_API          $api          API instance for order sync.
-	 * @param WC_Logger           $logger       Logger instance for logging.
+	 * @param WC_Logger|null      $logger       Logger instance for logging.
 	 */
-	public function __construct( Miguel_Hook_Manager_Interface $hook_manager, Miguel_API $api, WC_Logger $logger = null ) {
+	public function __construct( Miguel_Hook_Manager_Interface $hook_manager, Miguel_API $api, WC_Logger $logger ) {
 		$this->hook_manager = $hook_manager;
 		$this->api          = $api;
 		$this->logger       = $logger;
@@ -136,7 +136,7 @@ class Miguel_Orders {
 				return;
 			}
 
-			$response = $this->get_api()->delete_order( strval( $order_id ) );
+			$response = $this->api->delete_order( strval( $order_id ) );
 
 			if ( is_wp_error( $response ) ) {
 				$this->log( 'Failed to delete order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
@@ -155,7 +155,7 @@ class Miguel_Orders {
 				return;
 			}
 
-			$response = $this->get_api()->submit_order( $order_data );
+			$response = $this->api->submit_order( $order_data );
 
 			if ( is_wp_error( $response ) ) {
 				$this->log( 'Failed to sync order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
@@ -237,15 +237,6 @@ class Miguel_Orders {
 
 		// Re-sync the order with updated data
 		$this->sync_order( $order_id, '', $order->get_status(), $order );
-	}
-
-	/**
-	 * Get API instance with fallback
-	 *
-	 * @return Miguel_API
-	 */
-	private function get_api() {
-		return $this->api ?: miguel()->api();
 	}
 
 	/**
