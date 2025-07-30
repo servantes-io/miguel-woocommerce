@@ -73,7 +73,7 @@ class Miguel_API {
 			return $res;
 		}
 
-		if ( $res['response']['code'] === 200 || $res['response']['code'] === 201 ) {
+		if ( 200 === $res['response']['code'] || 201 === $res['response']['code'] ) {
 			return $res;
 		}
 
@@ -95,7 +95,7 @@ class Miguel_API {
 			return $res;
 		}
 
-		if ( $res['response']['code'] === 200 || $res['response']['code'] === 404 ) {
+		if ( 200 === $res['response']['code'] || 404 === $res['response']['code'] ) {
 			return $res;
 		}
 

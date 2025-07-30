@@ -39,7 +39,7 @@ class Miguel_Orders {
 	 * @return string
 	 */
 	private function generate_order_hash( $order, $action ) {
-		if ( $action === 'delete' ) {
+		if ( 'delete' === $action ) {
 			// For deletions, just use order ID and action
 			$hash_data = array(
 				'action' => 'delete',
