@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Manages WordPress hooks registration and cleanup for testability
  */
-class Miguel_Hook_Manager {
+class Miguel_Hook_Manager implements Miguel_Hook_Manager_Interface {
 
 	/**
 	 * Array of registered hooks for cleanup

@@ -19,7 +19,7 @@ class Miguel_Download {
 	/**
 	 * Hook manager instance
 	 *
-	 * @var Miguel_Hook_Manager
+	 * @var Miguel_Hook_Manager_Interface
 	 */
 	private $hook_manager;
 
@@ -54,14 +54,14 @@ class Miguel_Download {
 	/**
 	 * Constructor with dependency injection
 	 *
-	 * @param Miguel_Hook_Manager $hook_manager    Hook manager for registering actions.
+	 * @param Miguel_Hook_Manager_Interface $hook_manager    Hook manager for registering actions.
 	 * @param Miguel_API          $api             API instance for file generation.
 	 * @param callable            $file_factory    Function to get file (default: miguel_get_file).
 	 * @param callable            $error_handler   Function to handle errors (default: wp_die).
 	 * @param callable            $redirect_handler Function to handle redirects (default: wp_redirect + exit).
 	 */
 	public function __construct(
-		Miguel_Hook_Manager $hook_manager,
+		Miguel_Hook_Manager_Interface $hook_manager,
 		Miguel_API $api,
 		$file_factory = null,
 		$error_handler = null,
@@ -194,7 +194,7 @@ class Miguel_Download {
 	/**
 	 * Get hook manager (for testing purposes)
 	 *
-	 * @return Miguel_Hook_Manager|null
+	 * @return Miguel_Hook_Manager_Interface|null
 	 */
 	public function get_hook_manager() {
 		return $this->hook_manager;

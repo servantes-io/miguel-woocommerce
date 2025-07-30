@@ -11,16 +11,18 @@ class Test_Miguel_Download_Improved extends Miguel_Test_Case {
 	 * Test that hooks are registered correctly
 	 */
 	public function test_download_registers_correct_hooks() {
-		$download = $this->create_service_with_mocks( 'Miguel_Download' );
+		$hook_manager_mock = $this->createMock( Miguel_Hook_Manager_Interface::class );
+
+		// Expect the correct hook registration
+		$hook_manager_mock->expects( $this->once() )
+			->method( 'add_action' )
+			->with( 'woocommerce_download_product', $this->anything(), 10, 6 );
+
+		$download = $this->create_service_with_mocks( 'Miguel_Download', [
+			'hook_manager' => $hook_manager_mock
+		] );
+
 		$download->register_hooks();
-
-		$hook_manager     = $download->get_hook_manager();
-		$registered_hooks = $hook_manager->get_registered_hooks();
-
-		$this->assertCount( 1, $registered_hooks );
-		$this->assertEquals( 'woocommerce_download_product', $registered_hooks[0]['hook'] );
-		$this->assertEquals( 10, $registered_hooks[0]['priority'] );
-		$this->assertEquals( 6, $registered_hooks[0]['accepted_args'] );
 	}
 
 	/**
@@ -197,17 +199,5 @@ class Test_Miguel_Download_Improved extends Miguel_Test_Case {
 		$this->assertStringContains( 'Something went wrong', $error_messages[0] );
 	}
 
-	/**
-	 * Test backward compatibility when no hook manager is provided
-	 */
-	public function test_backward_compatibility_without_hook_manager() {
-		$download = new Miguel_Download();
-		$download->register_hooks();
 
-		// Verify that the hook was registered using WordPress directly
-		$this->assertTrue( has_action( 'woocommerce_download_product', [ $download, 'download' ] ) );
-
-		// Clean up
-		remove_action( 'woocommerce_download_product', [ $download, 'download' ], 10 );
-	}
 }

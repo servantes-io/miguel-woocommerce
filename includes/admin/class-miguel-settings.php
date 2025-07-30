@@ -13,16 +13,16 @@ class Miguel_Settings extends WC_Settings_Page {
 	/**
 	 * Hook manager instance
 	 *
-	 * @var Miguel_Hook_Manager
+	 * @var Miguel_Hook_Manager_Interface
 	 */
 	private $hook_manager;
 
 	/**
 	 * Init settings page with dependency injection
 	 *
-	 * @param Miguel_Hook_Manager $hook_manager Hook manager for registering actions.
+	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager for registering actions.
 	 */
-	public function __construct( Miguel_Hook_Manager $hook_manager ) {
+	public function __construct( Miguel_Hook_Manager_Interface $hook_manager ) {
 		$this->hook_manager = $hook_manager;
 		$this->id = 'miguel';
 		$this->label = __( 'Miguel', 'miguel' );
@@ -42,7 +42,7 @@ class Miguel_Settings extends WC_Settings_Page {
 	/**
 	 * Get hook manager (for testing purposes)
 	 *
-	 * @return Miguel_Hook_Manager|null
+	 * @return Miguel_Hook_Manager_Interface|null
 	 */
 	public function get_hook_manager() {
 		return $this->hook_manager;

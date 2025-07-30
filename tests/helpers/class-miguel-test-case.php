@@ -31,7 +31,7 @@ class Miguel_Test_Case extends WC_Unit_Test_Case {
 	 * @return object
 	 */
 	protected function create_service_with_mocks( $service_class, $mocks = [] ) {
-		$hook_manager = new Miguel_Hook_Manager();
+		$hook_manager = $mocks['hook_manager'] ?? $this->createMock( Miguel_Hook_Manager_Interface::class );
 
 		switch ( $service_class ) {
 			case 'Miguel_Download':

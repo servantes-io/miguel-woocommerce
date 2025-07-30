@@ -11,17 +11,21 @@ class Test_Miguel_Orders_Improved extends Miguel_Test_Case {
 	 * Test that hooks are registered correctly
 	 */
 	public function test_orders_registers_correct_hooks() {
-		$orders = $this->create_service_with_mocks( 'Miguel_Orders' );
+		$hook_manager_mock = $this->createMock( Miguel_Hook_Manager_Interface::class );
+
+		// Expect the correct hook registrations
+		$hook_manager_mock->expects( $this->exactly( 2 ) )
+			->method( 'add_action' )
+			->withConsecutive(
+				[ 'woocommerce_order_status_changed', $this->anything(), 10, 4 ],
+				[ 'woocommerce_update_order', $this->anything(), 10, 1 ]
+			);
+
+		$orders = $this->create_service_with_mocks( 'Miguel_Orders', [
+			'hook_manager' => $hook_manager_mock
+		] );
+
 		$orders->register_hooks();
-
-		$hook_manager     = $orders->get_hook_manager();
-		$registered_hooks = $hook_manager->get_registered_hooks();
-
-		$this->assertCount( 2, $registered_hooks );
-		$this->assertEquals( 'woocommerce_order_status_changed', $registered_hooks[0]['hook'] );
-		$this->assertEquals( 'woocommerce_update_order', $registered_hooks[1]['hook'] );
-		$this->assertEquals( 10, $registered_hooks[0]['priority'] );
-		$this->assertEquals( 4, $registered_hooks[0]['accepted_args'] );
 	}
 
 	/**

@@ -41,7 +41,7 @@ class Miguel {
 	/**
 	 * Hook manager for centralized hook registration
 	 *
-	 * @var Miguel_Hook_Manager
+	 * @var Miguel_Hook_Manager_Interface
 	 */
 	private $hook_manager;
 
@@ -79,6 +79,7 @@ class Miguel {
 	 * Includes required files.
 	 */
 	public function includes() {
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/interface-miguel-hook-manager.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-hook-manager.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-container.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/miguel-functions.php';
@@ -241,7 +242,7 @@ class Miguel {
 	/**
 	 * Get the hook manager
 	 *
-	 * @return Miguel_Hook_Manager
+	 * @return Miguel_Hook_Manager_Interface
 	 */
 	public function get_hook_manager() {
 		return $this->hook_manager;

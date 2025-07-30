@@ -19,7 +19,7 @@ class Miguel_Orders {
 	/**
 	 * Hook manager instance
 	 *
-	 * @var Miguel_Hook_Manager
+	 * @var Miguel_Hook_Manager_Interface
 	 */
 	private $hook_manager;
 
@@ -40,11 +40,11 @@ class Miguel_Orders {
 	/**
 	 * Constructor with dependency injection
 	 *
-	 * @param Miguel_Hook_Manager $hook_manager Hook manager for registering actions.
+	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager for registering actions.
 	 * @param Miguel_API          $api          API instance for order sync.
 	 * @param WC_Logger           $logger       Logger instance for logging.
 	 */
-	public function __construct( Miguel_Hook_Manager $hook_manager, Miguel_API $api, WC_Logger $logger = null ) {
+	public function __construct( Miguel_Hook_Manager_Interface $hook_manager, Miguel_API $api, WC_Logger $logger = null ) {
 		$this->hook_manager = $hook_manager;
 		$this->api          = $api;
 		$this->logger       = $logger;
@@ -61,7 +61,7 @@ class Miguel_Orders {
 	/**
 	 * Get hook manager (for testing purposes)
 	 *
-	 * @return Miguel_Hook_Manager
+	 * @return Miguel_Hook_Manager_Interface
 	 */
 	public function get_hook_manager() {
 		return $this->hook_manager;

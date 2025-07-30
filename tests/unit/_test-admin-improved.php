@@ -11,16 +11,18 @@ class Test_Miguel_Admin_Improved extends Miguel_Test_Case {
 	 * Test that Miguel_Admin hooks are registered correctly
 	 */
 	public function test_admin_registers_correct_hooks() {
-		$admin = $this->create_service_with_mocks( 'Miguel_Admin' );
+		$hook_manager_mock = $this->createMock( Miguel_Hook_Manager_Interface::class );
+
+		// Expect the correct hook registration
+		$hook_manager_mock->expects( $this->once() )
+			->method( 'add_filter' )
+			->with( 'woocommerce_get_settings_pages', $this->anything(), 10 );
+
+		$admin = $this->create_service_with_mocks( 'Miguel_Admin', [
+			'hook_manager' => $hook_manager_mock
+		] );
+
 		$admin->register_hooks();
-
-		$hook_manager     = $admin->get_hook_manager();
-		$registered_hooks = $hook_manager->get_registered_hooks();
-
-		$this->assertCount( 1, $registered_hooks );
-		$this->assertEquals( 'woocommerce_get_settings_pages', $registered_hooks[0]['hook'] );
-		$this->assertEquals( 'filter', $registered_hooks[0]['type'] );
-		$this->assertEquals( 10, $registered_hooks[0]['priority'] );
 	}
 
 	/**
@@ -62,26 +64,25 @@ class Test_Miguel_Admin_Improved extends Miguel_Test_Case {
 	 * Test Miguel_Settings hooks are registered correctly
 	 */
 	public function test_settings_registers_correct_hooks() {
-		$settings = $this->create_service_with_mocks( 'Miguel_Settings' );
+		$hook_manager_mock = $this->createMock( Miguel_Hook_Manager_Interface::class );
+
+		// Expect the correct hook registrations
+		$hook_manager_mock->expects( $this->exactly( 2 ) )
+			->method( 'add_action' )
+			->withConsecutive(
+				[ 'woocommerce_settings_miguel', $this->anything() ],
+				[ 'woocommerce_settings_save_miguel', $this->anything() ]
+			);
+
+		$hook_manager_mock->expects( $this->once() )
+			->method( 'add_filter' )
+			->with( 'woocommerce_settings_tabs_array', $this->anything(), 20 );
+
+		$settings = $this->create_service_with_mocks( 'Miguel_Settings', [
+			'hook_manager' => $hook_manager_mock
+		] );
+
 		$settings->register_hooks();
-
-		$hook_manager     = $settings->get_hook_manager();
-		$registered_hooks = $hook_manager->get_registered_hooks();
-
-		$this->assertCount( 3, $registered_hooks );
-
-		// Check the settings output action
-		$this->assertEquals( 'woocommerce_settings_miguel', $registered_hooks[0]['hook'] );
-		$this->assertEquals( 'action', $registered_hooks[0]['type'] );
-
-		// Check the settings save action
-		$this->assertEquals( 'woocommerce_settings_save_miguel', $registered_hooks[1]['hook'] );
-		$this->assertEquals( 'action', $registered_hooks[1]['type'] );
-
-		// Check the settings tabs filter
-		$this->assertEquals( 'woocommerce_settings_tabs_array', $registered_hooks[2]['hook'] );
-		$this->assertEquals( 'filter', $registered_hooks[2]['type'] );
-		$this->assertEquals( 20, $registered_hooks[2]['priority'] );
 	}
 
 	/**
@@ -154,24 +155,7 @@ class Test_Miguel_Admin_Improved extends Miguel_Test_Case {
 		unset( $_POST['miguel_api_key'] );
 	}
 
-	/**
-	 * Test Miguel_Settings fallback behavior when no hook manager is provided
-	 */
-	public function test_settings_fallback_hook_registration() {
-		// Create settings without hook manager (should use fallback)
-		$settings = new Miguel_Settings();
-		$settings->register_hooks();
 
-		// Verify that hooks were registered using WordPress directly
-		$this->assertTrue( has_action( 'woocommerce_settings_miguel', [ $settings, 'output' ] ) );
-		$this->assertTrue( has_action( 'woocommerce_settings_save_miguel', [ $settings, 'save' ] ) );
-		$this->assertTrue( has_filter( 'woocommerce_settings_tabs_array', [ $settings, 'add_settings_page' ] ) );
-
-		// Clean up
-		remove_action( 'woocommerce_settings_miguel', [ $settings, 'output' ] );
-		remove_action( 'woocommerce_settings_save_miguel', [ $settings, 'save' ] );
-		remove_filter( 'woocommerce_settings_tabs_array', [ $settings, 'add_settings_page' ], 20 );
-	}
 
 	/**
 	 * Test admin integration with both classes
@@ -179,27 +163,18 @@ class Test_Miguel_Admin_Improved extends Miguel_Test_Case {
 	public function test_admin_integration_flow() {
 		// Create settings instance
 		$settings = $this->create_service_with_mocks( 'Miguel_Settings' );
-		$settings->register_hooks();
 
 		// Create admin instance with settings
 		$admin = $this->create_service_with_mocks( 'Miguel_Admin', [
 			'settings' => $settings,
 		] );
-		$admin->register_hooks();
 
-		// Test the complete flow
+		// Test the complete flow - verify settings injection works
 		$pages = [];
 		$result = $admin->add_settings_pages( $pages );
 
 		$this->assertCount( 1, $result );
 		$this->assertSame( $settings, $result[0] );
-
-		// Verify both have their hooks registered
-		$admin_hooks = $admin->get_hook_manager()->get_registered_hooks();
-		$settings_hooks = $settings->get_hook_manager()->get_registered_hooks();
-
-		$this->assertCount( 1, $admin_hooks );
-		$this->assertCount( 3, $settings_hooks );
 	}
 
 	/**
