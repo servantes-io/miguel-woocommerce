@@ -6,30 +6,8 @@
  */
 
 class Test_Miguel_Orders extends Miguel_Test_Case {
-
-	/**
-	 * The system under test
-	 *
-	 * @var Miguel_Orders
-	 */
-	private $sut = null;
-
-	/**
-	 * Clean up after each test
-	 */
-	public function tearDown(): void {
-		if ( $this->sut ) {
-			$this->sut->deconstruct();
-		}
-
-		parent::tearDown();
-	}
-
 	private function get_sut() {
-		if ( null === $this->sut ) {
-			$this->sut = new Miguel_Orders();
-		}
-		return $this->sut;
+		return $this->create_service_with_mocks( 'Miguel_Orders' );
 	}
 
 	/**

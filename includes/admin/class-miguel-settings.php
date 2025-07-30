@@ -4,24 +4,48 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Settings
+ * Settings with dependency injection for better testability
  *
  * @package Miguel
  */
 class Miguel_Settings extends WC_Settings_Page {
 
 	/**
-	 * Init settings page.
+	 * Hook manager instance
+	 *
+	 * @var Miguel_Hook_Manager
 	 */
-	public function __construct() {
+	private $hook_manager;
+
+	/**
+	 * Init settings page with dependency injection
+	 *
+	 * @param Miguel_Hook_Manager $hook_manager Hook manager for registering actions.
+	 */
+	public function __construct( Miguel_Hook_Manager $hook_manager ) {
+		$this->hook_manager = $hook_manager;
 		$this->id = 'miguel';
 		$this->label = __( 'Miguel', 'miguel' );
 
-		add_action( 'woocommerce_settings_' . $this->id, array( $this, 'output' ) );
-		add_action( 'woocommerce_settings_save_' . $this->id, array( $this, 'save' ) );
-		add_filter( 'woocommerce_settings_tabs_array', array( $this, 'add_settings_page' ), 20 );
-
 		parent::__construct();
+	}
+
+	/**
+	 * Register WordPress hooks
+	 */
+	public function register_hooks() {
+		$this->hook_manager->add_action( 'woocommerce_settings_' . $this->id, array( $this, 'output' ) );
+		$this->hook_manager->add_action( 'woocommerce_settings_save_' . $this->id, array( $this, 'save' ) );
+		$this->hook_manager->add_filter( 'woocommerce_settings_tabs_array', array( $this, 'add_settings_page' ), 20 );
+	}
+
+	/**
+	 * Get hook manager (for testing purposes)
+	 *
+	 * @return Miguel_Hook_Manager|null
+	 */
+	public function get_hook_manager() {
+		return $this->hook_manager;
 	}
 
 	/**
@@ -75,5 +99,3 @@ class Miguel_Settings extends WC_Settings_Page {
 		WC_Admin_Settings::save_fields( $settings );
 	}
 }
-
-return new Miguel_Settings();

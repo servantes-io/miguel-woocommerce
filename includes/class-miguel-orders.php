@@ -17,18 +17,54 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Miguel_Orders {
 
 	/**
-	 * Add WooCommerce hooks.
+	 * Hook manager instance
+	 *
+	 * @var Miguel_Hook_Manager
 	 */
-	public function __construct() {
-		// Hook into order status changes - this covers all status transitions including new orders
-		add_action( 'woocommerce_order_status_changed', array( $this, 'sync_order' ), 10, 4 );
-		// Hook into order updates (for item changes)
-		add_action( 'woocommerce_update_order', array( $this, 'handle_order_update' ), 10, 1 );
+	private $hook_manager;
+
+	/**
+	 * API instance
+	 *
+	 * @var Miguel_API
+	 */
+	private $api;
+
+	/**
+	 * Logger instance
+	 *
+	 * @var WC_Logger
+	 */
+	private $logger;
+
+	/**
+	 * Constructor with dependency injection
+	 *
+	 * @param Miguel_Hook_Manager $hook_manager Hook manager for registering actions.
+	 * @param Miguel_API          $api          API instance for order sync.
+	 * @param WC_Logger           $logger       Logger instance for logging.
+	 */
+	public function __construct( Miguel_Hook_Manager $hook_manager, Miguel_API $api, WC_Logger $logger = null ) {
+		$this->hook_manager = $hook_manager;
+		$this->api          = $api;
+		$this->logger       = $logger;
 	}
 
-	public function deconstruct() {
-		remove_action( 'woocommerce_order_status_changed', array( $this, 'sync_order' ), 10 );
-		remove_action( 'woocommerce_update_order', array( $this, 'handle_order_update' ), 10 );
+	/**
+	 * Register WordPress hooks
+	 */
+	public function register_hooks() {
+		$this->hook_manager->add_action( 'woocommerce_order_status_changed', array( $this, 'sync_order' ), 10, 4 );
+		$this->hook_manager->add_action( 'woocommerce_update_order', array( $this, 'handle_order_update' ), 10, 1 );
+	}
+
+	/**
+	 * Get hook manager (for testing purposes)
+	 *
+	 * @return Miguel_Hook_Manager
+	 */
+	public function get_hook_manager() {
+		return $this->hook_manager;
 	}
 
 	/**
@@ -100,12 +136,12 @@ class Miguel_Orders {
 				return;
 			}
 
-			$response = miguel()->api()->delete_order( strval( $order_id ) );
+			$response = $this->get_api()->delete_order( strval( $order_id ) );
 
 			if ( is_wp_error( $response ) ) {
-				Miguel::log( 'Failed to delete order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
+				$this->log( 'Failed to delete order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
 			} else {
-				Miguel::log( 'Successfully deleted order ' . $order_id . ' from Miguel API', 'info' );
+				$this->log( 'Successfully deleted order ' . $order_id . ' from Miguel API', 'info' );
 				$this->store_order_hash( $order, 'delete' );
 			}
 		} else {
@@ -119,12 +155,12 @@ class Miguel_Orders {
 				return;
 			}
 
-			$response = miguel()->api()->submit_order( $order_data );
+			$response = $this->get_api()->submit_order( $order_data );
 
 			if ( is_wp_error( $response ) ) {
-				Miguel::log( 'Failed to sync order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
+				$this->log( 'Failed to sync order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
 			} else {
-				Miguel::log( 'Successfully synced order ' . $order_id . ' with Miguel API', 'info' );
+				$this->log( 'Successfully synced order ' . $order_id . ' with Miguel API', 'info' );
 				$this->store_order_hash( $order, 'sync' );
 			}
 		}
@@ -202,6 +238,27 @@ class Miguel_Orders {
 		// Re-sync the order with updated data
 		$this->sync_order( $order_id, '', $order->get_status(), $order );
 	}
-}
 
-return new Miguel_Orders();
+	/**
+	 * Get API instance with fallback
+	 *
+	 * @return Miguel_API
+	 */
+	private function get_api() {
+		return $this->api ?: miguel()->api();
+	}
+
+	/**
+	 * Log message with fallback
+	 *
+	 * @param string $message Message to log.
+	 * @param string $type    Log type (info, error, etc.).
+	 */
+	private function log( $message, $type = 'info' ) {
+		if ( $this->logger ) {
+			$this->logger->add( 'miguel', strtoupper( $type ) . ' ' . $message );
+		} else {
+			Miguel::log( $message, $type );
+		}
+	}
+}
