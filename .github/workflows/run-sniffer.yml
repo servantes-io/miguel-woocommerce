@@ -1,6 +1,8 @@
 name: Code checking by sniffer
 on:
   push:
+    branches:
+      - main
   pull_request:
 jobs:
   sniff:
