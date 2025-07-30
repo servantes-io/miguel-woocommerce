@@ -25,13 +25,6 @@ class Miguel {
 	protected static $instance = null;
 
 	/**
-	 * Api
-	 *
-	 * @var Miguel_API
-	 */
-	protected $api = null;
-
-	/**
 	 * Container for dependency injection
 	 *
 	 * @var Miguel_Container
@@ -175,20 +168,6 @@ class Miguel {
 	 */
 	public function init() {
 		load_plugin_textdomain( 'miguel', false, plugin_basename( dirname( MIGUEL_PLUGIN_FILE ) ) . '/languages/' );
-	}
-
-	/**
-	 * Get api
-	 *
-	 * @return Miguel_API
-	 */
-	public function api() {
-		if ( is_null( $this->api ) ) {
-			$url = get_option( 'miguel_api_url', 'https://miguel.servantes.cz/v1/' );
-			$token = get_option( 'miguel_api_key' );
-			$this->api = new Miguel_API( $url, $token );
-		}
-		return $this->api;
 	}
 
 	/**
