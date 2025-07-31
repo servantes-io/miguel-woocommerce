@@ -2,12 +2,12 @@
 /**
  * Test API
  *
- * @package Miguel\Tests
+ * @package Miguel\Tests\Services
  */
 
 use Servantes\Miguel\Services\API;
 
-class Miguel_Test_API extends WP_UnitTestCase {
+class APITest extends WP_UnitTestCase {
 
 	/**
 	 * Setup.
