@@ -2,8 +2,8 @@
 Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 4.9
-Tested up to: 6.5
-Stable tag: 1.3.0
+Tested up to: 6.8
+Stable tag: 1.4.0
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -90,5 +90,8 @@ The interactive wizard allows you to set the screen size for which the resulting
 
 = 1.3.0 =
 * Removed support for async watermarking (not needed anymore and we don't have to rewrite the whole plugin to push this plugin to WordPress Plugin Directory)
+
+= 1.4.0 =
+* Automatically create orders on Miguel to allow users read and listen all audiobooks in our [Miguel Book Reader app](https://servantes.cz/en/ella)
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
