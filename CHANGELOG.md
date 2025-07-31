@@ -2,18 +2,15 @@
 
 ## 1.4.0
 
-Released YYYY-MM-DD
+Released 2025-07-31
 
-* Added automatic order synchronization with Miguel API
-* Orders are now automatically sent to Miguel when created, paid, or status changes
-* Only orders containing Miguel digital products are synchronized
+* Automatically create orders on Miguel to allow users read and listen all audiobooks in our [Miguel Book Reader app](https://servantes.cz/en/ella)
 
 ## 1.3.0
 
-Released YYYY-MM-DD
+Released 2024-07-18
 
-* Dropped support for async watermarking (so we can push this plugin to WordPress Plugin Directory and not rewriting
-half of the plugin)
+* Dropped support for async watermarking (so we can push this plugin to WordPress Plugin Directory and not rewriting half of the plugin)
 
 ## 1.2.2
 
