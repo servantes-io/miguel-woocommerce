@@ -94,24 +94,24 @@ class Miguel {
 	 * Register services in the container
 	 */
 	private function register_services() {
-		$this->container->register( 'hook_manager', function() {
+		$this->container->register( 'hook_manager', function () {
 			return $this->hook_manager;
 		} );
 
-		$this->container->register( 'api', function() {
+		$this->container->register( 'api', function () {
 			$url = get_option( 'miguel_api_url', 'https://miguel.servantes.cz/v1/' );
 			$token = get_option( 'miguel_api_key' );
 			return new Miguel_API( $url, $token );
 		} );
 
-		$this->container->register( 'download', function( $container ) {
+		$this->container->register( 'download', function ( $container ) {
 			return new Miguel_Download(
 				$container->get( 'hook_manager' ),
 				$container->get( 'api' )
 			);
 		} );
 
-		$this->container->register( 'orders', function( $container ) {
+		$this->container->register( 'orders', function ( $container ) {
 			return new Miguel_Orders(
 				$container->get( 'hook_manager' ),
 				$container->get( 'api' ),
@@ -119,15 +119,15 @@ class Miguel {
 			);
 		} );
 
-		$this->container->register( 'logger', function() {
+		$this->container->register( 'logger', function () {
 			return new WC_Logger();
 		} );
 
-		$this->container->register( 'settings', function( $container ) {
+		$this->container->register( 'settings', function ( $container ) {
 			return new Miguel_Settings( $container->get( 'hook_manager' ) );
 		} );
 
-		$this->container->register( 'admin', function( $container ) {
+		$this->container->register( 'admin', function ( $container ) {
 			return new Miguel_Admin(
 				$container->get( 'hook_manager' ),
 				$container->get( 'settings' )

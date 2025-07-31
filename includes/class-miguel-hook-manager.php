@@ -19,7 +19,7 @@ class Miguel_Hook_Manager implements Miguel_Hook_Manager_Interface {
 	 *
 	 * @var array
 	 */
-	private $registered_hooks = [];
+	private $registered_hooks = array();
 
 	/**
 	 * Add action hook with tracking for cleanup
@@ -31,13 +31,13 @@ class Miguel_Hook_Manager implements Miguel_Hook_Manager_Interface {
 	 */
 	public function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
 		add_action( $hook, $callback, $priority, $accepted_args );
-		$this->registered_hooks[] = [
+		$this->registered_hooks[] = array(
 			'type'          => 'action',
 			'hook'          => $hook,
 			'callback'      => $callback,
 			'priority'      => $priority,
 			'accepted_args' => $accepted_args,
-		];
+		);
 	}
 
 	/**
@@ -50,13 +50,13 @@ class Miguel_Hook_Manager implements Miguel_Hook_Manager_Interface {
 	 */
 	public function add_filter( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
 		add_filter( $hook, $callback, $priority, $accepted_args );
-		$this->registered_hooks[] = [
+		$this->registered_hooks[] = array(
 			'type'          => 'filter',
 			'hook'          => $hook,
 			'callback'      => $callback,
 			'priority'      => $priority,
 			'accepted_args' => $accepted_args,
-		];
+		);
 	}
 
 	/**
@@ -70,7 +70,7 @@ class Miguel_Hook_Manager implements Miguel_Hook_Manager_Interface {
 				remove_filter( $hook_data['hook'], $hook_data['callback'], $hook_data['priority'] );
 			}
 		}
-		$this->registered_hooks = [];
+		$this->registered_hooks = array();
 	}
 
 	/**

@@ -69,9 +69,9 @@ class Miguel_Download {
 	) {
 		$this->hook_manager     = $hook_manager;
 		$this->api              = $api;
-		$this->file_factory     = $file_factory ?: 'miguel_get_file';
-		$this->error_handler    = $error_handler ?: 'wp_die';
-		$this->redirect_handler = $redirect_handler ?: array( $this, 'default_redirect_handler' );
+		$this->file_factory     = $file_factory ? $file_factory : 'miguel_get_file';
+		$this->error_handler    = $error_handler ? $error_handler : 'wp_die';
+		$this->redirect_handler = $redirect_handler ? $redirect_handler : array( $this, 'default_redirect_handler' );
 	}
 
 	/**

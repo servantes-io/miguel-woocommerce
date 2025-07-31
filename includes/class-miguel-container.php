@@ -19,14 +19,14 @@ class Miguel_Container {
 	 *
 	 * @var array
 	 */
-	private $services = [];
+	private $services = array();
 
 	/**
 	 * Service instances cache
 	 *
 	 * @var array
 	 */
-	private $instances = [];
+	private $instances = array();
 
 	/**
 	 * Register a service factory
@@ -48,7 +48,7 @@ class Miguel_Container {
 	public function get( $name ) {
 		if ( ! isset( $this->instances[ $name ] ) ) {
 			if ( ! isset( $this->services[ $name ] ) ) {
-				throw new Exception( "Service {$name} not found" );
+				throw new Exception( esc_html( "Service {$name} not found" ) );
 			}
 			$this->instances[ $name ] = call_user_func( $this->services[ $name ], $this );
 		}
@@ -59,7 +59,7 @@ class Miguel_Container {
 	 * Reset all instances (useful for testing)
 	 */
 	public function reset() {
-		$this->instances = [];
+		$this->instances = array();
 	}
 
 	/**
