@@ -1,4 +1,12 @@
 <?php
+/**
+ * Order utilities class
+ *
+ * @package Miguel
+ */
+
+namespace Servantes\Miguel\Services;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -6,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Order utilities class
  */
-class Miguel_Order_Utils {
+class OrderUtils {
 
 	/**
 	 * Get user ID for order
@@ -24,7 +32,7 @@ class Miguel_Order_Utils {
 
 	/**
 	 * Get email for order
-	 * @param WC_Order $order Order object.
+	 * @param \WC_Order $order Order object.
 	 * @return string
 	 */
 	public static function get_email_for_order( $order ) {
@@ -74,12 +82,12 @@ class Miguel_Order_Utils {
 	public static function get_purchase_date_for_order( $order ) {
 		$paid_date = $order->get_date_paid();
 		if ( $paid_date ) {
-			return $paid_date->format( DateTime::ATOM );
+			return $paid_date->format( \DateTime::ATOM );
 		}
 
 		$created_date = $order->get_date_created();
 		if ( $created_date ) {
-			return $created_date->format( DateTime::ATOM );
+			return $created_date->format( \DateTime::ATOM );
 		}
 
 		return null;

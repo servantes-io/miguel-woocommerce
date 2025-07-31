@@ -5,6 +5,11 @@
  * @package Miguel
  */
 
+namespace Servantes\Miguel\Services;
+
+use Servantes\Miguel\Interfaces\HookManagerInterface;
+use Servantes\Miguel\Core\Miguel;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -14,37 +19,37 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @package Miguel
  */
-class Miguel_Orders {
+class Orders {
 
 	/**
 	 * Hook manager instance
 	 *
-	 * @var Miguel_Hook_Manager_Interface
+	 * @var HookManagerInterface
 	 */
 	private $hook_manager;
 
 	/**
 	 * API instance
 	 *
-	 * @var Miguel_API
+	 * @var API
 	 */
 	private $api;
 
 	/**
 	 * Logger instance
 	 *
-	 * @var WC_Logger
+	 * @var \WC_Logger
 	 */
 	private $logger;
 
 	/**
 	 * Constructor with dependency injection
 	 *
-	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager for registering actions.
-	 * @param Miguel_API          $api          API instance for order sync.
-	 * @param WC_Logger|null      $logger       Logger instance for logging.
+	 * @param HookManagerInterface $hook_manager Hook manager for registering actions.
+	 * @param API                  $api          API instance for order sync.
+	 * @param \WC_Logger|null      $logger       Logger instance for logging.
 	 */
-	public function __construct( Miguel_Hook_Manager_Interface $hook_manager, Miguel_API $api, WC_Logger $logger ) {
+	public function __construct( HookManagerInterface $hook_manager, API $api, \WC_Logger $logger ) {
 		$this->hook_manager = $hook_manager;
 		$this->api          = $api;
 		$this->logger       = $logger;
@@ -61,7 +66,7 @@ class Miguel_Orders {
 	/**
 	 * Get hook manager (for testing purposes)
 	 *
-	 * @return Miguel_Hook_Manager_Interface
+	 * @return HookManagerInterface
 	 */
 	public function get_hook_manager() {
 		return $this->hook_manager;
@@ -70,7 +75,7 @@ class Miguel_Orders {
 	/**
 	 * Generate hash of order data for deduplication
 	 *
-	 * @param WC_Order $order Order object.
+	 * @param \WC_Order $order Order object.
 	 * @param 'sync' | 'delete' $action Action type (sync or delete).
 	 * @return string
 	 */
@@ -98,7 +103,7 @@ class Miguel_Orders {
 	/**
 	 * Check if order data has changed since last sync
 	 *
-	 * @param WC_Order $order Order object.
+	 * @param \WC_Order $order Order object.
 	 * @param 'sync' | 'delete' $action Action type (sync or delete).
 	 * @return bool True if data has changed or no previous hash exists.
 	 */
@@ -112,7 +117,7 @@ class Miguel_Orders {
 	/**
 	 * Store the current order data hash
 	 *
-	 * @param WC_Order $order Order object.
+	 * @param \WC_Order $order Order object.
 	 * @param 'sync' | 'delete' $action Action type (sync or delete).
 	 */
 	private function store_order_hash( $order, $action ) {
@@ -127,7 +132,7 @@ class Miguel_Orders {
 	 * @param int $order_id Order ID.
 	 * @param string $from_state Previous status.
 	 * @param string $to_state New status.
-	 * @param WC_Order $order Order object.
+	 * @param \WC_Order $order Order object.
 	 */
 	public function sync_order( $order_id, $from_state, $to_state, $order ) {
 		if ( $order->get_id() == 0 || in_array( $to_state, array( 'trash', 'refunded', 'cancelled', 'failed' ) ) ) {
@@ -169,14 +174,14 @@ class Miguel_Orders {
 	/**
 	 * Prepare order data for Miguel API
 	 *
-	 * @param WC_Order $order Order object.
+	 * @param \WC_Order $order Order object.
 	 * @return array
 	 */
 	private function prepare_order_data( $order ) {
 		$products = array();
 
 		foreach ( $order->get_items() as $item ) {
-			if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
+			if ( ! ( $item instanceof \WC_Order_Item_Product ) ) {
 				continue;
 			}
 
@@ -190,8 +195,8 @@ class Miguel_Orders {
 			$miguel_codes = array();
 
 			foreach ( $downloads as $download ) {
-				if ( Miguel_Order_Utils::is_miguel_shortcode( $download['file'] ) ) {
-					$code = Miguel_Order_Utils::extract_miguel_code( $download['file'] );
+				if ( OrderUtils::is_miguel_shortcode( $download['file'] ) ) {
+					$code = OrderUtils::extract_miguel_code( $download['file'] );
 					if ( $code && ! in_array( $code, $miguel_codes ) ) {
 						$miguel_codes[] = $code;
 					}
@@ -216,10 +221,10 @@ class Miguel_Orders {
 		return array(
 			'code' => strval( $order->get_id() ),
 			'eshop_id' => strval( $order->get_id() ),
-			'user' => Miguel_Order_Utils::get_user_data_for_order( $order, true ),
+			'user' => OrderUtils::get_user_data_for_order( $order, true ),
 			'products' => $products,
 			'currency_code' => $order->get_currency(),
-			'purchase_date' => Miguel_Order_Utils::get_purchase_date_for_order( $order ),
+			'purchase_date' => OrderUtils::get_purchase_date_for_order( $order ),
 			'send_email' => 'disable',
 		);
 	}

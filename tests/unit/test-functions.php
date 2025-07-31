@@ -4,7 +4,7 @@
  *
  * @package Miguel\Tests
  */
-class Miguel_Test_Functions extends WP_UnitTestCase {
+class Test_Miguel_Functions extends WP_UnitTestCase {
 
 	/**
 	 * Data provider for starts_with().

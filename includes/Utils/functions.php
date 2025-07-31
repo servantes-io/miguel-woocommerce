@@ -6,7 +6,7 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
 /**
@@ -49,13 +49,13 @@ function miguel_template_path( $tpl ) {
  * @param int $product_id
  * @param int $download_id
  *
- * @return Miguel_File|WP_Error
+ * @return \Servantes\Miguel\Services\File|\WP_Error
  */
 function miguel_get_file( $product_id, $download_id ) {
 	try {
-		$file = new Miguel_File( $product_id, $download_id );
+		$file = new \Servantes\Miguel\Services\File( $product_id, $download_id );
 	} catch ( \Exception $e ) {
-		return new WP_Error( 'invalid-file', $e->getMessage() );
+		return new \WP_Error( 'invalid-file', $e->getMessage() );
 	}
 	return $file;
 }

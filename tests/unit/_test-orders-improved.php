@@ -5,13 +5,15 @@
  * @package Miguel\Tests
  */
 
+use Servantes\Miguel\Interfaces\HookManagerInterface;
+
 class Test_Miguel_Orders_Improved extends Miguel_Test_Case {
 
 	/**
 	 * Test that hooks are registered correctly
 	 */
 	public function test_orders_registers_correct_hooks() {
-		$hook_manager_mock = $this->createMock( Miguel_Hook_Manager_Interface::class );
+		$hook_manager_mock = $this->createMock( HookManagerInterface::class );
 
 		// Expect the correct hook registrations
 		$hook_manager_mock->expects( $this->exactly( 2 ) )
@@ -250,8 +252,8 @@ class Test_Miguel_Orders_Improved extends Miguel_Test_Case {
 				 ->willReturn( new WP_Error( 'test_error', 'Test error message' ) );
 
 		// Create orders instance without logger (should fall back to Miguel::log)
-		$orders = new Miguel_Orders(
-			new Miguel_Hook_Manager(),
+		$orders = new \Servantes\Miguel\Services\Orders(
+			new \Servantes\Miguel\Utils\HookManager(),
 			$api_mock
 		);
 

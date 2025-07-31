@@ -1,6 +1,16 @@
 <?php
+/**
+ * API client
+ *
+ * @package Miguel
+ */
+
+namespace Servantes\Miguel\Services;
+
+use Servantes\Miguel\Core\Miguel;
+
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
 /**
@@ -8,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @package Miguel
  */
-class Miguel_API {
+class API {
 
 	/**
 	 * URL
@@ -50,11 +60,11 @@ class Miguel_API {
 	 * @param string $book
 	 * @param string $format
 	 * @param array  $args
-	 * @return array|WP_Error
+	 * @return array|\WP_Error
 	 */
 	public function generate( $book, $format, $args ) {
 		if ( ! in_array( $format, array( 'epub', 'mobi', 'pdf', 'audio' ) ) ) {
-			return new WP_Error( 'miguel', __( 'Format is not allowed.', 'miguel' ) );
+			return new \WP_Error( 'miguel', __( 'Format is not allowed.', 'miguel' ) );
 		}
 
 		return $this->post( 'generate_' . $format . '/' . urlencode( $book ), $args );
@@ -64,7 +74,7 @@ class Miguel_API {
 	 * Submit order to Miguel API
 	 *
 	 * @param array $order_data Order data array.
-	 * @return array|WP_Error
+	 * @return array|\WP_Error
 	 */
 	public function submit_order( $order_data ) {
 		$res = $this->post( 'orders', $order_data );
@@ -79,14 +89,14 @@ class Miguel_API {
 
 		Miguel::log( 'Failed to submit order: ' . $res['response']['code'] . ' ' . $res['response']['message'] . ' ' . $res['body'], 'error' );
 
-		return new WP_Error( 'miguel', __( 'Failed to delete order.', 'miguel' ) );
+		return new \WP_Error( 'miguel', __( 'Failed to delete order.', 'miguel' ) );
 	}
 
 	/**
 	 * Delete order from Miguel API
 	 *
 	 * @param string $order_code Order code/ID to delete.
-	 * @return array|WP_Error
+	 * @return array|\WP_Error
 	 */
 	public function delete_order( $order_code ) {
 		$res = $this->delete( 'orders/' . urlencode( $order_code ) );
@@ -101,7 +111,7 @@ class Miguel_API {
 
 		Miguel::log( 'Failed to delete order: ' . $res['response']['code'] . ' ' . $res['response']['message'] . ' ' . $res['body'], 'error' );
 
-		return new WP_Error( 'miguel', __( 'Failed to delete order.', 'miguel' ) );
+		return new \WP_Error( 'miguel', __( 'Failed to delete order.', 'miguel' ) );
 	}
 
 	/**
@@ -109,7 +119,7 @@ class Miguel_API {
 	 *
 	 * @param string $query
 	 * @param array  $body
-	 * @return array|WP_Error
+	 * @return array|\WP_Error
 	 */
 	private function post( $query, $body ) {
 		$data = array(
@@ -131,7 +141,7 @@ class Miguel_API {
 	 * Create DELETE request
 	 *
 	 * @param string $query
-	 * @return array|WP_Error
+	 * @return array|\WP_Error
 	 */
 	private function delete( $query ) {
 		$data = array(

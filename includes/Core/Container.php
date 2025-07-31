@@ -5,6 +5,8 @@
  * @package Miguel
  */
 
+namespace Servantes\Miguel\Core;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -12,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Simple dependency injection container
  */
-class Miguel_Container {
+class Container {
 
 	/**
 	 * Service definitions
@@ -48,7 +50,7 @@ class Miguel_Container {
 	public function get( $name ) {
 		if ( ! isset( $this->instances[ $name ] ) ) {
 			if ( ! isset( $this->services[ $name ] ) ) {
-				throw new Exception( esc_html( "Service {$name} not found" ) );
+				throw new \Exception( esc_html( "Service {$name} not found" ) );
 			}
 			$this->instances[ $name ] = call_user_func( $this->services[ $name ], $this );
 		}

@@ -5,6 +5,8 @@
  * @package Miguel
  */
 
+namespace Servantes\Miguel\Services;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -14,12 +16,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @package Miguel
  */
-class Miguel_File {
+class File {
 
 	/**
 	 * Product
 	 *
-	 * @var WC_Product
+	 * @var \WC_Product
 	 */
 	protected $product;
 
@@ -43,25 +45,25 @@ class Miguel_File {
 	 * @param int $product_id Product ID.
 	 * @param int $download_id Download ID.
 	 *
-	 * @throws Exception If invalid product or any other issue.
+	 * @throws \Exception If invalid product or any other issue.
 	 */
 	public function __construct( $product_id, $download_id ) {
 		$product = wc_get_product( $product_id );
 		if ( ! $product ) {
-			throw new Exception( esc_html__( 'Invalid product.', 'miguel' ) );
+			throw new \Exception( esc_html__( 'Invalid product.', 'miguel' ) );
 		}
 
 		$download_url = $product->get_file_download_path( $download_id );
 		if ( ! $download_url ) {
-			throw new Exception( esc_html__( 'Invalid download url.', 'miguel' ) );
+			throw new \Exception( esc_html__( 'Invalid download url.', 'miguel' ) );
 		}
 
 		$is_valid_url = miguel_starts_with( $download_url, '[miguel' ) || miguel_starts_with( $download_url, '[wosa' );
 		if ( ! $is_valid_url ) {
-			throw new Exception( esc_html__( 'Invalid download url format.', 'miguel' ) );
+			throw new \Exception( esc_html__( 'Invalid download url format.', 'miguel' ) );
 		}
 
-		$this->atts = Miguel_Order_Utils::parse_shortcode_atts( $download_url );
+		$this->atts = OrderUtils::parse_shortcode_atts( $download_url );
 		$this->product = $product;
 		$this->download_id = $download_id;
 	}

@@ -5,6 +5,10 @@
  * @package Miguel
  */
 
+namespace Servantes\Miguel\Utils;
+
+use Servantes\Miguel\Interfaces\HookManagerInterface;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -12,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Manages WordPress hooks registration and cleanup for testability
  */
-class Miguel_Hook_Manager implements Miguel_Hook_Manager_Interface {
+class HookManager implements HookManagerInterface {
 
 	/**
 	 * Array of registered hooks for cleanup
