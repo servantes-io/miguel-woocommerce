@@ -91,7 +91,7 @@ class Miguel {
 		} );
 
 		$this->container->register( 'api', function () {
-			$url = get_option( 'miguel_api_url', 'https://miguel.servantes.cz/v1/' );
+			$url = get_option( 'miguel_api_url', 'https://miguel.servantes.cz/' );
 			$token = get_option( 'miguel_api_key' );
 			return new Miguel_API( $url, $token );
 		} );

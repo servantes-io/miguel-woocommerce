@@ -47,17 +47,13 @@ class Miguel_API {
 	/**
 	 * Generate
 	 *
-	 * @param string $book
-	 * @param string $format
+	 * @param string $product_code
 	 * @param array  $args
 	 * @return array|WP_Error
 	 */
-	public function generate( $book, $format, $args ) {
-		if ( ! in_array( $format, array( 'epub', 'mobi', 'pdf', 'audio' ) ) ) {
-			return new WP_Error( 'miguel', __( 'Format is not allowed.', 'miguel' ) );
-		}
-
-		return $this->post( 'generate_' . $format . '/' . urlencode( $book ), $args );
+	public function generate( $product_code, $args ) {
+		$url = 'v2/product-variants/' . urlencode( $product_code ) . '/watermarked-file';
+		return $this->post( $url, $args );
 	}
 
 	/**
@@ -67,7 +63,7 @@ class Miguel_API {
 	 * @return array|WP_Error
 	 */
 	public function submit_order( $order_data ) {
-		$res = $this->post( 'orders', $order_data );
+		$res = $this->post( 'v1/orders', $order_data );
 
 		if ( is_wp_error( $res ) ) {
 			return $res;
@@ -89,7 +85,7 @@ class Miguel_API {
 	 * @return array|WP_Error
 	 */
 	public function delete_order( $order_code ) {
-		$res = $this->delete( 'orders/' . urlencode( $order_code ) );
+		$res = $this->delete( 'v1/orders/' . urlencode( $order_code ) );
 
 		if ( is_wp_error( $res ) ) {
 			return $res;
@@ -116,11 +112,7 @@ class Miguel_API {
 			'method' => 'POST',
 			'timeout' => 180,
 			'user-agent' => $this->user_agent(),
-			'headers' => array(
-				'Content-Type' => 'application/json; charset=utf-8',
-				'Authorization' => 'Bearer ' . $this->token,
-				'Accept-Language' => get_user_locale(),
-			),
+			'headers' => $this->get_headers(),
 			'body' => wp_json_encode( $body ),
 		);
 
@@ -138,13 +130,18 @@ class Miguel_API {
 			'method' => 'DELETE',
 			'timeout' => 180,
 			'user-agent' => $this->user_agent(),
-			'headers' => array(
-				'Authorization' => 'Bearer ' . $this->token,
-				'Accept-Language' => get_user_locale(),
-			),
+			'headers' => $this->get_headers(),
 		);
 
 		return wp_remote_request( $this->get_url() . $query, $data );
+	}
+
+	private function get_headers() {
+		return array(
+			'Content-Type' => 'application/json; charset=utf-8',
+			'Authorization' => 'Bearer ' . $this->token,
+			'Accept-Language' => get_user_locale(),
+		);
 	}
 
 	private function user_agent() {

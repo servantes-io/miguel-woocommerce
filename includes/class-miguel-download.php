@@ -136,7 +136,7 @@ class Miguel_Download {
 	 * @throws Exception If request is invalid.
 	 */
 	public function serve( $file, $order, $item ) {
-		$request = new Miguel_Request( $order, $item );
+		$request = new Miguel_Request( $order, $item, $file->get_format() );
 		if ( ! $request->is_valid() ) {
 			call_user_func( $this->error_handler, esc_html__( 'Invalid request.', 'miguel' ) );
 			return;
@@ -152,7 +152,7 @@ class Miguel_Download {
 	 * @param Miguel_Request $request
 	 */
 	public function serve_file( $file, $request ) {
-		$response = $this->api->generate( $file->get_name(), $file->get_format(), $request->to_array() );
+		$response = $this->api->generate( $file->get_name(), $request->to_array() );
 
 		if ( is_wp_error( $response ) ) {
 			call_user_func( $this->error_handler, esc_html( $response->get_error_message() ) );
@@ -165,14 +165,19 @@ class Miguel_Download {
 			return;
 		}
 
-		if ( property_exists( $json, 'reason' ) && $json->reason ) {
+		if ( property_exists( $json, 'title' ) && $json->title ) {
+			$title = $json->title;
+			$detail = property_exists( $json, 'detail' ) ? $json->detail : null;
+			call_user_func( $this->error_handler, esc_html( $title ), esc_html( $detail ) );
+			return;
+		} elseif ( property_exists( $json, 'reason' ) && $json->reason ) {
 			call_user_func( $this->error_handler, esc_html( $json->reason ) );
 			return;
 		} elseif ( property_exists( $json, 'error' ) && $json->error ) {
 			call_user_func( $this->error_handler, esc_html( $json->error . ': ' . $json->message ) );
 			return;
-		} elseif ( property_exists( $json, 'download_url' ) ) {
-			$url = $json->download_url;
+		} elseif ( property_exists( $json, 'downloadUrl' ) ) {
+			$url = $json->downloadUrl;
 			call_user_func( $this->redirect_handler, $url );
 			return;
 		} else {

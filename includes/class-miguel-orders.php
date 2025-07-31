@@ -207,7 +207,7 @@ class Miguel_Orders {
 		return array(
 			'code' => strval( $order->get_id() ),
 			'eshop_id' => strval( $order->get_id() ),
-			'user' => Miguel_Order_Utils::get_user_data_for_order( $order, true ),
+			'user' => Miguel_Order_Utils::get_user_data_for_order_v1( $order, true ),
 			'products' => $products,
 			'currency_code' => $order->get_currency(),
 			'purchase_date' => Miguel_Order_Utils::get_purchase_date_for_order( $order ),
