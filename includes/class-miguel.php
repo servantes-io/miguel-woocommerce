@@ -39,13 +39,6 @@ class Miguel {
 	private $hook_manager;
 
 	/**
-	 * Log
-	 *
-	 * @var WC_Logger
-	 */
-	public static $log = null;
-
-	/**
 	 * Get instance
 	 *
 	 * @return Miguel
@@ -86,7 +79,6 @@ class Miguel {
 
 		if ( is_admin() ) {
 			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-admin.php';
-			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php';
 		}
 	}
 
@@ -114,23 +106,19 @@ class Miguel {
 		$this->container->register( 'orders', function ( $container ) {
 			return new Miguel_Orders(
 				$container->get( 'hook_manager' ),
-				$container->get( 'api' ),
-				$container->get( 'logger' )
+				$container->get( 'api' )
 			);
 		} );
 
-		$this->container->register( 'logger', function () {
-			return new WC_Logger();
-		} );
-
 		$this->container->register( 'settings', function ( $container ) {
+			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php';
 			return new Miguel_Settings( $container->get( 'hook_manager' ) );
 		} );
 
 		$this->container->register( 'admin', function ( $container ) {
 			return new Miguel_Admin(
 				$container->get( 'hook_manager' ),
-				$container->get( 'settings' )
+				$container
 			);
 		} );
 	}
@@ -159,7 +147,6 @@ class Miguel {
 
 			// Initialize admin services only in admin context
 			if ( is_admin() ) {
-				$this->container->get( 'settings' )->register_hooks();
 				$this->container->get( 'admin' )->register_hooks();
 			}
 		}
@@ -179,10 +166,7 @@ class Miguel {
 	 * @param string $type    Type.
 	 */
 	public static function log( $message, $type = 'info' ) {
-		if ( is_null( self::$log ) ) {
-			self::$log = new WC_Logger();
-		}
-		self::$log->add( 'miguel', strtoupper( $type ) . ' ' . $message );
+		wc_get_logger()->log( $type, $message, array( 'source' => 'miguel' ) );
 	}
 
 	/**

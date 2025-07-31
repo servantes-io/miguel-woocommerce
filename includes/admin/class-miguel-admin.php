@@ -18,21 +18,20 @@ class Miguel_Admin {
 	private $hook_manager;
 
 	/**
-	 * Settings page instance
+	 * Container instance
 	 *
-	 * @var Miguel_Settings
+	 * @var Miguel_Container
 	 */
-	private $settings_page;
+	private $container;
 
 	/**
 	 * Initialize with dependency injection
 	 *
 	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager for registering actions.
-	 * @param Miguel_Settings     $settings_page Settings page instance.
 	 */
-	public function __construct( Miguel_Hook_Manager_Interface $hook_manager, Miguel_Settings $settings_page ) {
+	public function __construct( Miguel_Hook_Manager_Interface $hook_manager, Miguel_Container $container ) {
 		$this->hook_manager  = $hook_manager;
-		$this->settings_page = $settings_page;
+		$this->container = $container;
 	}
 
 	/**
@@ -58,7 +57,7 @@ class Miguel_Admin {
 	 * @return array
 	 */
 	public function add_settings_pages( $pages ) {
-		$pages[] = $this->settings_page;
+		$pages[] = $this->container->get( 'settings' );
 		return $pages;
 	}
 }

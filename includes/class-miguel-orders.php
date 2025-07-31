@@ -31,23 +31,14 @@ class Miguel_Orders {
 	private $api;
 
 	/**
-	 * Logger instance
-	 *
-	 * @var WC_Logger
-	 */
-	private $logger;
-
-	/**
 	 * Constructor with dependency injection
 	 *
 	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager for registering actions.
 	 * @param Miguel_API          $api          API instance for order sync.
-	 * @param WC_Logger|null      $logger       Logger instance for logging.
 	 */
-	public function __construct( Miguel_Hook_Manager_Interface $hook_manager, Miguel_API $api, WC_Logger $logger ) {
+	public function __construct( Miguel_Hook_Manager_Interface $hook_manager, Miguel_API $api ) {
 		$this->hook_manager = $hook_manager;
 		$this->api          = $api;
-		$this->logger       = $logger;
 	}
 
 	/**
@@ -139,9 +130,9 @@ class Miguel_Orders {
 			$response = $this->api->delete_order( strval( $order_id ) );
 
 			if ( is_wp_error( $response ) ) {
-				$this->log( 'Failed to delete order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
+				Miguel::log( 'Failed to delete order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
 			} else {
-				$this->log( 'Successfully deleted order ' . $order_id . ' from Miguel API', 'info' );
+				Miguel::log( 'Successfully deleted order ' . $order_id . ' from Miguel API', 'info' );
 				$this->store_order_hash( $order, 'delete' );
 			}
 		} else {
@@ -158,9 +149,9 @@ class Miguel_Orders {
 			$response = $this->api->submit_order( $order_data );
 
 			if ( is_wp_error( $response ) ) {
-				$this->log( 'Failed to sync order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
+				Miguel::log( 'Failed to sync order ' . $order_id . ': ' . $response->get_error_message(), 'error' );
 			} else {
-				$this->log( 'Successfully synced order ' . $order_id . ' with Miguel API', 'info' );
+				Miguel::log( 'Successfully synced order ' . $order_id . ' with Miguel API', 'info' );
 				$this->store_order_hash( $order, 'sync' );
 			}
 		}
@@ -237,19 +228,5 @@ class Miguel_Orders {
 
 		// Re-sync the order with updated data
 		$this->sync_order( $order_id, '', $order->get_status(), $order );
-	}
-
-	/**
-	 * Log message with fallback
-	 *
-	 * @param string $message Message to log.
-	 * @param string $type    Log type (info, error, etc.).
-	 */
-	private function log( $message, $type = 'info' ) {
-		if ( $this->logger ) {
-			$this->logger->add( 'miguel', strtoupper( $type ) . ' ' . $message );
-		} else {
-			Miguel::log( $message, $type );
-		}
 	}
 }
