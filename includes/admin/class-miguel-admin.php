@@ -58,12 +58,7 @@ class Miguel_Admin {
 	 * @return array
 	 */
 	public function add_settings_pages( $pages ) {
-		if ( $this->settings_page ) {
-			$pages[] = $this->settings_page;
-		} else {
-			// Fallback for backward compatibility
-			$pages[] = include dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php';
-		}
+		$pages[] = $this->settings_page;
 		return $pages;
 	}
 }
