@@ -5,6 +5,7 @@
  * @package Miguel
  */
 
+define( 'MIGUEL_TESTS', true );
 define( 'MIGUEL_PROJECT_DIR', dirname( __DIR__ ));
 $_tests_dir = getenv( 'WP_TESTS_DIR' );
 
@@ -35,11 +36,6 @@ function _manually_load_plugin() {
 
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
-// Plugin helpers
-require_once MIGUEL_PROJECT_DIR . '/tests/helpers/class-miguel-helper-http.php';
-require_once MIGUEL_PROJECT_DIR . '/tests/helpers/class-miguel-helper-order.php';
-require_once MIGUEL_PROJECT_DIR . '/tests/helpers/class-miguel-helper-product.php';
-
 // WooCommerce helpers
 if ( file_exists(MIGUEL_WC_DIR . '/tests/legacy/bootstrap.php') ) {
 	require_once MIGUEL_WC_DIR . '/tests/legacy/bootstrap.php';
@@ -49,3 +45,9 @@ if ( file_exists(MIGUEL_WC_DIR . '/tests/legacy/bootstrap.php') ) {
 
 // Start up the WP testing environment.
 require_once $_tests_dir . '/includes/bootstrap.php';
+
+// Plugin helpers
+require_once MIGUEL_PROJECT_DIR . '/tests/helpers/class-miguel-helper-http.php';
+require_once MIGUEL_PROJECT_DIR . '/tests/helpers/class-miguel-helper-order.php';
+require_once MIGUEL_PROJECT_DIR . '/tests/helpers/class-miguel-helper-product.php';
+require_once MIGUEL_PROJECT_DIR . '/tests/helpers/class-miguel-test-case.php';

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+Released YYYY-MM-DD
+
+* Added automatic order synchronization with Miguel API
+* Orders are now automatically sent to Miguel when created, paid, or status changes
+* Only orders containing Miguel digital products are synchronized
+
 ## 1.3.0
 
 Released YYYY-MM-DD
