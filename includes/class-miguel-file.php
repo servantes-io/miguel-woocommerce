@@ -64,6 +64,10 @@ class Miguel_File {
 		$this->atts = Miguel_Order_Utils::parse_shortcode_atts( $download_url );
 		$this->product = $product;
 		$this->download_id = $download_id;
+
+		if ( ! in_array( $this->get_format(), array( 'epub', 'mobi', 'pdf', 'audio' ) ) ) {
+			throw new Exception( esc_html__( 'Format is not allowed.', 'miguel' ) );
+		}
 	}
 
 	/**

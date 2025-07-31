@@ -32,14 +32,23 @@ class Miguel_Request {
 	protected $item;
 
 	/**
+	 * Format
+	 *
+	 * @var string
+	 */
+	protected $format;
+
+	/**
 	 * Constructor
 	 *
 	 * @param WC_Order              $order
 	 * @param WC_Order_Item_Product $item
+	 * @param string                $format
 	 */
-	public function __construct( $order, $item ) {
+	public function __construct( $order, $item, $format ) {
 		$this->order = $order;
 		$this->item = $item;
+		$this->format = $format;
 
 		$user_id = $order->get_user_id();
 		if ( $user_id > 0 ) {
@@ -105,7 +114,8 @@ class Miguel_Request {
 			return null;
 		}
 
-		return $paid_date->format( DateTime::ATOM );
+		$paid_date->setTimezone( new DateTimeZone( 'UTC' ) );
+		return $paid_date->format( 'Y-m-d\TH:i:s.u\Z' );
 	}
 
 	/**
@@ -133,12 +143,14 @@ class Miguel_Request {
 	 */
 	public function to_array() {
 		return array(
-			'user' => Miguel_Order_Utils::get_user_data_for_order( $this->order ),
-			'order_code' => strval( $this->get_order_id() ),
-			'sold_price' => $this->order->get_item_total( $this->item, false, false ), // calculate price after discounts, before tax
-			'currency_code' => $this->order->get_currency(),
-			'purchase_date' => $this->get_purchase_date(),
-			'result' => 'download_link',
+			'target' => $this->format,
+			'userInfo' => Miguel_Order_Utils::get_user_data_for_order_v2( $this->order ),
+			'purchaseDate' => $this->get_purchase_date(),
+			'orderInfo' => array(
+				'code' => strval( $this->get_order_id() ),
+				'soldPrice' => $this->order->get_item_total( $this->item, false, false ), // calculate price after discounts, before tax
+				'currencyCode' => $this->order->get_currency(),
+			),
 		);
 	}
 }
