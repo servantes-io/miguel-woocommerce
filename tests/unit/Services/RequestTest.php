@@ -1,10 +1,13 @@
 <?php
 /**
- * Test Generate Request
+ * Test Request functionality
  *
- * @package Miguel\Tests
+ * @package Miguel\Tests\Services
  */
-class Miguel_Test_Request extends Miguel_Test_Case {
+
+use Servantes\Miguel\Services\Request;
+
+class RequestTest extends Miguel_Test_Case {
 	/**
 	 * Test get_args(), guest
 	 */
@@ -26,7 +29,7 @@ class Miguel_Test_Request extends Miguel_Test_Case {
 			'result' => 'download_link',
 		);
 
-		$sut = new Miguel_Request( $order, array_values($order->get_items())[0] );
+		$sut = new Request( $order, array_values($order->get_items())[0] );
 
 		$this->assertEquals( $want, $sut->to_array() );
 
@@ -63,7 +66,7 @@ class Miguel_Test_Request extends Miguel_Test_Case {
 			'result' => 'download_link',
 		);
 
-		$sut = new Miguel_Request( $order, array_values($order->get_items())[0] );
+		$sut = new Request( $order, array_values($order->get_items())[0] );
 
 		$this->assertEquals( $want, $sut->to_array() );
 
@@ -76,7 +79,7 @@ class Miguel_Test_Request extends Miguel_Test_Case {
 	 */
 	public function test_is_valid(): void {
 		$order = Miguel_Helper_Order::create_order();
-		$sut = new Miguel_Request( $order, array_values($order->get_items())[0] );
+		$sut = new Request( $order, array_values($order->get_items())[0] );
 
 		$this->assertEquals( true, $sut->is_valid() );
 

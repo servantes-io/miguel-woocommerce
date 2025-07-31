@@ -2,9 +2,12 @@
 /**
  * Test API
  *
- * @package Miguel\Tests
+ * @package Miguel\Tests\Services
  */
-class Miguel_Test_API extends WP_UnitTestCase {
+
+use Servantes\Miguel\Services\API;
+
+class APITest extends WP_UnitTestCase {
 
 	/**
 	 * Setup.
@@ -13,7 +16,7 @@ class Miguel_Test_API extends WP_UnitTestCase {
 		parent::setUp();
 
 		$this->token = '1a2b3c4d5e6f7g8h9';
-		$this->sut = new Miguel_API( 'https://miguel.servantes.cz/v1/', $this->token );
+		$this->sut = new API( 'https://miguel.servantes.cz/v1/', $this->token );
 	}
 
 	/**

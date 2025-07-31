@@ -1,17 +1,22 @@
 <?php
 /**
- * Improved tests for Miguel Download functionality with dependency injection
+ * Test Download functionality with dependency injection
  *
- * @package Miguel\Tests
+ * @package Miguel\Tests\Services
  */
 
-class Test_Miguel_Download_Improved extends Miguel_Test_Case {
+use Servantes\Miguel\Interfaces\HookManagerInterface;
+use Servantes\Miguel\Services\API;
+use Servantes\Miguel\Services\File;
+use Servantes\Miguel\Services\Request;
+
+class DownloadTest extends Miguel_Test_Case {
 
 	/**
 	 * Test that hooks are registered correctly
 	 */
 	public function test_download_registers_correct_hooks() {
-		$hook_manager_mock = $this->createMock( Miguel_Hook_Manager_Interface::class );
+		$hook_manager_mock = $this->createMock( HookManagerInterface::class );
 
 		// Expect the correct hook registration
 		$hook_manager_mock->expects( $this->once() )
@@ -58,7 +63,7 @@ class Test_Miguel_Download_Improved extends Miguel_Test_Case {
 			$error_messages[] = $message;
 		};
 
-		$file_mock = $this->createMock( Miguel_File::class );
+		$file_mock = $this->createMock( File::class );
 		$file_mock->method( 'is_valid' )->willReturn( false );
 
 		$file_factory = function( $product_id, $download_id ) use ( $file_mock ) {
@@ -86,14 +91,14 @@ class Test_Miguel_Download_Improved extends Miguel_Test_Case {
 		};
 
 		// Mock API response with download URL
-		$api_mock = $this->createMock( Miguel_API::class );
+		$api_mock = $this->createMock( API::class );
 		$api_response = $this->create_mock_api_response([
 			'download_url' => 'https://example.com/download/file.pdf'
 		]);
 		$api_mock->method( 'generate' )->willReturn( $api_response );
 
 		// Mock file
-		$file_mock = $this->createMock( Miguel_File::class );
+		$file_mock = $this->createMock( File::class );
 		$file_mock->method( 'is_valid' )->willReturn( true );
 		$file_mock->method( 'get_name' )->willReturn( 'test-file' );
 		$file_mock->method( 'get_format' )->willReturn( 'pdf' );
@@ -103,7 +108,7 @@ class Test_Miguel_Download_Improved extends Miguel_Test_Case {
 		};
 
 		// Mock request
-		$request_mock = $this->createMock( Miguel_Request::class );
+		$request_mock = $this->createMock( Request::class );
 		$request_mock->method( 'is_valid' )->willReturn( true );
 		$request_mock->method( 'to_array' )->willReturn( [ 'test' => 'data' ] );
 
@@ -120,7 +125,7 @@ class Test_Miguel_Download_Improved extends Miguel_Test_Case {
 		] );
 
 		// For this test, let's directly test serve_file method
-		$request_mock = $this->createMock( Miguel_Request::class );
+		$request_mock = $this->createMock( Request::class );
 		$request_mock->method( 'to_array' )->willReturn( [ 'test' => 'data' ] );
 
 		$download->serve_file( $file_mock, $request_mock );
@@ -139,16 +144,16 @@ class Test_Miguel_Download_Improved extends Miguel_Test_Case {
 		};
 
 		// Mock API to return error
-		$api_mock = $this->createMock( Miguel_API::class );
+		$api_mock = $this->createMock( API::class );
 		$api_mock->method( 'generate' )->willReturn( new WP_Error( 'api_error', 'API connection failed' ) );
 
 		// Mock file
-		$file_mock = $this->createMock( Miguel_File::class );
+		$file_mock = $this->createMock( File::class );
 		$file_mock->method( 'get_name' )->willReturn( 'test-file' );
 		$file_mock->method( 'get_format' )->willReturn( 'pdf' );
 
 		// Mock request
-		$request_mock = $this->createMock( Miguel_Request::class );
+		$request_mock = $this->createMock( Request::class );
 		$request_mock->method( 'to_array' )->willReturn( [ 'test' => 'data' ] );
 
 		$download = $this->create_service_with_mocks( 'Miguel_Download', [
@@ -172,7 +177,7 @@ class Test_Miguel_Download_Improved extends Miguel_Test_Case {
 		};
 
 		// Mock API to return invalid JSON
-		$api_mock = $this->createMock( Miguel_API::class );
+		$api_mock = $this->createMock( API::class );
 		$api_response = [
 			'body'     => 'invalid json content',
 			'response' => [ 'code' => 200 ],
@@ -180,12 +185,12 @@ class Test_Miguel_Download_Improved extends Miguel_Test_Case {
 		$api_mock->method( 'generate' )->willReturn( $api_response );
 
 		// Mock file
-		$file_mock = $this->createMock( Miguel_File::class );
+		$file_mock = $this->createMock( File::class );
 		$file_mock->method( 'get_name' )->willReturn( 'test-file' );
 		$file_mock->method( 'get_format' )->willReturn( 'pdf' );
 
 		// Mock request
-		$request_mock = $this->createMock( Miguel_Request::class );
+		$request_mock = $this->createMock( Request::class );
 		$request_mock->method( 'to_array' )->willReturn( [ 'test' => 'data' ] );
 
 		$download = $this->create_service_with_mocks( 'Miguel_Download', [

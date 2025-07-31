@@ -1,6 +1,14 @@
 <?php
+/**
+ * Request
+ *
+ * @package Miguel
+ */
+
+namespace Servantes\Miguel\Services;
+
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
 /**
@@ -8,34 +16,34 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @package Miguel
  */
-class Miguel_Request {
+class Request {
 
 	/**
 	 * Order
 	 *
-	 * @var WC_Order
+	 * @var \WC_Order
 	 */
 	protected $order;
 
 	/**
 	 * User
 	 *
-	 * @var WP_User|false
+	 * @var \WP_User|false
 	 */
 	protected $user;
 
 	/**
 	 * Item
 	 *
-	 * @var WC_Order_Item_Product
+	 * @var \WC_Order_Item_Product
 	 */
 	protected $item;
 
 	/**
 	 * Constructor
 	 *
-	 * @param WC_Order              $order
-	 * @param WC_Order_Item_Product $item
+	 * @param \WC_Order              $order
+	 * @param \WC_Order_Item_Product $item
 	 */
 	public function __construct( $order, $item ) {
 		$this->order = $order;
@@ -55,7 +63,7 @@ class Miguel_Request {
 	 * @return string
 	 */
 	public function get_id() {
-		return Miguel_Order_Utils::get_user_id_for_order( $this->order );
+		return OrderUtils::get_user_id_for_order( $this->order );
 	}
 
 	/**
@@ -73,7 +81,7 @@ class Miguel_Request {
 	 * @return string
 	 */
 	public function get_email() {
-		return Miguel_Order_Utils::get_email_for_order( $this->order );
+		return OrderUtils::get_email_for_order( $this->order );
 	}
 
 	/**
@@ -82,7 +90,7 @@ class Miguel_Request {
 	 * @return string
 	 */
 	public function get_full_name() {
-		return Miguel_Order_Utils::get_full_name_for_order( $this->order );
+		return OrderUtils::get_full_name_for_order( $this->order );
 	}
 
 	/**
@@ -91,7 +99,7 @@ class Miguel_Request {
 	 * @return string
 	 */
 	public function get_address() {
-		return Miguel_Order_Utils::get_address_for_order( $this->order );
+		return OrderUtils::get_address_for_order( $this->order );
 	}
 
 	/**
@@ -105,7 +113,7 @@ class Miguel_Request {
 			return null;
 		}
 
-		return $paid_date->format( DateTime::ATOM );
+		return $paid_date->format( \DateTime::ATOM );
 	}
 
 	/**
@@ -114,7 +122,7 @@ class Miguel_Request {
 	 * @return string
 	 */
 	public function get_language() {
-		return Miguel_Order_Utils::get_language_for_order( $this->order );
+		return OrderUtils::get_language_for_order( $this->order );
 	}
 
 	/**
@@ -133,7 +141,7 @@ class Miguel_Request {
 	 */
 	public function to_array() {
 		return array(
-			'user' => Miguel_Order_Utils::get_user_data_for_order( $this->order ),
+			'user' => OrderUtils::get_user_data_for_order( $this->order ),
 			'order_code' => strval( $this->get_order_id() ),
 			'sold_price' => $this->order->get_item_total( $this->item, false, false ), // calculate price after discounts, before tax
 			'currency_code' => $this->order->get_currency(),

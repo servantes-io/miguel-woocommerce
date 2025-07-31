@@ -1,6 +1,14 @@
 <?php
+/**
+ * Installation
+ *
+ * @package Miguel
+ */
+
+namespace Servantes\Miguel\Core;
+
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
 /**
@@ -8,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @package Miguel
  */
-class Miguel_Install {
+class Install {
 
 	/**
 	 * Update plugin version.

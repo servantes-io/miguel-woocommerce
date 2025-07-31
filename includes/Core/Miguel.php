@@ -1,4 +1,21 @@
 <?php
+/**
+ * The main class
+ *
+ * @package Miguel
+ */
+
+namespace Servantes\Miguel\Core;
+
+use Servantes\Miguel\Interfaces\HookManagerInterface;
+use Servantes\Miguel\Utils\HookManager;
+use Servantes\Miguel\Services\API;
+use Servantes\Miguel\Services\Download;
+use Servantes\Miguel\Services\Orders;
+use Servantes\Miguel\Admin\Settings;
+use Servantes\Miguel\Admin\Admin;
+use Servantes\Miguel\Core\Install;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -27,21 +44,21 @@ class Miguel {
 	/**
 	 * Container for dependency injection
 	 *
-	 * @var Miguel_Container
+	 * @var Container
 	 */
 	private $container;
 
 	/**
 	 * Hook manager for centralized hook registration
 	 *
-	 * @var Miguel_Hook_Manager_Interface
+	 * @var HookManagerInterface
 	 */
 	private $hook_manager;
 
 	/**
 	 * Log
 	 *
-	 * @var WC_Logger
+	 * @var \WC_Logger
 	 */
 	public static $log = null;
 
@@ -61,33 +78,10 @@ class Miguel {
 	 * Initialize.
 	 */
 	public function __construct() {
-		$this->includes();
-		$this->container = new Miguel_Container();
-		$this->hook_manager = new Miguel_Hook_Manager();
+		$this->container = new Container();
+		$this->hook_manager = new HookManager();
 		$this->register_services();
 		$this->init_hooks();
-	}
-
-	/**
-	 * Includes required files.
-	 */
-	public function includes() {
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/interface-miguel-hook-manager.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-hook-manager.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-container.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/miguel-functions.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-api.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-file.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-install.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-utils.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-request.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-download.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-orders.php';
-
-		if ( is_admin() ) {
-			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-admin.php';
-			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php';
-		}
 	}
 
 	/**
@@ -101,18 +95,18 @@ class Miguel {
 		$this->container->register( 'api', function () {
 			$url = get_option( 'miguel_api_url', 'https://miguel.servantes.cz/v1/' );
 			$token = get_option( 'miguel_api_key' );
-			return new Miguel_API( $url, $token );
+			return new API( $url, $token );
 		} );
 
 		$this->container->register( 'download', function ( $container ) {
-			return new Miguel_Download(
+			return new Download(
 				$container->get( 'hook_manager' ),
 				$container->get( 'api' )
 			);
 		} );
 
 		$this->container->register( 'orders', function ( $container ) {
-			return new Miguel_Orders(
+			return new Orders(
 				$container->get( 'hook_manager' ),
 				$container->get( 'api' ),
 				$container->get( 'logger' )
@@ -120,15 +114,15 @@ class Miguel {
 		} );
 
 		$this->container->register( 'logger', function () {
-			return new WC_Logger();
+			return new \WC_Logger();
 		} );
 
 		$this->container->register( 'settings', function ( $container ) {
-			return new Miguel_Settings( $container->get( 'hook_manager' ) );
+			return new Settings( $container->get( 'hook_manager' ) );
 		} );
 
 		$this->container->register( 'admin', function ( $container ) {
-			return new Miguel_Admin(
+			return new Admin(
 				$container->get( 'hook_manager' ),
 				$container->get( 'settings' )
 			);
@@ -139,7 +133,7 @@ class Miguel {
 	 * Inits hooks.
 	 */
 	public function init_hooks() {
-		register_activation_hook( MIGUEL_PLUGIN_FILE, array( 'Miguel_Install', 'install' ) );
+		register_activation_hook( MIGUEL_PLUGIN_FILE, array( Install::class, 'install' ) );
 		$this->hook_manager->add_action( 'init', array( $this, 'init' ) );
 
 		// Add links to plugins page.
@@ -180,7 +174,7 @@ class Miguel {
 	 */
 	public static function log( $message, $type = 'info' ) {
 		if ( is_null( self::$log ) ) {
-			self::$log = new WC_Logger();
+			self::$log = new \WC_Logger();
 		}
 		self::$log->add( 'miguel', strtoupper( $type ) . ' ' . $message );
 	}
@@ -214,7 +208,7 @@ class Miguel {
 	/**
 	 * Get the service container
 	 *
-	 * @return Miguel_Container
+	 * @return Container
 	 */
 	public function get_container() {
 		return $this->container;
@@ -223,7 +217,7 @@ class Miguel {
 	/**
 	 * Get the hook manager
 	 *
-	 * @return Miguel_Hook_Manager_Interface
+	 * @return HookManagerInterface
 	 */
 	public function get_hook_manager() {
 		return $this->hook_manager;

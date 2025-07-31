@@ -5,6 +5,10 @@
  * @package Miguel
  */
 
+namespace Servantes\Miguel\Services;
+
+use Servantes\Miguel\Interfaces\HookManagerInterface;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -14,19 +18,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @package Miguel
  */
-class Miguel_Download {
+class Download {
 
 	/**
 	 * Hook manager instance
 	 *
-	 * @var Miguel_Hook_Manager_Interface
+	 * @var HookManagerInterface
 	 */
 	private $hook_manager;
 
 	/**
 	 * API instance
 	 *
-	 * @var Miguel_API
+	 * @var API
 	 */
 	private $api;
 
@@ -54,15 +58,15 @@ class Miguel_Download {
 	/**
 	 * Constructor with dependency injection
 	 *
-	 * @param Miguel_Hook_Manager_Interface $hook_manager    Hook manager for registering actions.
-	 * @param Miguel_API          $api             API instance for file generation.
-	 * @param callable            $file_factory    Function to get file (default: miguel_get_file).
-	 * @param callable            $error_handler   Function to handle errors (default: wp_die).
-	 * @param callable            $redirect_handler Function to handle redirects (default: wp_redirect + exit).
+	 * @param HookManagerInterface $hook_manager    Hook manager for registering actions.
+	 * @param API                  $api             API instance for file generation.
+	 * @param callable             $file_factory    Function to get file (default: miguel_get_file).
+	 * @param callable             $error_handler   Function to handle errors (default: wp_die).
+	 * @param callable             $redirect_handler Function to handle redirects (default: wp_redirect + exit).
 	 */
 	public function __construct(
-		Miguel_Hook_Manager_Interface $hook_manager,
-		Miguel_API $api,
+		HookManagerInterface $hook_manager,
+		API $api,
 		$file_factory = null,
 		$error_handler = null,
 		$redirect_handler = null
@@ -122,7 +126,7 @@ class Miguel_Download {
 			$item = $this->get_item( $order, $download_id );
 
 			$this->serve( $file, $order, $item );
-		} catch ( Exception $e ) {
+		} catch ( \Exception $e ) {
 			call_user_func( $this->error_handler, esc_html( $e->getMessage() ) );
 		}
 	}
@@ -130,13 +134,13 @@ class Miguel_Download {
 	/**
 	 * Serve
 	 *
-	 * @param Miguel_File           $file
-	 * @param WC_Order              $order
-	 * @param WC_Order_Item_Product $item
-	 * @throws Exception If request is invalid.
+	 * @param File                       $file
+	 * @param \WC_Order                  $order
+	 * @param \WC_Order_Item_Product     $item
+	 * @throws \Exception If request is invalid.
 	 */
 	public function serve( $file, $order, $item ) {
-		$request = new Miguel_Request( $order, $item );
+		$request = new Request( $order, $item );
 		if ( ! $request->is_valid() ) {
 			call_user_func( $this->error_handler, esc_html__( 'Invalid request.', 'miguel' ) );
 			return;
@@ -148,8 +152,8 @@ class Miguel_Download {
 	/**
 	 * Serve file
 	 *
-	 * @param Miguel_File    $file
-	 * @param Miguel_Request $request
+	 * @param File    $file
+	 * @param Request $request
 	 */
 	public function serve_file( $file, $request ) {
 		$response = $this->api->generate( $file->get_name(), $file->get_format(), $request->to_array() );
@@ -184,7 +188,7 @@ class Miguel_Download {
 	/**
 	 * Get hook manager (for testing purposes)
 	 *
-	 * @return Miguel_Hook_Manager_Interface|null
+	 * @return HookManagerInterface|null
 	 */
 	public function get_hook_manager() {
 		return $this->hook_manager;
@@ -193,14 +197,14 @@ class Miguel_Download {
 	/**
 	 * Get item
 	 *
-	 * @param WC_Order $order
-	 * @param int      $download_id
+	 * @param \WC_Order $order
+	 * @param int       $download_id
 	 *
-	 * @return WC_Order_Item_Product|null
+	 * @return \WC_Order_Item_Product|null
 	 */
 	protected function get_item( $order, $download_id ) {
 		foreach ( $order->get_items() as $item_id => $item ) {
-			if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
+			if ( ! ( $item instanceof \WC_Order_Item_Product ) ) {
 				continue;
 			}
 

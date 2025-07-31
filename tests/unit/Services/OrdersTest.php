@@ -1,14 +1,16 @@
 <?php
 /**
- * Test Miguel Orders functionality
+ * Test Orders functionality
  *
- * @package Miguel\Tests
+ * @package Miguel\Tests\Services
  */
 
-class Test_Miguel_Orders extends Miguel_Test_Case {
+use Servantes\Miguel\Services\API;
+
+class OrdersTest extends Miguel_Test_Case {
 	private function get_sut() {
 		return $this->create_service_with_mocks( 'Miguel_Orders', [
-			'api' => new Miguel_API( 'https://example.com/api/', 'test-token' ),
+			'api' => new API( 'https://example.com/api/', 'test-token' ),
 		] );
 	}
 
@@ -253,7 +255,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 			),
 		));
 
-		$api = new Miguel_API( 'https://example.com/api/', 'test-token' );
+		$api = new API( 'https://example.com/api/', 'test-token' );
 		$result = $api->delete_order( '123' );
 
 		// Should return the response array, not WP_Error
@@ -280,7 +282,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 			),
 		));
 
-		$api = new Miguel_API( 'https://example.com/api/', 'test-token' );
+		$api = new API( 'https://example.com/api/', 'test-token' );
 		$result = $api->delete_order( '123' );
 
 		// Should return the response array (404 is acceptable for DELETE)
@@ -301,7 +303,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 			),
 		));
 
-		$api = new Miguel_API( 'https://example.com/api/', 'test-token' );
+		$api = new API( 'https://example.com/api/', 'test-token' );
 		$result = $api->delete_order( '123' );
 
 		// Should return WP_Error for non-200/404 responses
@@ -321,7 +323,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 			),
 		));
 
-		$api = new Miguel_API( 'https://example.com/api/', 'test-token' );
+		$api = new API( 'https://example.com/api/', 'test-token' );
 		$order_data = array(
 			'code' => '123',
 			'products' => array(),
@@ -352,7 +354,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 			),
 		));
 
-		$api = new Miguel_API( 'https://example.com/api/', 'test-token' );
+		$api = new API( 'https://example.com/api/', 'test-token' );
 		$order_data = array(
 			'code' => '123',
 			'products' => array(),

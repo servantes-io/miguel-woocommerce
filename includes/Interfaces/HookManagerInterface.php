@@ -5,6 +5,8 @@
  * @package Miguel
  */
 
+namespace Servantes\Miguel\Interfaces;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -12,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Interface for hook managers to enable dependency injection and better testability
  */
-interface Miguel_Hook_Manager_Interface {
+interface HookManagerInterface {
 
 	/**
 	 * Add action hook with tracking for cleanup

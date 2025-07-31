@@ -1,10 +1,10 @@
 <?php
 /**
- * Test functions
+ * Test utility functions
  *
- * @package Miguel\Tests
+ * @package Miguel\Tests\Utils
  */
-class Miguel_Test_Functions extends WP_UnitTestCase {
+class FunctionsTest extends WP_UnitTestCase {
 
 	/**
 	 * Data provider for starts_with().

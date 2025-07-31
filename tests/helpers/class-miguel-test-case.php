@@ -5,6 +5,14 @@
  * @package Miguel\Tests
  */
 
+use Servantes\Miguel\Core\Miguel;
+use Servantes\Miguel\Interfaces\HookManagerInterface;
+use Servantes\Miguel\Services\API;
+use Servantes\Miguel\Services\Download;
+use Servantes\Miguel\Services\Orders;
+use Servantes\Miguel\Admin\Settings;
+use Servantes\Miguel\Admin\Admin;
+
 class Miguel_Test_Case extends WC_Unit_Test_Case {
 
 	public function setUp(): void {
@@ -31,16 +39,16 @@ class Miguel_Test_Case extends WC_Unit_Test_Case {
 	 * @return object
 	 */
 	protected function create_service_with_mocks( $service_class, $mocks = [] ) {
-		$hook_manager = $mocks['hook_manager'] ?? $this->createMock( Miguel_Hook_Manager_Interface::class );
+		$hook_manager = $mocks['hook_manager'] ?? $this->createMock( HookManagerInterface::class );
 
 		switch ( $service_class ) {
 			case 'Miguel_Download':
-				$api_mock         = $mocks['api'] ?? $this->createMock( Miguel_API::class );
+				$api_mock         = $mocks['api'] ?? $this->createMock( API::class );
 				$file_factory     = $mocks['file_factory'] ?? null;
 				$error_handler    = $mocks['error_handler'] ?? null;
 				$redirect_handler = $mocks['redirect_handler'] ?? null;
 
-				return new Miguel_Download(
+				return new Download(
 					$hook_manager,
 					$api_mock,
 					$file_factory,
@@ -49,16 +57,16 @@ class Miguel_Test_Case extends WC_Unit_Test_Case {
 				);
 
 			case 'Miguel_Orders':
-				$api_mock    = $mocks['api'] ?? $this->createMock( Miguel_API::class );
-				$logger_mock = $mocks['logger'] ?? $this->createMock( WC_Logger::class );
-				return new Miguel_Orders( $hook_manager, $api_mock, $logger_mock );
+				$api_mock    = $mocks['api'] ?? $this->createMock( API::class );
+				$logger_mock = $mocks['logger'] ?? $this->createMock( \WC_Logger::class );
+				return new Orders( $hook_manager, $api_mock, $logger_mock );
 
 			case 'Miguel_Settings':
-				return new Miguel_Settings( $hook_manager );
+				return new Settings( $hook_manager );
 
 			case 'Miguel_Admin':
-				$settings_mock = $mocks['settings'] ?? $this->createMock( Miguel_Settings::class );
-				return new Miguel_Admin( $hook_manager, $settings_mock );
+				$settings_mock = $mocks['settings'] ?? $this->createMock( Settings::class );
+				return new Admin( $hook_manager, $settings_mock );
 
 			default:
 				throw new Exception( "Unknown service: {$service_class}" );

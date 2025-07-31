@@ -9,6 +9,11 @@
     "dealerdirect/phpcodesniffer-composer-installer": "^0.7",
     "phpunit/phpunit": "^9"
   },
+  "autoload": {
+    "psr-4": {
+      "Servantes\\Miguel\\": "includes/"
+    }
+  },
   "config": {
     "allow-plugins": {
       "dealerdirect/phpcodesniffer-composer-installer": true

@@ -1,6 +1,16 @@
 <?php
+/**
+ * The main admin class.
+ *
+ * @package Miguel
+ */
+
+namespace Servantes\Miguel\Admin;
+
+use Servantes\Miguel\Interfaces\HookManagerInterface;
+
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
 /**
@@ -8,29 +18,29 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @package Miguel
  */
-class Miguel_Admin {
+class Admin {
 
 	/**
 	 * Hook manager instance
 	 *
-	 * @var Miguel_Hook_Manager_Interface
+	 * @var HookManagerInterface
 	 */
 	private $hook_manager;
 
 	/**
 	 * Settings page instance
 	 *
-	 * @var Miguel_Settings
+	 * @var Settings
 	 */
 	private $settings_page;
 
 	/**
 	 * Initialize with dependency injection
 	 *
-	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager for registering actions.
-	 * @param Miguel_Settings     $settings_page Settings page instance.
+	 * @param HookManagerInterface $hook_manager Hook manager for registering actions.
+	 * @param Settings             $settings_page Settings page instance.
 	 */
-	public function __construct( Miguel_Hook_Manager_Interface $hook_manager, Miguel_Settings $settings_page ) {
+	public function __construct( HookManagerInterface $hook_manager, Settings $settings_page ) {
 		$this->hook_manager  = $hook_manager;
 		$this->settings_page = $settings_page;
 	}
@@ -45,7 +55,7 @@ class Miguel_Admin {
 	/**
 	 * Get hook manager (for testing purposes)
 	 *
-	 * @return Miguel_Hook_Manager_Interface
+	 * @return HookManagerInterface
 	 */
 	public function get_hook_manager() {
 		return $this->hook_manager;

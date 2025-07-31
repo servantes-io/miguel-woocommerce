@@ -25,9 +25,15 @@ if ( ! defined( 'MIGUEL_PLUGIN_FILE' ) ) {
 	define( 'MIGUEL_PLUGIN_FILE', __FILE__ );
 }
 
-if ( ! class_exists( 'Miguel' ) ) {
-	include_once __DIR__ . '/includes/class-miguel.php';
+// Load Composer's autoloader
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+	require_once __DIR__ . '/vendor/autoload.php';
 }
+
+// Load functions file
+require_once __DIR__ . '/includes/Utils/functions.php';
+
+use Servantes\Miguel\Core\Miguel;
 
 /**
  * Main instance of Miguel.
