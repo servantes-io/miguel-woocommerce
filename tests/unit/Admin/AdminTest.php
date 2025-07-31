@@ -51,7 +51,8 @@ class AdminTest extends Miguel_Test_Case {
 	 */
 	public function test_add_settings_pages_fallback_behavior() {
 		// Create admin without settings injection (should use fallback)
-		$admin = new \Servantes\Miguel\Admin\Admin( new \Servantes\Miguel\Utils\HookManager() );
+		$hook_manager = $this->createMock( HookManagerInterface::class );
+		$admin = new \Servantes\Miguel\Admin\Admin( $hook_manager, new \Servantes\Miguel\Admin\Settings( $hook_manager ) );
 
 		$pages = [ 'existing_page' ];
 		$result = $admin->add_settings_pages( $pages );
@@ -60,7 +61,7 @@ class AdminTest extends Miguel_Test_Case {
 		$this->assertCount( 2, $result );
 		$this->assertEquals( 'existing_page', $result[0] );
 		// Second page should be the included settings instance
-		$this->assertInstanceOf( 'Miguel_Settings', $result[1] );
+		$this->assertInstanceOf( Servantes\Miguel\Admin\Settings::class, $result[1] );
 	}
 
 	/**
@@ -89,13 +90,23 @@ class AdminTest extends Miguel_Test_Case {
 	}
 
 	/**
-	 * Test Miguel_Settings initialization
+	 * Test Settings initialization
 	 */
 	public function test_settings_initialization() {
 		$settings = $this->create_service_with_mocks( 'Miguel_Settings' );
 
-		$this->assertEquals( 'miguel', $settings->id );
-		$this->assertEquals( 'Miguel', $settings->label );
+		// Test that the settings page is properly initialized
+		$this->assertInstanceOf( \WC_Settings_Page::class, $settings );
+
+		// Use reflection to access protected properties since WC doesn't provide getters
+		$reflection = new \ReflectionClass( $settings );
+		$id_property = $reflection->getProperty( 'id' );
+		$id_property->setAccessible( true );
+		$label_property = $reflection->getProperty( 'label' );
+		$label_property->setAccessible( true );
+
+		$this->assertEquals( 'miguel', $id_property->getValue( $settings ) );
+		$this->assertEquals( 'Miguel', $label_property->getValue( $settings ) );
 	}
 
 	/**
