@@ -78,19 +78,10 @@ class Miguel {
 	 * Initialize.
 	 */
 	public function __construct() {
-		$this->includes();
 		$this->container = new Container();
 		$this->hook_manager = new HookManager();
 		$this->register_services();
 		$this->init_hooks();
-	}
-
-	/**
-	 * Includes required files.
-	 * Note: With PSR-4 autoloading, includes are no longer needed
-	 */
-	public function includes() {
-		// Files are now autoloaded via PSR-4
 	}
 
 	/**
