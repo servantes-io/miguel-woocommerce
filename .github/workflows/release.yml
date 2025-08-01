@@ -31,6 +31,14 @@ jobs:
         SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
         SLUG: miguel
 
+    - name: WordPress.org plugin asset/readme update
+      uses: 10up/action-wordpress-plugin-asset-update@stable
+      env:
+        SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+        SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+        SLUG: miguel
+        IGNORE_OTHER_FILES: true
+
     - uses: ncipollo/release-action@v1
       with:
         draft: true
