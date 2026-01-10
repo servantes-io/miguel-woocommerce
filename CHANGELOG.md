@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.0
+
+Released 2026-01-10
+
+* Add support for Melvil WooCommerce Bundle products
+
 ## 1.4.0
 
 Released 2025-07-31
