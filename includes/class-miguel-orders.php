@@ -172,32 +172,16 @@ class Miguel_Orders {
 			}
 
 			$product = $item->get_product();
-			if ( ! $product || ! $product->is_downloadable() ) {
+			if ( ! $product ) {
 				continue;
 			}
 
-			// Get Miguel product codes from downloadable files
-			$downloads = $product->get_downloads();
-			$miguel_codes = array();
+			$item_total = $order->get_item_total( $item, false, false );
 
-			foreach ( $downloads as $download ) {
-				if ( Miguel_Order_Utils::is_miguel_shortcode( $download['file'] ) ) {
-					$code = Miguel_Order_Utils::extract_miguel_code( $download['file'] );
-					if ( $code && ! in_array( $code, $miguel_codes ) ) {
-						$miguel_codes[] = $code;
-					}
-				}
-			}
+			// Get Miguel products with calculated prices
+			$miguel_products = $this->get_miguel_products_from_item( $product, $item_total );
 
-			// Create separate product item for each unique code
-			foreach ( $miguel_codes as $code ) {
-				$products[] = array(
-					'code' => $code,
-					'price' => array(
-						'sold_without_vat' => $order->get_item_total( $item, false, false ),
-					),
-				);
-			}
+			$products = array_merge( $products, $miguel_products );
 		}
 
 		if ( empty( $products ) ) {
@@ -213,6 +197,159 @@ class Miguel_Orders {
 			'purchase_date' => Miguel_Order_Utils::get_purchase_date_for_order( $order ),
 			'send_email' => 'disable',
 		);
+	}
+
+	/**
+	 * Get Miguel products with calculated prices from an order item's product
+	 *
+	 * @param WC_Product $product Product object.
+	 * @param float $item_total Total price of the order item (without VAT).
+	 * @return array Array of product data with codes and prices.
+	 */
+	private function get_miguel_products_from_item( $product, $item_total ) {
+		$products = array();
+
+		// Check for bundle products (Melvil WooCommerce Bundle plugin)
+		$bundle_ids = $product->get_meta( '_bundle_ids', true );
+		if ( ! empty( $bundle_ids ) ) {
+			$products = $this->get_miguel_products_from_bundle( $bundle_ids, $item_total );
+		}
+
+		// Also check if the product itself is downloadable with Miguel codes
+		if ( $product->is_downloadable() ) {
+			$miguel_codes = $this->extract_miguel_codes_from_product( $product );
+			foreach ( $miguel_codes as $code ) {
+				$products[] = array(
+					'code' => $code,
+					'price' => array(
+						'sold_without_vat' => $item_total,
+					),
+				);
+			}
+		}
+
+		return $products;
+	}
+
+	/**
+	 * Get Miguel products from a bundle with proportionally calculated prices
+	 *
+	 * @param array $bundle_ids Array of bundled product IDs.
+	 * @param float $bundle_total Total price of the bundle (without VAT).
+	 * @return array Array of product data with codes and prices.
+	 */
+	private function get_miguel_products_from_bundle( $bundle_ids, $bundle_total ) {
+		$products = array();
+		$bundled_items = array();
+		$total_regular_price = 0;
+
+		// First pass: collect all bundled products with Miguel codes and their regular prices
+		foreach ( array_keys( $bundle_ids ) as $bundle_product_id ) {
+			$bundled_product = wc_get_product( $bundle_product_id );
+			if ( ! $bundled_product ) {
+				continue;
+			}
+
+			// Recursively get Miguel products (handles nested bundles)
+			$nested_codes = $this->extract_all_miguel_codes( $bundled_product );
+			if ( empty( $nested_codes ) ) {
+				continue;
+			}
+
+			$regular_price = floatval( $bundled_product->get_regular_price() );
+			if ( $regular_price <= 0 ) {
+				$regular_price = floatval( $bundled_product->get_price() );
+			}
+
+			$bundled_items[] = array(
+				'codes' => $nested_codes,
+				'regular_price' => $regular_price,
+			);
+			$total_regular_price += $regular_price;
+		}
+
+		// Second pass: calculate proportional prices and create product entries
+		foreach ( $bundled_items as $bundled_item ) {
+			// Calculate proportional price based on regular price ratio
+			if ( $total_regular_price > 0 ) {
+				$price_ratio = $bundled_item['regular_price'] / $total_regular_price;
+				$calculated_price = $bundle_total * $price_ratio;
+			} else {
+				// Fallback: divide equally if no regular prices available
+				$calculated_price = $bundle_total / count( $bundled_items );
+			}
+
+			foreach ( $bundled_item['codes'] as $code ) {
+				$products[] = array(
+					'code' => $code,
+					'price' => array(
+						'sold_without_vat' => round( $calculated_price, 2 ),
+					),
+				);
+			}
+		}
+
+		return $products;
+	}
+
+	/**
+	 * Extract all Miguel codes from a product (including nested bundles)
+	 *
+	 * @param WC_Product $product Product object.
+	 * @return array Array of unique Miguel codes.
+	 */
+	private function extract_all_miguel_codes( $product ) {
+		$miguel_codes = array();
+
+		// Check for nested bundles
+		$bundle_ids = $product->get_meta( '_bundle_ids', true );
+		if ( ! empty( $bundle_ids ) ) {
+			foreach ( array_keys( $bundle_ids ) as $bundle_product_id ) {
+				$bundled_product = wc_get_product( $bundle_product_id );
+				if ( $bundled_product ) {
+					$nested_codes = $this->extract_all_miguel_codes( $bundled_product );
+					foreach ( $nested_codes as $code ) {
+						if ( ! in_array( $code, $miguel_codes, true ) ) {
+							$miguel_codes[] = $code;
+						}
+					}
+				}
+			}
+		}
+
+		// Extract codes from this product's downloads
+		if ( $product->is_downloadable() ) {
+			$codes = $this->extract_miguel_codes_from_product( $product );
+			foreach ( $codes as $code ) {
+				if ( ! in_array( $code, $miguel_codes, true ) ) {
+					$miguel_codes[] = $code;
+				}
+			}
+		}
+
+		return $miguel_codes;
+	}
+
+	/**
+	 * Extract Miguel codes from a product's downloadable files
+	 *
+	 * @param WC_Product $product Product object.
+	 * @return array Array of unique Miguel codes.
+	 */
+	private function extract_miguel_codes_from_product( $product ) {
+		$miguel_codes = array();
+
+		$downloads = $product->get_downloads();
+		foreach ( $downloads as $download ) {
+			if ( Miguel_Order_Utils::is_miguel_shortcode( $download['file'] ) ) {
+				$code = Miguel_Order_Utils::extract_miguel_code( $download['file'] );
+				if ( $code && ! in_array( $code, $miguel_codes, true ) ) {
+					$miguel_codes[] = $code;
+				}
+			}
+		}
+
+		return $miguel_codes;
 	}
 
 	/**
