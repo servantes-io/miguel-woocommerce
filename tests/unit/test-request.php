@@ -12,21 +12,21 @@ class Miguel_Test_Request extends Miguel_Test_Case {
 		$order = Miguel_Helper_Order::create_order();
 
 		$want = array(
-			'user' => array(
+			'userInfo' => array(
 				'id' => md5( $order->get_billing_email() ),
 				'email' => $order->get_billing_email(),
-				'full_name' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+				'name' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
 				'address' => $order->get_billing_address_1() . ' ' . $order->get_billing_city(),
-				'lang' => 'en_US'
 			),
-			'purchase_date' => $order->get_date_paid()->format( DateTime::ATOM ),
-			'order_code' => strval($order->get_id()),
-			'sold_price' => 10.0,
-			'currency_code' => $order->get_currency(),
-			'result' => 'download_link',
+			'purchaseDate' => $order->get_date_paid()->format( 'Y-m-d\TH:i:s.u\Z' ),
+			'orderInfo' => array(
+				'code' => strval($order->get_id()),
+				'soldPrice' => 10.0,
+				'currencyCode' => $order->get_currency(),
+			),
 		);
 
-		$sut = new Miguel_Request( $order, array_values($order->get_items())[0] );
+		$sut = new Miguel_Request( $order, array_values($order->get_items())[0], 'epub' );
 
 		$this->assertEquals( $want, $sut->to_array() );
 
@@ -63,7 +63,7 @@ class Miguel_Test_Request extends Miguel_Test_Case {
 			'result' => 'download_link',
 		);
 
-		$sut = new Miguel_Request( $order, array_values($order->get_items())[0] );
+		$sut = new Miguel_Request( $order, array_values($order->get_items())[0], 'epub' );
 
 		$this->assertEquals( $want, $sut->to_array() );
 
@@ -76,7 +76,7 @@ class Miguel_Test_Request extends Miguel_Test_Case {
 	 */
 	public function test_is_valid(): void {
 		$order = Miguel_Helper_Order::create_order();
-		$sut = new Miguel_Request( $order, array_values($order->get_items())[0] );
+		$sut = new Miguel_Request( $order, array_values($order->get_items())[0], 'epub' );
 
 		$this->assertEquals( true, $sut->is_valid() );
 

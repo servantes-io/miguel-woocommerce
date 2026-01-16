@@ -74,12 +74,14 @@ class Miguel_Order_Utils {
 	public static function get_purchase_date_for_order( $order ) {
 		$paid_date = $order->get_date_paid();
 		if ( $paid_date ) {
-			return $paid_date->format( DateTime::ATOM );
+			$paid_date->setTimezone( new DateTimeZone( 'UTC' ) );
+			return $paid_date->format( 'Y-m-d\TH:i:s.u\Z' );
 		}
 
 		$created_date = $order->get_date_created();
 		if ( $created_date ) {
-			return $created_date->format( DateTime::ATOM );
+			$created_date->setTimezone( new DateTimeZone( 'UTC' ) );
+			return $created_date->format( 'Y-m-d\TH:i:s.u\Z' );
 		}
 
 		return null;
@@ -88,13 +90,25 @@ class Miguel_Order_Utils {
 	/**
 	 * Get user data array for order
 	 */
-	public static function get_user_data_for_order( $order, $enhanced_address = false ) {
+	public static function get_user_data_for_order_v1( $order, $enhanced_address = false ) {
 		return array(
 			'id' => self::get_user_id_for_order( $order ),
 			'email' => self::get_email_for_order( $order ),
 			'full_name' => self::get_full_name_for_order( $order ),
 			'address' => self::get_address_for_order( $order, $enhanced_address ),
 			'lang' => self::get_language_for_order( $order ),
+		);
+	}
+
+	/**
+	 * Get user data array for order
+	 */
+	public static function get_user_data_for_order_v2( $order, $enhanced_address = false ) {
+		return array(
+			'id' => self::get_user_id_for_order( $order ),
+			'email' => self::get_email_for_order( $order ),
+			'name' => self::get_full_name_for_order( $order ),
+			'address' => self::get_address_for_order( $order, $enhanced_address ),
 		);
 	}
 
