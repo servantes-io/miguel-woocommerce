@@ -17,6 +17,7 @@ services:
     image: wordpress:6.4
     volumes:
       - ./run/wordpress:/var/www/html
+      - ./run/apache/authorization.conf:/etc/apache2/conf-enabled/authorization.conf:ro
       # - ./src:/var/www/html/wp-content/plugins/miguel
     ports:
       - "8000:80"
