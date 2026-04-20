@@ -55,34 +55,53 @@ class Miguel_Products_Api {
 	 * @return true|WP_Error
 	 */
 	public function validate_api_access( $request ) {
-		$configured_token = get_option( 'miguel_api_key' );
-		$provided_token = $this->get_bearer_token( $request );
+		try {
+			$provided_token = $this->get_bearer_token( $request );
 
-		if ( empty( $provided_token ) ) {
-			return new WP_Error(
-				'miguel_api_key_not_provided',
-				esc_html__( 'Authorization bearer token is missing.', 'miguel' ),
-				array( 'status' => 401 )
-			);
-		}
+			if ( '' === $provided_token ) {
+				return new WP_Error(
+					'api_key.not_set',
+					esc_html__( 'Authorization bearer token is missing.', 'miguel' ),
+					array( 'status' => 401 )
+				);
+			}
 
-		if ( empty( $configured_token ) ) {
+			$configuration = Miguel_API::getCurrentApiConfiguration();
+			if ( false === $configuration ) {
+				return new WP_Error(
+					'configuration.not_set',
+					esc_html__( 'Miguel API configuration is not set.', 'miguel' ),
+					array( 'status' => 500 )
+				);
+			}
+
+			$configured_token = isset( $configuration['token'] ) ? (string) $configuration['token'] : '';
+			if ( '' === $configured_token ) {
+				return new WP_Error(
+					'api_key.not_set',
+					esc_html__( 'Miguel API key is not configured.', 'miguel' ),
+					array( 'status' => 500 )
+				);
+			}
+
+			if ( ! hash_equals( $configured_token, $provided_token ) ) {
+				return new WP_Error(
+					'api_key.invalid',
+					esc_html__( 'Invalid API token.', 'miguel' ),
+					array( 'status' => 403 )
+				);
+			}
+
+			return true;
+		} catch ( Exception $exception ) {
+			Miguel::log( 'validate_api_access failed: ' . $exception->getMessage(), 'error' );
+
 			return new WP_Error(
-				'miguel_api_key_not_configured',
-				esc_html__( 'Miguel API key is not configured.', 'miguel' ),
+				'unknown.error',
+				esc_html__( 'Unexpected authentication error.', 'miguel' ),
 				array( 'status' => 500 )
 			);
 		}
-
-		if ( ! hash_equals( (string) $configured_token, (string) $provided_token ) ) {
-			return new WP_Error(
-				'miguel_api_key_invalid',
-				esc_html__( 'Invalid API token.', 'miguel' ),
-				array( 'status' => 403 )
-			);
-		}
-
-		return true;
 	}
 
 	/**
@@ -320,7 +339,7 @@ class Miguel_Products_Api {
 			'stock_status' => $product->get_stock_status(),
 			'manage_stock' => $manage_stock,
 			'stock_quantity' => $manage_stock ? $product->get_stock_quantity() : null,
-			'backorders_allowed' => (bool) $product->backorders_allowed(),
+			'backorders_allowed' => $product->get_backorders(),
 		);
 	}
 }
