@@ -2,9 +2,9 @@
 
 Sell watermarked e-books and audiobooks directly from WooCommerce e-shop via [Miguel](https://servantes.cz/en/miguel).
 
-- __Requires at least:__ WooCommerce 3.9
-- __Tested up to:__ WooCommerce 10.0
-- __Version:__ 1.5.0
+- **Requires at least:** WooCommerce 3.9
+- **Tested up to:** WooCommerce 10.0
+- **Version:** 1.6.0
 
 ## Setup
 

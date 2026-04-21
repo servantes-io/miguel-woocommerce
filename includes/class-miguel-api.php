@@ -292,10 +292,13 @@ class Miguel_API {
 			return $request_guard;
 		}
 
+		$base_uri = $this->build_base_uri( $base_url );
+
 		$body = array(
 			'wcVersion' => (string) $wc_version,
 			'moduleVersion' => (string) $module_version,
 			'baseUrl' => (string) $base_url,
+			'baseUri' => $base_uri,
 		);
 
 		$data = array(
@@ -373,6 +376,22 @@ class Miguel_API {
 	 */
 	private function build_url( $path ) {
 		return trailingslashit( untrailingslashit( $this->url ) ) . ltrim( $path, '/' );
+	}
+
+	/**
+	 * Build canonical base URI from absolute URL.
+	 *
+	 * @param string $base_url Absolute e-shop base URL.
+	 * @return string
+	 */
+	private function build_base_uri( $base_url ) {
+		$path = wp_parse_url( (string) $base_url, PHP_URL_PATH );
+
+		if ( ! is_string( $path ) || '' === $path ) {
+			return '/';
+		}
+
+		return trailingslashit( '/' . ltrim( $path, '/' ) );
 	}
 
 	/**
