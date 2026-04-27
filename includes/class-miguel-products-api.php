@@ -196,6 +196,7 @@ class Miguel_Products_Api {
 				'manage_stock' => $stock_data['manage_stock'],
 				'stock_quantity' => $stock_data['stock_quantity'],
 				'backorders_allowed' => $stock_data['backorders_allowed'],
+				'sold_individually' => $product->is_sold_individually(),
 				'regular_price' => $this->normalize_price( $product->get_regular_price() ),
 				'sale_price' => $this->normalize_price( $product->get_sale_price() ),
 				'parent_id' => $product->get_parent_id(),
