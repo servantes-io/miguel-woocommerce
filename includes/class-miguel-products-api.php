@@ -121,6 +121,38 @@ class Miguel_Products_Api {
 			$authorization = wp_unslash( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
 		}
 
+		if ( empty( $authorization ) && isset( $_SERVER['AUTHORIZATION'] ) ) {
+			$authorization = wp_unslash( $_SERVER['AUTHORIZATION'] );
+		}
+
+		if ( empty( $authorization ) && isset( $_SERVER['X-HTTP_AUTHORIZATION'] ) ) {
+			$authorization = wp_unslash( $_SERVER['X-HTTP_AUTHORIZATION'] );
+		}
+
+		if ( empty( $authorization ) && function_exists( 'getallheaders' ) ) {
+			$headers = getallheaders();
+			if ( is_array( $headers ) ) {
+				foreach ( $headers as $header_name => $header_value ) {
+					if ( 0 === strcasecmp( (string) $header_name, 'Authorization' ) ) {
+						$authorization = (string) $header_value;
+						break;
+					}
+				}
+			}
+		}
+
+		if ( empty( $authorization ) && function_exists( 'apache_request_headers' ) ) {
+			$headers = apache_request_headers();
+			if ( is_array( $headers ) ) {
+				foreach ( $headers as $header_name => $header_value ) {
+					if ( 0 === strcasecmp( (string) $header_name, 'Authorization' ) ) {
+						$authorization = (string) $header_value;
+						break;
+					}
+				}
+			}
+		}
+
 		if ( empty( $authorization ) ) {
 			return '';
 		}
