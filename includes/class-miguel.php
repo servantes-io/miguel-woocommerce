@@ -77,6 +77,7 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-download.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-orders.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-products-api.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-create-api.php';
 
 		if ( is_admin() ) {
 			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-admin.php';
@@ -124,6 +125,12 @@ class Miguel {
 			);
 		} );
 
+		$this->container->register( 'order_create_api', function ( $container ) {
+			return new Miguel_Order_Create_Api(
+				$container->get( 'hook_manager' )
+			);
+		} );
+
 		$this->container->register( 'settings', function ( $container ) {
 			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php';
 			return new Miguel_Settings( $container->get( 'hook_manager' ) );
@@ -159,6 +166,7 @@ class Miguel {
 			$this->container->get( 'download' )->register_hooks();
 			$this->container->get( 'orders' )->register_hooks();
 			$this->container->get( 'products_api' )->register_hooks();
+			$this->container->get( 'order_create_api' )->register_hooks();
 
 			// Initialize admin services only in admin context
 			if ( is_admin() ) {
