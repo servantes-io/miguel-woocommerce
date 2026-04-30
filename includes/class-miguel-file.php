@@ -56,12 +56,12 @@ class Miguel_File {
 			throw new Exception( esc_html__( 'Invalid download url.', 'miguel' ) );
 		}
 
-		$is_valid_url = miguel_starts_with( $download_url, '[miguel' ) || miguel_starts_with( $download_url, '[wosa' );
-		if ( ! $is_valid_url ) {
+		$atts = Miguel_Order_Utils::parse_shortcode_atts( $download_url );
+		if ( $atts == null ) {
 			throw new Exception( esc_html__( 'Invalid download url format.', 'miguel' ) );
 		}
 
-		$this->atts = Miguel_Order_Utils::parse_shortcode_atts( $download_url );
+		$this->atts = $atts;
 		$this->product = $product;
 		$this->download_id = $download_id;
 	}
