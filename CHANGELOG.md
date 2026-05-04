@@ -2,7 +2,7 @@
 
 ## 1.6.0
 
-Released 2026-04-21
+Released 2026-05-04
 
 * Added support for connecting to the Miguel API using an access token (API key)
 * Implemented API endpoint for retrieving all products including prices and stock information
