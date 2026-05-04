@@ -17,6 +17,7 @@ services:
     image: wordpress:6.4
     volumes:
       - ./run/wordpress:/var/www/html
+      - ./run/apache/authorization.conf:/etc/apache2/conf-enabled/authorization.conf:ro
       # - ./src:/var/www/html/wp-content/plugins/miguel
     ports:
       - "8000:80"
@@ -27,6 +28,8 @@ services:
       WORDPRESS_DB_PASSWORD: wordpress
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_DEBUG: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   phpmyadmin:
     depends_on:

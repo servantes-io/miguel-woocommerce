@@ -123,6 +123,18 @@ class Miguel_Order_Utils {
 			);
 			$atts['id'] = $atts['book'];
 			return $atts;
+		} else if ( miguel_starts_with( $shortcode, '[audio ' ) ) {
+			$atts = miguel_get_shortcode_atts(
+				$shortcode,
+				array(
+					'id' => '',
+				)
+			);
+			// Vracíme id a format=audio
+			return array(
+				'id' => $atts['id'],
+				'format' => 'audio',
+			);
 		}
 
 		return null;
@@ -135,7 +147,7 @@ class Miguel_Order_Utils {
 	 * @return bool
 	 */
 	public static function is_miguel_shortcode( $file_url ) {
-		return miguel_starts_with( $file_url, '[miguel ' ) || miguel_starts_with( $file_url, '[wosa ' );
+		return miguel_starts_with( $file_url, '[miguel ' ) || miguel_starts_with( $file_url, '[wosa ' ) || miguel_starts_with( $file_url, '[audio ' );
 	}
 
 	/**
