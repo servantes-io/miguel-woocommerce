@@ -12,6 +12,14 @@
   "config": {
     "allow-plugins": {
       "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "audit": {
+      "ignore": {
+        "PKSA-z3gr-8qht-p93v": {
+          "apply": "all",
+          "reason": "We need PHPUnit 7 to work"
+        }
+      }
     }
   }
 }
