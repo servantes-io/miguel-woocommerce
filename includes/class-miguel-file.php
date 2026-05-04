@@ -57,7 +57,7 @@ class Miguel_File {
 		}
 
 		$atts = Miguel_Order_Utils::parse_shortcode_atts( $download_url );
-		if ( $atts == null ) {
+		if ( null == $atts ) {
 			throw new Exception( esc_html__( 'Invalid download url format.', 'miguel' ) );
 		}
 
