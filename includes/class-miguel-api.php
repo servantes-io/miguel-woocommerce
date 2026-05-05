@@ -231,7 +231,7 @@ class Miguel_API {
 			return new WP_Error( 'miguel', __( 'Format is not allowed.', 'miguel' ) );
 		}
 
-		return $this->post( 'generate_' . $format . '/' . urlencode( $book ), $args );
+		return $this->post( 'v1/generate_' . $format . '/' . urlencode( $book ), $args );
 	}
 
 	/**
@@ -241,7 +241,7 @@ class Miguel_API {
 	 * @return array|WP_Error
 	 */
 	public function submit_order( $order_data ) {
-		$res = $this->post( 'orders', $order_data );
+		$res = $this->post( 'v1/orders', $order_data );
 
 		if ( is_wp_error( $res ) ) {
 			return $res;
@@ -263,7 +263,7 @@ class Miguel_API {
 	 * @return array|WP_Error
 	 */
 	public function delete_order( $order_code ) {
-		$res = $this->delete( 'orders/' . urlencode( $order_code ) );
+		$res = $this->delete( 'v1/orders/' . urlencode( $order_code ) );
 
 		if ( is_wp_error( $res ) ) {
 			return $res;
