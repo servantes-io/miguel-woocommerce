@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.1
+
+Released 2026-05-05
+
+* Fixed communication with older Miguel API
+
 ## 1.6.0
 
 Released 2026-05-04
