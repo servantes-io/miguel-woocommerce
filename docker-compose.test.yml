@@ -1,0 +1,29 @@
+services:
+  woocommerce_test_db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: woocommerce_test_password
+      MYSQL_DATABASE: woocommerce_tests
+    tmpfs:
+      - /var/lib/mysql
+
+  phpunit:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - woocommerce_test_db
+    volumes:
+      - .:/project
+      - woocommerce_cache:/project/woocommerce
+      - wp_tests_cache:/tmp/wordpress-tests-lib
+      - wp_core_cache:/tmp/wordpress
+    environment:
+      WC_VERSION: ${WC_VERSION:-9.9.5}
+      WP_VERSION: ${WP_VERSION:-6.8.5}
+    entrypoint: /project/bin/docker-test-entrypoint.sh
+
+volumes:
+  woocommerce_cache:
+  wp_tests_cache:
+  wp_core_cache:

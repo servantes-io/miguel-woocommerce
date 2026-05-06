@@ -1,0 +1,13 @@
+FROM php:8.3-cli
+
+RUN apt-get update && apt-get install -y \
+        libpng-dev libfreetype6-dev libjpeg-dev libzip-dev \
+        libxml2-dev libxslt1-dev libicu-dev libonig-dev pkg-config \
+        subversion git curl unzip default-mysql-client \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" gd mysqli zip exif intl mbstring xml xsl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /project
