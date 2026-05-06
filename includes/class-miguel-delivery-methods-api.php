@@ -12,11 +12,15 @@ class Miguel_Delivery_Methods_Api {
 	use Miguel_Rest_Auth_Trait;
 
 	/**
+	 * Hook manager instance.
+	 *
 	 * @var Miguel_Hook_Manager_Interface
 	 */
 	private $hook_manager;
 
 	/**
+	 * Constructor.
+	 *
 	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager.
 	 */
 	public function __construct( Miguel_Hook_Manager_Interface $hook_manager ) {
@@ -48,9 +52,10 @@ class Miguel_Delivery_Methods_Api {
 	/**
 	 * Return all configured WooCommerce shipping methods across all zones.
 	 *
+	 * @param WP_REST_Request $request REST request.
 	 * @return WP_REST_Response
 	 */
-	public function get_delivery_methods() {
+	public function get_delivery_methods( $request ) {
 		$methods = $this->collect_delivery_methods();
 
 		return new WP_REST_Response(

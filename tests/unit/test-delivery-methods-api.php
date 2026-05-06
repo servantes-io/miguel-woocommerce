@@ -6,15 +6,17 @@
  */
 class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 
-	public function test_routes_are_registered() {
-		$api = new Miguel_Delivery_Methods_Api( new Miguel_Hook_Manager() );
+	public function test_registers_rest_api_init_hook() {
+		$hook_manager = $this->createMock( Miguel_Hook_Manager_Interface::class );
+		$hook_manager->expects( $this->once() )
+			->method( 'add_action' )
+			->with(
+				'rest_api_init',
+				$this->isType( 'array' )
+			);
 
-		add_action( 'rest_api_init', array( $api, 'register_routes' ) );
-		do_action( 'rest_api_init' );
-
-		$routes = rest_get_server()->get_routes( 'miguel/v1' );
-
-		$this->assertArrayHasKey( '/miguel/v1/delivery-methods', $routes );
+		$api = new Miguel_Delivery_Methods_Api( $hook_manager );
+		$api->register_hooks();
 	}
 
 	public function test_get_delivery_methods_returns_correct_structure_when_no_zones() {
@@ -46,7 +48,7 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		$data     = $response->get_data();
 
 		$this->assertSame( 200, $response->get_status() );
-		$this->assertGreaterThanOrEqual( 1, $data['count'] );
+		$this->assertSame( 1, $data['count'] );
 
 		$found = false;
 		foreach ( $data['methods'] as $method ) {
