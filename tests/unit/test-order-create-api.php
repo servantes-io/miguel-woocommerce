@@ -67,6 +67,7 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	 * Test that helper email flags are not forwarded to WooCommerce.
 	 */
 	public function test_prepare_payload_for_wc_order_strips_send_email_flags() {
+		Miguel_Helper_Product::create_downloadable_product();
 		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
 
 		$reflection = new ReflectionClass( $api );
@@ -96,6 +97,7 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	 * Test that email_template helper param is not forwarded to WooCommerce.
 	 */
 	public function test_prepare_payload_for_wc_order_strips_email_template_flag() {
+		Miguel_Helper_Product::create_downloadable_product();
 		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
 
 		$reflection = new ReflectionClass( $api );
@@ -381,7 +383,7 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	 */
 	public function test_prepare_payload_for_wc_order_rejects_conflicting_product_references() {
 		$product_one = Miguel_Helper_Product::create_downloadable_product();
-		$product_two = Miguel_Helper_Product::create_downloadable_product();
+		$product_two = Miguel_Helper_Product::create_virtual_product();
 
 		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
 		$reflection = new ReflectionClass( $api );
