@@ -76,7 +76,10 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-request.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-download.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-orders.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/trait-miguel-rest-auth.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-product-code-resolver.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-products-api.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-product-code-map-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-create-api.php';
 
 		if ( is_admin() ) {
@@ -125,6 +128,12 @@ class Miguel {
 			);
 		} );
 
+		$this->container->register( 'product_code_map_api', function ( $container ) {
+			return new Miguel_Product_Code_Map_Api(
+				$container->get( 'hook_manager' )
+			);
+		} );
+
 		$this->container->register( 'order_create_api', function ( $container ) {
 			return new Miguel_Order_Create_Api(
 				$container->get( 'hook_manager' )
@@ -166,6 +175,7 @@ class Miguel {
 			$this->container->get( 'download' )->register_hooks();
 			$this->container->get( 'orders' )->register_hooks();
 			$this->container->get( 'products_api' )->register_hooks();
+			$this->container->get( 'product_code_map_api' )->register_hooks();
 			$this->container->get( 'order_create_api' )->register_hooks();
 
 			// Initialize admin services only in admin context
@@ -190,6 +200,84 @@ class Miguel {
 	 */
 	public static function log( $message, $type = 'info' ) {
 		wc_get_logger()->log( $type, $message, array( 'source' => 'miguel' ) );
+	}
+
+	/**
+	 * Write a structured debug entry to a dedicated file.
+	 *
+	 * @param string $message Debug message.
+	 * @param array  $context Additional context.
+	 */
+	public static function debug_log( $message, $context = array() ) {
+		$log_file = self::resolve_debug_log_path( true );
+		$payload = array(
+			'timestamp' => gmdate( 'c' ),
+			'message' => (string) $message,
+			'context' => is_array( $context ) ? $context : array(),
+		);
+
+		$line = wp_json_encode( $payload );
+		if ( false === $line ) {
+			$line = print_r( $payload, true );
+		}
+
+		if ( '' === $log_file ) {
+			self::log( 'Miguel debug log path is unavailable. Message: ' . (string) $message, 'warning' );
+			return;
+		}
+
+		$result = @file_put_contents( $log_file, $line . PHP_EOL, FILE_APPEND | LOCK_EX );
+		if ( false === $result ) {
+			self::log( 'Unable to write Miguel debug log file at ' . $log_file . '. Message: ' . (string) $message, 'error' );
+		}
+	}
+
+	/**
+	 * Get debug log file path.
+	 *
+	 * @return string
+	 */
+	public static function get_debug_log_path() {
+		return self::resolve_debug_log_path( false );
+	}
+
+	/**
+	 * Resolve debug log file path.
+	 *
+	 * @param bool $ensure_directory Whether to create the directory.
+	 * @return string
+	 */
+	private static function resolve_debug_log_path( $ensure_directory ) {
+		$candidate_dirs = array();
+		$log_file_name = 'miguel-debug-' . gmdate( 'd-m-Y' ) . '.log';
+
+		$upload_dir = wp_upload_dir();
+		if ( isset( $upload_dir['basedir'] ) && '' !== (string) $upload_dir['basedir'] ) {
+			$candidate_dirs[] = trailingslashit( (string) $upload_dir['basedir'] ) . 'miguel-logs';
+		}
+
+		if ( defined( 'WP_CONTENT_DIR' ) && '' !== (string) WP_CONTENT_DIR ) {
+			$candidate_dirs[] = trailingslashit( WP_CONTENT_DIR ) . 'uploads/miguel-logs';
+		}
+
+		$candidate_dirs = array_unique( array_filter( $candidate_dirs ) );
+		foreach ( $candidate_dirs as $log_dir ) {
+			if ( $ensure_directory && ! file_exists( $log_dir ) && ! wp_mkdir_p( $log_dir ) ) {
+				continue;
+			}
+
+			if ( file_exists( $log_dir ) && ! is_dir( $log_dir ) ) {
+				continue;
+			}
+
+			if ( file_exists( $log_dir ) && ! is_writable( $log_dir ) ) {
+				continue;
+			}
+
+			return trailingslashit( $log_dir ) . $log_file_name;
+		}
+
+		return '';
 	}
 
 	/**
