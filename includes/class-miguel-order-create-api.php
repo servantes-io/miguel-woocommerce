@@ -945,5 +945,4 @@ class Miguel_Order_Create_Api {
 
 		return false;
 	}
-
 }

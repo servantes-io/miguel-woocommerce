@@ -74,6 +74,7 @@ class Miguel_Product_Code_Resolver {
 		if ( ! isset( $product_code_details_map[ $product_code ] ) ) {
 			return new WP_Error(
 				'product_code.not_found',
+				// translators: %s: product code string.
 				sprintf( esc_html__( 'Product code "%s" was not found.', 'miguel' ), $product_code ),
 				array(
 					'status' => 409,
@@ -95,6 +96,7 @@ class Miguel_Product_Code_Resolver {
 
 			return new WP_Error(
 				'product_code.ambiguous',
+				// translators: %s: product code string.
 				sprintf( esc_html__( 'Product code "%s" matches multiple products.', 'miguel' ), $product_code ),
 				array(
 					'status' => 409,

@@ -92,5 +92,4 @@ class Miguel_Product_Code_Map_Api {
 			200
 		);
 	}
-
 }
