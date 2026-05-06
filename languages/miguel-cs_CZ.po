@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: Miguel for WooCommerce\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-12-19 17:27+0100\n"
-"PO-Revision-Date: 2020-12-19 17:28+0100\n"
+"PO-Revision-Date: 2026-05-06 00:00+0000\n"
 "Last-Translator: roman.kriz@servantes.cz\n"
 "Language-Team: \n"
 "Language: cs\n"
@@ -136,3 +136,120 @@ msgstr "Vložení se nezdařilo."
 
 msgid "Settings"
 msgstr "Nastavení"
+
+msgid "Miguel API"
+msgstr "Miguel API"
+
+msgid "Authorization bearer token is missing."
+msgstr "Autorizační bearer token chybí."
+
+msgid "Invalid API token."
+msgstr "Neplatný API token."
+
+msgid "Miguel API key is not configured."
+msgstr "API klíč pro Miguel není nastaven."
+
+msgid "Unexpected authentication error."
+msgstr "Neočekávaná chyba ověření."
+
+msgid "Failed to delete order."
+msgstr "Smazání objednávky se nezdařilo."
+
+msgid "Miguel API configuration is not set."
+msgstr "Konfigurace Miguel API není nastavena."
+
+msgid "Miguel connection skipped: API key is required."
+msgstr "Připojení k Miguelovi bylo přeskočeno: API klíč je povinný."
+
+msgid "Miguel API URL is not configured."
+msgstr "URL adresa Miguel API není nastavena."
+
+msgid "Connection to Miguel API failed due to network error. Please verify API key and try again."
+msgstr "Připojení k Miguel API selhalo kvůli síťové chybě. Zkontrolujte prosím API klíč a zkuste to znovu."
+
+msgid "Miguel API key is invalid or unauthorized."
+msgstr "API klíč pro Miguel je neplatný nebo nemá oprávnění."
+
+msgid "Empty response body."
+msgstr "Prázdné tělo odpovědi."
+
+msgid "Unexpected non-JSON response received."
+msgstr "Obdržena neočekávaná odpověď, která není ve formátu JSON."
+
+msgid "Unexpected API response."
+msgstr "Neočekávaná odpověď API."
+
+msgid "Miguel API connection successful."
+msgstr "Připojení k Miguel API bylo úspěšné."
+
+#, php-format
+msgid "Miguel API connection failed (HTTP %1$d): %2$s"
+msgstr "Připojení k Miguel API selhalo (HTTP %1$d): %2$s"
+
+msgid "Idempotency key is required."
+msgstr "Klíč idempotence je povinný."
+
+msgid "Request with this idempotency key is currently being processed."
+msgstr "Požadavek s tímto klíčem idempotence se právě zpracovává."
+
+msgid "Idempotency key was already used with different payload."
+msgstr "Klíč idempotence byl již použit s jiným obsahem požadavku."
+
+msgid "WooCommerce REST Orders controller is unavailable."
+msgstr "Kontroler REST Orders pro WooCommerce není dostupný."
+
+msgid "Order was not created."
+msgstr "Objednávka nebyla vytvořena."
+
+msgid "Order line_items array is required."
+msgstr "Pole položek objednávky (line_items) je povinné."
+
+msgid "Order line_items must be an array."
+msgstr "Položky objednávky (line_items) musí být pole."
+
+msgid "Order must contain at least one line item."
+msgstr "Objednávka musí obsahovat alespoň jednu položku."
+
+msgid "Each line item must be an object."
+msgstr "Každá položka objednávky musí být objekt."
+
+msgid "Line item quantity is required."
+msgstr "Množství položky objednávky je povinné."
+
+msgid "Line item quantity must be a positive integer."
+msgstr "Množství položky objednávky musí být kladné celé číslo."
+
+msgid "Line item product_id and product_code refer to different products."
+msgstr "Hodnoty product_id a product_code v položce objednávky odkazují na různé produkty."
+
+msgid "Line item must include product_id or product_code."
+msgstr "Položka objednávky musí obsahovat product_id nebo product_code."
+
+msgid "Order email_template must be one of the supported WooCommerce email template identifiers."
+msgstr "Hodnota email_template objednávky musí být jedním z podporovaných identifikátorů e-mailových šablon WooCommerce."
+
+msgid "Order customer_id must reference an existing user."
+msgstr "Hodnota customer_id objednávky musí odkazovat na existujícího uživatele."
+
+msgid "Order payment_method is required."
+msgstr "Způsob platby objednávky (payment_method) je povinný."
+
+msgid "Order billing object is required."
+msgstr "Fakturační údaje objednávky jsou povinné."
+
+msgid "Order shipping object is required."
+msgstr "Doručovací adresa objednávky je povinná."
+
+msgid "Order shipping_lines array is required."
+msgstr "Pole způsobů dopravy objednávky (shipping_lines) je povinné."
+
+#, php-format
+msgid "Product code \"%s\" was not found."
+msgstr "Kód produktu \"%s\" nebyl nalezen."
+
+#, php-format
+msgid "Product code \"%s\" matches multiple products."
+msgstr "Kód produktu \"%s\" odpovídá více produktům."
+
+msgid "Product code is required."
+msgstr "Kód produktu je povinný."
