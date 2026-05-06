@@ -55,7 +55,7 @@ set -ex
 
 install_wp() {
 
-	if [ -d $WP_CORE_DIR ]; then
+	if [ -f $WP_CORE_DIR/wp-settings.php ]; then
 		return;
 	fi
 
@@ -104,7 +104,7 @@ install_test_suite() {
 	fi
 
 	# set up testing suite if it doesn't yet exist
-	if [ ! -d $WP_TESTS_DIR ]; then
+	if [ ! -f $WP_TESTS_DIR/includes/functions.php ]; then
 		# set up testing suite
 		mkdir -p $WP_TESTS_DIR
 		rm -rf $WP_TESTS_DIR/{includes,data}
@@ -157,11 +157,11 @@ install_db() {
 
 	if ! [ -z $DB_HOSTNAME ] ; then
 		if [ $(echo $DB_SOCK_OR_PORT | grep -e '^[0-9]\{1,\}$') ]; then
-			EXTRA=" --host=$DB_HOSTNAME --port=$DB_SOCK_OR_PORT --protocol=tcp"
+			EXTRA=" --host=$DB_HOSTNAME --port=$DB_SOCK_OR_PORT --protocol=tcp --skip-ssl"
 		elif ! [ -z $DB_SOCK_OR_PORT ] ; then
-			EXTRA=" --socket=$DB_SOCK_OR_PORT"
+			EXTRA=" --socket=$DB_SOCK_OR_PORT --skip-ssl"
 		elif ! [ -z $DB_HOSTNAME ] ; then
-			EXTRA=" --host=$DB_HOSTNAME --protocol=tcp"
+			EXTRA=" --host=$DB_HOSTNAME --protocol=tcp --skip-ssl"
 		fi
 	fi
 
