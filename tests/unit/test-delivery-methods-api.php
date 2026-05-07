@@ -72,6 +72,8 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		$this->assertArrayHasKey( 'enabled', $method );
 		$this->assertArrayHasKey( 'cost', $method );
 		$this->assertArrayHasKey( 'min_amount', $method );
+		$this->assertArrayHasKey( 'requires', $method );
+		$this->assertArrayHasKey( 'ignore_discounts', $method );
 		$this->assertArrayNotHasKey( 'zone_id', $method );
 		$this->assertArrayNotHasKey( 'zone_name', $method );
 	}
@@ -109,5 +111,45 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 			$this->assertArrayHasKey( 'type', $loc );
 			$this->assertArrayHasKey( 'code', $loc );
 		}
+	}
+
+	public function test_free_shipping_method_includes_requires_and_ignore_discounts() {
+		$zone = new WC_Shipping_Zone();
+		$zone->set_zone_name( 'Free Shipping Zone' );
+		$zone->save();
+		$instance_id = $zone->add_shipping_method( 'free_shipping' );
+
+		// Configure the free_shipping instance with a min_amount and requires condition.
+		$option_key = 'woocommerce_free_shipping_' . $instance_id . '_settings';
+		update_option(
+			$option_key,
+			array(
+				'title'            => 'Free Shipping',
+				'requires'         => 'min_amount',
+				'min_amount'       => '50',
+				'ignore_discounts' => 'yes',
+			)
+		);
+
+		$api     = new Miguel_Delivery_Methods_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/delivery-methods' );
+
+		$response = $api->get_delivery_methods( $request );
+		$data     = $response->get_data();
+
+		$found_zone = null;
+		foreach ( $data['zones'] as $z ) {
+			if ( $z['id'] === $zone->get_id() ) {
+				$found_zone = $z;
+				break;
+			}
+		}
+		$this->assertNotNull( $found_zone, 'Expected zone not found in response' );
+
+		$method = $found_zone['methods'][0];
+		$this->assertEquals( 'free_shipping', $method['method_id'] );
+		$this->assertEquals( 'min_amount', $method['requires'] );
+		$this->assertEquals( '50', $method['min_amount'] );
+		$this->assertEquals( 'yes', $method['ignore_discounts'] );
 	}
 }

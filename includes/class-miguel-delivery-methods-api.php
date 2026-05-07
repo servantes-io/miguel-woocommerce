@@ -149,13 +149,15 @@ class Miguel_Delivery_Methods_Api {
 	 */
 	private function format_method( $method ) {
 		return array(
-			'instance_id' => $method->get_instance_id(),
-			'method_id'   => $method->id,
-			'title'       => $method->get_title(),
-			'description' => $method->get_method_description(),
-			'enabled'     => $method->is_enabled(),
-			'cost'        => $method->get_option( 'cost', null ),
-			'min_amount'  => $method->get_option( 'min_amount', null ),
+			'instance_id'      => $method->get_instance_id(),
+			'method_id'        => $method->id,
+			'title'            => $method->get_title(),
+			'description'      => $method->get_method_description(),
+			'enabled'          => $method->is_enabled(),
+			'cost'             => $method->get_option( 'cost', null ),
+			'min_amount'       => $method->get_option( 'min_amount', null ),
+			'requires'         => $method->get_option( 'requires', null ),
+			'ignore_discounts' => $method->get_option( 'ignore_discounts', null ),
 		);
 	}
 }
