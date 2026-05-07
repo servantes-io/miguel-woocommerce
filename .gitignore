@@ -7,3 +7,5 @@
 /run/
 temp
 .idea
+tests/.phpunit*
+woocommerce-*

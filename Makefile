@@ -5,9 +5,10 @@ include .dbconfig
 make:
 	@echo "Please choose one of the following target:"
 	@echo ""
-	@echo " install  Installs required packages"
-	@echo " test     Runs tests"
-	@echo " pack     Creates a zip file with the plugin"
+	@echo " install      Installs required packages"
+	@echo " test         Runs tests locally"
+	@echo " test-docker  Runs tests in Docker (no local tools needed)"
+	@echo " pack         Creates a zip file with the plugin"
 	@echo ""
 
 install:
@@ -18,6 +19,9 @@ install:
 
 test:
 	vendor/bin/phpunit
+
+test-docker:
+	docker compose -f docker-compose.test.yml run --rm phpunit
 
 build: $(static_langs)
 
