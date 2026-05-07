@@ -57,8 +57,8 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 		$data = $response->get_data();
 		$this->assertArrayHasKey( 'count', $data );
 		$this->assertArrayHasKey( 'orders', $data );
-		$this->assertIsInt( $data['count'] );
 		$this->assertIsArray( $data['orders'] );
+		$this->assertSame( count( $data['orders'] ), $data['count'] );
 	}
 
 	public function test_get_orders_includes_orders_modified_since_date() {

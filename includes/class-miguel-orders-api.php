@@ -67,6 +67,7 @@ class Miguel_Orders_Api {
 		}
 
 		$timestamp = strtotime( $updated_since );
+		// strtotime returns false for unparseable strings; valid timestamps including 0 (epoch) are accepted.
 		if ( false === $timestamp ) {
 			return new WP_Error(
 				'argument.invalid',
@@ -122,6 +123,7 @@ class Miguel_Orders_Api {
 
 	/**
 	 * Extract Miguel product codes and prices from an order.
+	 * Only downloadable line items with a Miguel shortcode are included; other items are omitted.
 	 *
 	 * @param WC_Order $order WooCommerce order.
 	 * @return array
@@ -139,7 +141,7 @@ class Miguel_Orders_Api {
 				continue;
 			}
 
-			$item_total = $order->get_item_total( $item, false, false );
+			$item_total = $order->get_item_total( $item, false, false ); // exc. tax, exc. rounding
 
 			foreach ( $product->get_downloads() as $download ) {
 				$file = is_array( $download )
