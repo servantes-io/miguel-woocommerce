@@ -1,0 +1,816 @@
+openapi: 3.0.3
+info:
+  title: Miguel WooCommerce API
+  version: "1"
+  description: >
+    REST API exposed by the Miguel WooCommerce plugin under the `/wp-json/miguel/v1` namespace.
+    All endpoints require bearer-token authentication.
+
+servers:
+  - url: https://{domain}/wp-json/miguel/v1
+    variables:
+      domain:
+        default: example.com
+        description: WordPress site domain
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API token configured in the Miguel plugin settings.
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          example: argument.missing
+        message:
+          type: string
+          example: The updated_since parameter is required.
+        data:
+          type: object
+          properties:
+            status:
+              type: integer
+              example: 400
+
+    ZoneLocation:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Location type.
+          enum: [country, state, postcode, continent]
+          example: country
+        code:
+          type: string
+          description: ISO code for the location (e.g. country code, state code).
+          example: CZ
+
+    ShippingMethod:
+      type: object
+      properties:
+        instance_id:
+          type: integer
+          description: Unique instance ID of this shipping method within WooCommerce.
+          example: 3
+        method_id:
+          type: string
+          description: WooCommerce shipping method identifier.
+          example: flat_rate
+        title:
+          type: string
+          description: Display title configured by the merchant.
+          example: Flat Rate
+        description:
+          type: string
+          description: Method description from WooCommerce.
+          example: Lets you charge a fixed rate for shipping.
+        enabled:
+          type: boolean
+          description: Whether the method is enabled.
+          example: true
+        cost:
+          type: string
+          nullable: true
+          description: Shipping cost (flat_rate). Null when not applicable.
+          example: "5.00"
+        min_amount:
+          type: string
+          nullable: true
+          description: Minimum order amount required for free shipping. Null when not applicable.
+          example: "50.00"
+        free_shipping:
+          type: string
+          nullable: true
+          description: free_shipping option value on the method. Null when not set.
+          example: null
+        requires:
+          type: string
+          nullable: true
+          description: >
+            Condition required to qualify for free shipping (free_shipping method).
+            One of: '' (none), 'coupon', 'min_amount', 'either', 'both'.
+            Null when not applicable.
+          example: min_amount
+        ignore_discounts:
+          type: string
+          nullable: true
+          description: >
+            Whether to ignore discounts when checking the min_amount condition
+            (free_shipping method). 'yes' or 'no'. Null when not applicable.
+          example: "yes"
+
+    Zone:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: WooCommerce shipping zone ID. 0 = Rest of World.
+          example: 1
+        name:
+          type: string
+          description: Shipping zone name.
+          example: Europe
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZoneLocation'
+          description: Countries/states/postcodes this zone applies to. Empty for Rest of World.
+        methods:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShippingMethod'
+
+    OrderAddress:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        company:
+          type: string
+        address_1:
+          type: string
+        address_2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postcode:
+          type: string
+        country:
+          type: string
+          description: Full country name.
+          example: Czech Republic
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+
+    OrderUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          nullable: true
+          description: WordPress user ID. Null for guest orders.
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        address:
+          $ref: '#/components/schemas/OrderAddress'
+        lang:
+          type: string
+          nullable: true
+          description: Customer locale/language.
+
+    OrderProductPrice:
+      type: object
+      properties:
+        sold_without_vat:
+          type: number
+          format: float
+          description: Line item total excluding tax and rounding.
+
+    OrderProduct:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Miguel product code extracted from the downloadable file shortcode.
+          example: ABC123
+        price:
+          $ref: '#/components/schemas/OrderProductPrice'
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          description: WooCommerce order ID as a string.
+          example: "42"
+        status:
+          type: string
+          description: WooCommerce order status slug (without wc- prefix).
+          example: processing
+        currency_code:
+          type: string
+          description: ISO 4217 currency code.
+          example: CZK
+        paid:
+          type: boolean
+          description: Whether the order has been paid.
+        purchase_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date the order was placed (ISO 8601).
+        update_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date the order was last modified (ISO 8601).
+        user:
+          $ref: '#/components/schemas/OrderUser'
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderProduct'
+          description: >
+            Only downloadable line items with a Miguel shortcode are included.
+            Non-Miguel or non-downloadable items are omitted.
+
+    MiguelItem:
+      type: object
+      properties:
+        book_id:
+          type: string
+          description: Miguel book ID from the shortcode.
+          example: "9788024271101"
+        format:
+          type: string
+          description: File format from the shortcode (e.g. epub, pdf). Empty string if not specified.
+          example: epub
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 15
+        name:
+          type: string
+          example: My eBook
+        status:
+          type: boolean
+          description: True when the product is published.
+        type:
+          type: string
+          description: WooCommerce product type (simple, variable, variation, etc.).
+          example: simple
+        sku:
+          type: string
+        currency:
+          type: string
+          example: CZK
+        price:
+          type: number
+          format: float
+          nullable: true
+          description: Current price including tax.
+        price_without_tax:
+          type: number
+          format: float
+          nullable: true
+        tax:
+          type: number
+          format: float
+          nullable: true
+          description: Total tax rate percentage.
+        tax_total:
+          type: number
+          format: float
+          nullable: true
+        in_stock:
+          type: boolean
+        stock_status:
+          type: string
+          example: instock
+        manage_stock:
+          type: boolean
+        stock_quantity:
+          type: integer
+          nullable: true
+          description: Null when manage_stock is false.
+        backorders_allowed:
+          type: string
+          description: WooCommerce backorders setting (no, notify, yes).
+          example: "no"
+        sold_individually:
+          type: boolean
+        regular_price:
+          type: number
+          format: float
+          nullable: true
+        sale_price:
+          type: number
+          format: float
+          nullable: true
+        parent_id:
+          type: integer
+          description: Parent product ID for variations. 0 for top-level products.
+        miguel_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MiguelItem'
+          description: Miguel shortcodes found in the product's downloadable files.
+
+    ProductCodeDetail:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        product_ids:
+          type: array
+          items:
+            type: integer
+          description: All product IDs that share this code (useful when is_unique is false).
+        is_unique:
+          type: boolean
+          description: False when multiple products share the same code.
+
+    LineItem:
+      type: object
+      required: [quantity]
+      properties:
+        product_id:
+          type: integer
+          description: WooCommerce product ID. Required when productCode is not supplied.
+        productCode:
+          type: string
+          description: >
+            Miguel product code. Resolved to product_id before passing to WooCommerce.
+            Use either product_id or productCode, not both (unless they refer to the same product).
+        product_code:
+          type: string
+          description: Snake-case alias for productCode.
+        quantity:
+          type: integer
+          minimum: 1
+          example: 1
+
+    BillingAddress:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        company:
+          type: string
+        address_1:
+          type: string
+        address_2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postcode:
+          type: string
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code.
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+
+    ShippingAddress:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        company:
+          type: string
+        address_1:
+          type: string
+        address_2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postcode:
+          type: string
+        country:
+          type: string
+
+    ShippingLine:
+      type: object
+      properties:
+        method_id:
+          type: string
+          example: flat_rate
+        method_title:
+          type: string
+          example: Flat Rate
+        total:
+          type: string
+          example: "5.00"
+
+    CreateOrderRequest:
+      type: object
+      required: [payment_method, billing, shipping, shipping_lines, line_items]
+      properties:
+        idempotency_key:
+          type: string
+          description: >
+            Idempotency key for safe retries. Can also be sent via the
+            Idempotency-Key or X-Idempotency-Key request header.
+          example: "order-2024-abc123"
+        payment_method:
+          type: string
+          description: WooCommerce payment method ID.
+          example: bacs
+        payment_method_title:
+          type: string
+          example: Direct Bank Transfer
+        customer_id:
+          type: integer
+          description: WordPress user ID. Must reference an existing user when supplied.
+        status:
+          type: string
+          description: Initial order status. Defaults to WooCommerce default (pending).
+          example: processing
+        billing:
+          $ref: '#/components/schemas/BillingAddress'
+        shipping:
+          $ref: '#/components/schemas/ShippingAddress'
+        shipping_lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShippingLine'
+          minItems: 1
+        line_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineItem'
+          minItems: 1
+        send_emails:
+          type: boolean
+          description: >
+            Send standard WooCommerce order notification emails after creation.
+            Ignored when email_template is set.
+        send_email:
+          type: boolean
+          description: Alias for send_emails.
+        email_template:
+          type: string
+          description: >
+            Send a specific WooCommerce email template instead of the default set.
+            Setting this implies send_emails=true.
+          enum:
+            - new_order
+            - customer_invoice
+            - customer_on_hold_order
+            - customer_processing_order
+            - customer_completed_order
+            - customer_failed_order
+
+    CreateOrderResponse:
+      type: object
+      description: >
+        WooCommerce order object (as returned by WC REST Orders controller)
+        with additional Miguel fields merged in.
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        idempotent_replay:
+          type: boolean
+          description: True when the response was served from a previous idempotent result.
+        debug_log_path:
+          type: string
+          nullable: true
+          description: Server-side path to the Miguel debug log file.
+        emails_requested:
+          type: boolean
+        emails_dispatched:
+          type: boolean
+        email_template:
+          type: string
+          nullable: true
+
+paths:
+  /delivery-methods:
+    get:
+      summary: List shipping methods grouped by zone
+      operationId: getDeliveryMethods
+      description: >
+        Returns all configured WooCommerce shipping methods grouped by shipping zone.
+        Zones with no methods are omitted. Zone 0 (Rest of World) is appended last
+        when it has methods.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: Number of zones returned.
+                  zones:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Zone'
+        "401":
+          description: Missing bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /orders:
+    get:
+      summary: List orders modified since a given date
+      operationId: getOrders
+      description: >
+        Returns all WooCommerce orders whose modification date is on or after
+        `updated_since`, ordered by modification date ascending.
+        Only line items that are downloadable and contain a Miguel shortcode
+        are included in each order's `products` array.
+      parameters:
+        - in: query
+          name: updated_since
+          required: true
+          schema:
+            type: string
+          description: >
+            Date/time threshold. Any value parseable by PHP `strtotime()` is accepted
+            (ISO 8601, RFC 2822, Unix timestamp, relative strings like "yesterday", etc.).
+          example: "2024-01-01T00:00:00Z"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+        "400":
+          description: Missing or unparseable updated_since parameter.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing:
+                  value:
+                    code: argument.missing
+                    message: The updated_since parameter is required.
+                    data:
+                      status: 400
+                invalid:
+                  value:
+                    code: argument.invalid
+                    message: The updated_since parameter is not a valid date.
+                    data:
+                      status: 400
+        "401":
+          description: Missing bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create an order
+      operationId: createOrder
+      description: >
+        Creates a WooCommerce order by delegating to the official WC REST Orders controller.
+        Supports idempotency: repeat the same request with the same `idempotency_key` (or
+        `Idempotency-Key` / `X-Idempotency-Key` header) to safely retry without creating
+        duplicate orders.
+
+
+        Line items may reference products by `product_id` (WooCommerce ID) or `productCode`
+        (Miguel shortcode code attribute). When `productCode` is supplied it is resolved to
+        a `product_id` before the order is created.
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema:
+            type: string
+          description: Idempotency key (alternative to body field).
+        - in: header
+          name: X-Idempotency-Key
+          schema:
+            type: string
+          description: Idempotency key (alternative to body field).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            example:
+              idempotency_key: "order-2024-abc123"
+              payment_method: bacs
+              payment_method_title: Direct Bank Transfer
+              status: processing
+              billing:
+                first_name: Jan
+                last_name: Novák
+                email: jan@example.com
+                address_1: Václavské náměstí 1
+                city: Praha
+                postcode: "11000"
+                country: CZ
+              shipping:
+                first_name: Jan
+                last_name: Novák
+                address_1: Václavské náměstí 1
+                city: Praha
+                postcode: "11000"
+                country: CZ
+              shipping_lines:
+                - method_id: flat_rate
+                  method_title: Flat Rate
+                  total: "5.00"
+              line_items:
+                - productCode: ABC123
+                  quantity: 1
+      responses:
+        "201":
+          description: Order created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrderResponse'
+        "200":
+          description: Idempotent replay — order already existed with this key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  status:
+                    type: string
+                  idempotent_replay:
+                    type: boolean
+                    example: true
+        "400":
+          description: Validation error (missing required fields, invalid line items, etc.).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Missing bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "409":
+          description: >
+            Conflict — idempotency key already used with a different payload,
+            or the same request is currently being processed concurrently.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                payload_mismatch:
+                  value:
+                    code: idempotency.payload_mismatch
+                    message: Idempotency key was already used with different payload.
+                    data:
+                      status: 409
+                in_progress:
+                  value:
+                    code: idempotency.in_progress
+                    message: Request with this idempotency key is currently being processed.
+                    data:
+                      status: 409
+        "500":
+          description: Server error (WC controller unavailable, order not created, etc.).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /products:
+    get:
+      summary: List all products with prices and Miguel items
+      operationId: getProducts
+      description: >
+        Returns all WooCommerce products and product variations (published, private, draft,
+        pending, future) with pricing, stock, and any Miguel shortcodes found in
+        their downloadable files.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  currency:
+                    type: string
+                    description: Store currency (ISO 4217).
+                    example: CZK
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+        "401":
+          description: Missing bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /product-code-map:
+    get:
+      summary: Get Miguel product code to WooCommerce product ID mapping
+      operationId: getProductCodeMap
+      description: >
+        Returns a map of all Miguel product codes found in downloadable product files,
+        with their resolved WooCommerce product IDs. Useful for detecting duplicate
+        codes (same code on multiple products).
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: Total number of unique product codes.
+                  duplicate_count:
+                    type: integer
+                    description: Number of codes that map to more than one product.
+                  product_code_map:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                    description: >
+                      Map of product_code → product_id. When a code is not unique,
+                      the ID of one of the matching products is returned.
+                    example:
+                      ABC123: 15
+                      XYZ789: 22
+                  product_code_details:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/ProductCodeDetail'
+                    description: >
+                      Extended map of product_code → detail object including all
+                      matching product IDs and uniqueness flag.
+        "401":
+          description: Missing bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
