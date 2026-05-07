@@ -30,12 +30,12 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 
 		$data = $response->get_data();
 		$this->assertArrayHasKey( 'count', $data );
-		$this->assertArrayHasKey( 'methods', $data );
+		$this->assertArrayHasKey( 'zones', $data );
 		$this->assertSame( 0, $data['count'] );
-		$this->assertSame( array(), $data['methods'] );
+		$this->assertSame( array(), $data['zones'] );
 	}
 
-	public function test_get_delivery_methods_returns_methods_from_zone() {
+	public function test_get_delivery_methods_groups_methods_by_zone() {
 		$zone = new WC_Shipping_Zone();
 		$zone->set_zone_name( 'Test Zone' );
 		$zone->save();
@@ -50,18 +50,24 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertSame( 1, $data['count'] );
 
-		$found = false;
-		foreach ( $data['methods'] as $method ) {
-			if ( $method['instance_id'] === $instance_id ) {
-				$found = true;
-				$this->assertEquals( 'flat_rate', $method['method_id'] );
-				$this->assertEquals( 'Test Zone', $method['zone_name'] );
-				$this->assertEquals( $zone->get_id(), $method['zone_id'] );
-				$this->assertArrayHasKey( 'title', $method );
-				$this->assertArrayHasKey( 'enabled', $method );
+		$found_zone = null;
+		foreach ( $data['zones'] as $z ) {
+			if ( $z['id'] === $zone->get_id() ) {
+				$found_zone = $z;
 				break;
 			}
 		}
-		$this->assertTrue( $found, 'Expected method not found in response' );
+		$this->assertNotNull( $found_zone, 'Expected zone not found in response' );
+		$this->assertEquals( 'Test Zone', $found_zone['name'] );
+		$this->assertArrayHasKey( 'methods', $found_zone );
+		$this->assertCount( 1, $found_zone['methods'] );
+
+		$method = $found_zone['methods'][0];
+		$this->assertEquals( $instance_id, $method['instance_id'] );
+		$this->assertEquals( 'flat_rate', $method['method_id'] );
+		$this->assertArrayHasKey( 'title', $method );
+		$this->assertArrayHasKey( 'enabled', $method );
+		$this->assertArrayNotHasKey( 'zone_id', $method );
+		$this->assertArrayNotHasKey( 'zone_name', $method );
 	}
 }

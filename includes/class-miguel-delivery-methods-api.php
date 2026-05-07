@@ -50,44 +50,76 @@ class Miguel_Delivery_Methods_Api {
 	}
 
 	/**
-	 * Return all configured WooCommerce shipping methods across all zones.
+	 * Return all configured WooCommerce shipping methods grouped by zone.
 	 *
 	 * @param WP_REST_Request $request REST request.
 	 * @return WP_REST_Response
 	 */
 	public function get_delivery_methods( $request ) {
-		$methods = $this->collect_delivery_methods();
+		$zones = $this->collect_zones();
 
 		return new WP_REST_Response(
 			array(
-				'count'   => count( $methods ),
-				'methods' => $methods,
+				'count' => count( $zones ),
+				'zones' => $zones,
 			),
 			200
 		);
 	}
 
 	/**
-	 * Collect shipping methods from all zones including "Rest of World".
+	 * Collect all zones with their shipping methods. Zones with no methods are omitted.
+	 * Zone 0 ("Rest of World") is appended last if it has methods.
 	 *
 	 * @return array
 	 */
-	private function collect_delivery_methods() {
-		$methods = array();
+	private function collect_zones() {
+		$zones = array();
 
 		foreach ( WC_Shipping_Zones::get_zones() as $zone_data ) {
-			$zone = new WC_Shipping_Zone( $zone_data['id'] );
-			foreach ( $zone->get_shipping_methods() as $method ) {
-				$methods[] = $this->format_method( $method, $zone );
+			$zone    = new WC_Shipping_Zone( $zone_data['id'] );
+			$methods = $this->collect_zone_methods( $zone );
+			if ( ! empty( $methods ) ) {
+				$zones[] = $this->format_zone( $zone, $methods );
 			}
 		}
 
 		// Zone 0 is "Rest of World" and is not included in get_zones().
 		$rest_zone = new WC_Shipping_Zone( 0 );
-		foreach ( $rest_zone->get_shipping_methods() as $method ) {
-			$methods[] = $this->format_method( $method, $rest_zone );
+		$methods   = $this->collect_zone_methods( $rest_zone );
+		if ( ! empty( $methods ) ) {
+			$zones[] = $this->format_zone( $rest_zone, $methods );
 		}
 
+		return $zones;
+	}
+
+	/**
+	 * Format a zone with its methods for the API response.
+	 *
+	 * @param WC_Shipping_Zone $zone    Shipping zone.
+	 * @param array            $methods Formatted methods array.
+	 * @return array
+	 */
+	private function format_zone( $zone, $methods ) {
+		return array(
+			'id'      => $zone->get_id(),
+			'name'    => $zone->get_zone_name(),
+			'methods' => $methods,
+		);
+	}
+
+	/**
+	 * Collect formatted shipping methods for a zone.
+	 *
+	 * @param WC_Shipping_Zone $zone Shipping zone.
+	 * @return array
+	 */
+	private function collect_zone_methods( $zone ) {
+		$methods = array();
+		foreach ( $zone->get_shipping_methods() as $method ) {
+			$methods[] = $this->format_method( $method );
+		}
 		return $methods;
 	}
 
@@ -95,17 +127,14 @@ class Miguel_Delivery_Methods_Api {
 	 * Format a single shipping method for the API response.
 	 *
 	 * @param WC_Shipping_Method $method Shipping method instance.
-	 * @param WC_Shipping_Zone   $zone   Zone the method belongs to.
 	 * @return array
 	 */
-	private function format_method( $method, $zone ) {
+	private function format_method( $method ) {
 		return array(
 			'instance_id' => $method->get_instance_id(),
 			'method_id'   => $method->id,
 			'title'       => $method->get_title(),
-			'enabled'     => 'yes' === $method->enabled,
-			'zone_id'     => $zone->get_id(),
-			'zone_name'   => $zone->get_zone_name(),
+			'enabled'     => $method->is_enabled(),
 		);
 	}
 }
