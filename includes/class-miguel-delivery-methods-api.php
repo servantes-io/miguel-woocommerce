@@ -103,10 +103,28 @@ class Miguel_Delivery_Methods_Api {
 	 */
 	private function format_zone( $zone, $methods ) {
 		return array(
-			'id'      => $zone->get_id(),
-			'name'    => $zone->get_zone_name(),
-			'methods' => $methods,
+			'id'        => $zone->get_id(),
+			'name'      => $zone->get_zone_name(),
+			'locations' => $this->format_zone_locations( $zone->get_zone_locations() ),
+			'methods'   => $methods,
 		);
+	}
+
+	/**
+	 * Format zone locations for the API response.
+	 *
+	 * @param array $locations Zone location objects from WC_Shipping_Zone::get_zone_locations().
+	 * @return array
+	 */
+	private function format_zone_locations( $locations ) {
+		$result = array();
+		foreach ( $locations as $loc ) {
+			$result[] = array(
+				'type' => $loc->type,
+				'code' => $loc->code,
+			);
+		}
+		return $result;
 	}
 
 	/**
@@ -134,7 +152,10 @@ class Miguel_Delivery_Methods_Api {
 			'instance_id' => $method->get_instance_id(),
 			'method_id'   => $method->id,
 			'title'       => $method->get_title(),
+			'description' => $method->get_method_description(),
 			'enabled'     => $method->is_enabled(),
+			'cost'        => $method->get_option( 'cost', null ),
+			'min_amount'  => $method->get_option( 'min_amount', null ),
 		);
 	}
 }

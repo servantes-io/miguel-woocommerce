@@ -59,6 +59,8 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		}
 		$this->assertNotNull( $found_zone, 'Expected zone not found in response' );
 		$this->assertEquals( 'Test Zone', $found_zone['name'] );
+		$this->assertArrayHasKey( 'locations', $found_zone );
+		$this->assertIsArray( $found_zone['locations'] );
 		$this->assertArrayHasKey( 'methods', $found_zone );
 		$this->assertCount( 1, $found_zone['methods'] );
 
@@ -66,8 +68,46 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		$this->assertEquals( $instance_id, $method['instance_id'] );
 		$this->assertEquals( 'flat_rate', $method['method_id'] );
 		$this->assertArrayHasKey( 'title', $method );
+		$this->assertArrayHasKey( 'description', $method );
 		$this->assertArrayHasKey( 'enabled', $method );
+		$this->assertArrayHasKey( 'cost', $method );
+		$this->assertArrayHasKey( 'min_amount', $method );
 		$this->assertArrayNotHasKey( 'zone_id', $method );
 		$this->assertArrayNotHasKey( 'zone_name', $method );
+	}
+
+	public function test_zone_includes_locations_with_correct_structure() {
+		$zone = new WC_Shipping_Zone();
+		$zone->set_zone_name( 'Europe Zone' );
+		$zone->save();
+		$zone->add_location( 'CZ', 'country' );
+		$zone->add_location( 'SK', 'country' );
+		$zone->save();
+		$zone->add_shipping_method( 'flat_rate' );
+
+		$api     = new Miguel_Delivery_Methods_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/delivery-methods' );
+
+		$response = $api->get_delivery_methods( $request );
+		$data     = $response->get_data();
+
+		$found_zone = null;
+		foreach ( $data['zones'] as $z ) {
+			if ( $z['id'] === $zone->get_id() ) {
+				$found_zone = $z;
+				break;
+			}
+		}
+		$this->assertNotNull( $found_zone, 'Expected zone not found in response' );
+		$this->assertCount( 2, $found_zone['locations'] );
+
+		$codes = array_column( $found_zone['locations'], 'code' );
+		$this->assertContains( 'CZ', $codes );
+		$this->assertContains( 'SK', $codes );
+
+		foreach ( $found_zone['locations'] as $loc ) {
+			$this->assertArrayHasKey( 'type', $loc );
+			$this->assertArrayHasKey( 'code', $loc );
+		}
 	}
 }
