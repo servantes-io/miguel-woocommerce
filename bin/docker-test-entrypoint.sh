@@ -10,8 +10,13 @@ DB_NAME="woocommerce_tests"
 DB_USER="root"
 DB_PASS="woocommerce_test_password"
 
+MYSQL_SSL_FLAG=""
+if mysql --help 2>&1 | grep -q -- '--skip-ssl'; then
+    MYSQL_SSL_FLAG="--skip-ssl"
+fi
+
 echo "==> Waiting for MySQL at $DB_HOST..."
-until mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" --skip-ssl -e "SELECT 1" 2>/dev/null; do
+until mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" $MYSQL_SSL_FLAG -e "SELECT 1" 2>/dev/null; do
     sleep 2
 done
 echo "==> MySQL ready."

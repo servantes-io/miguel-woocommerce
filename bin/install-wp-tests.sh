@@ -12,6 +12,11 @@ DB_HOST=${4-localhost}
 WP_VERSION=${5-latest}
 SKIP_DB_CREATE=${6-false}
 
+MYSQL_SSL_FLAG=""
+if mysql --help 2>&1 | grep -q -- '--skip-ssl'; then
+    MYSQL_SSL_FLAG=" --skip-ssl"
+fi
+
 TMPDIR=${TMPDIR-/tmp}
 TMPDIR=$(echo $TMPDIR | sed -e "s/\/$//")
 WP_TESTS_DIR=${WP_TESTS_DIR-$TMPDIR/wordpress-tests-lib}
@@ -157,11 +162,11 @@ install_db() {
 
 	if ! [ -z $DB_HOSTNAME ] ; then
 		if [ $(echo $DB_SOCK_OR_PORT | grep -e '^[0-9]\{1,\}$') ]; then
-			EXTRA=" --host=$DB_HOSTNAME --port=$DB_SOCK_OR_PORT --protocol=tcp --skip-ssl"
+			EXTRA=" --host=$DB_HOSTNAME --port=$DB_SOCK_OR_PORT --protocol=tcp$MYSQL_SSL_FLAG"
 		elif ! [ -z $DB_SOCK_OR_PORT ] ; then
-			EXTRA=" --socket=$DB_SOCK_OR_PORT --skip-ssl"
+			EXTRA=" --socket=$DB_SOCK_OR_PORT$MYSQL_SSL_FLAG"
 		elif ! [ -z $DB_HOSTNAME ] ; then
-			EXTRA=" --host=$DB_HOSTNAME --protocol=tcp --skip-ssl"
+			EXTRA=" --host=$DB_HOSTNAME --protocol=tcp$MYSQL_SSL_FLAG"
 		fi
 	fi
 
