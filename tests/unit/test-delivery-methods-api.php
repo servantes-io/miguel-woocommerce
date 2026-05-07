@@ -72,6 +72,7 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		$this->assertArrayHasKey( 'enabled', $method );
 		$this->assertArrayHasKey( 'cost', $method );
 		$this->assertArrayHasKey( 'min_amount', $method );
+		$this->assertArrayHasKey( 'free_shipping', $method );
 		$this->assertArrayHasKey( 'requires', $method );
 		$this->assertArrayHasKey( 'ignore_discounts', $method );
 		$this->assertArrayNotHasKey( 'zone_id', $method );

@@ -156,6 +156,7 @@ class Miguel_Delivery_Methods_Api {
 			'enabled'          => $method->is_enabled(),
 			'cost'             => $method->get_option( 'cost', null ),
 			'min_amount'       => $method->get_option( 'min_amount', null ),
+			'free_shipping'    => $method->get_option( 'free_shipping', null ),
 			'requires'         => $method->get_option( 'requires', null ),
 			'ignore_discounts' => $method->get_option( 'ignore_discounts', null ),
 		);
