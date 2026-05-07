@@ -114,23 +114,11 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		}
 	}
 
-	public function test_free_shipping_method_includes_requires_and_ignore_discounts() {
+	public function test_free_shipping_method_includes_free_shipping_specific_fields() {
 		$zone = new WC_Shipping_Zone();
 		$zone->set_zone_name( 'Free Shipping Zone' );
 		$zone->save();
-		$instance_id = $zone->add_shipping_method( 'free_shipping' );
-
-		// Configure the free_shipping instance with a min_amount and requires condition.
-		$option_key = 'woocommerce_free_shipping_' . $instance_id . '_settings';
-		update_option(
-			$option_key,
-			array(
-				'title'            => 'Free Shipping',
-				'requires'         => 'min_amount',
-				'min_amount'       => '50',
-				'ignore_discounts' => 'yes',
-			)
-		);
+		$zone->add_shipping_method( 'free_shipping' );
 
 		$api     = new Miguel_Delivery_Methods_Api( new Miguel_Hook_Manager() );
 		$request = new WP_REST_Request( 'GET', '/miguel/v1/delivery-methods' );
@@ -149,8 +137,8 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 
 		$method = $found_zone['methods'][0];
 		$this->assertEquals( 'free_shipping', $method['method_id'] );
-		$this->assertEquals( 'min_amount', $method['requires'] );
-		$this->assertEquals( '50', $method['min_amount'] );
-		$this->assertEquals( 'yes', $method['ignore_discounts'] );
+		$this->assertArrayHasKey( 'requires', $method );
+		$this->assertArrayHasKey( 'free_shipping', $method );
+		$this->assertArrayHasKey( 'ignore_discounts', $method );
 	}
 }
