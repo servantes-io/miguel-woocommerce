@@ -70,6 +70,17 @@ class Miguel_Settings extends WC_Settings_Page {
 					'desc' => __( 'To setup safe communication between your e-shop and our server.', 'miguel' ),
 				),
 				array(
+					'id'      => Miguel_API::SERVER_OPTION,
+					'type'    => 'select',
+					'title'   => __( 'API server', 'miguel' ),
+					'options' => array(
+						Miguel_API::ENV_PROD    => __( 'Production', 'miguel' ),
+						Miguel_API::ENV_STAGING => __( 'Staging', 'miguel' ),
+						Miguel_API::ENV_TEST    => __( 'Test', 'miguel' ),
+					),
+					'default' => Miguel_API::ENV_PROD,
+				),
+				array(
 					'id' => 'miguel_api_options',
 					'type' => 'sectionend',
 				),

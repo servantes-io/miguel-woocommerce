@@ -17,6 +17,7 @@ class Miguel_API {
 	const CURRENT_ENV = self::ENV_PROD;
 
 	const API_KEY_OPTION = 'miguel_api_key';
+	const SERVER_OPTION = 'miguel_api_server';
 
 	const MIGUEL_API_BASE_URL = 'https://miguel.servantes.cz';
 
@@ -62,7 +63,7 @@ class Miguel_API {
 	 * @return string
 	 */
 	public static function getServer() {
-		return self::CURRENT_ENV;
+		return (string) get_option( self::SERVER_OPTION, self::ENV_PROD );
 	}
 
 	/**

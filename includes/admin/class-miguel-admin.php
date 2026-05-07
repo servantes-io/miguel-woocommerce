@@ -39,6 +39,7 @@ class Miguel_Admin {
 	 */
 	public function register_hooks() {
 		$this->hook_manager->add_filter( 'woocommerce_get_settings_pages', array( $this, 'add_settings_pages' ) );
+		$this->hook_manager->add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 	}
 
 	/**
@@ -48,6 +49,26 @@ class Miguel_Admin {
 	 */
 	public function get_hook_manager() {
 		return $this->hook_manager;
+	}
+
+	/**
+	 * Enqueue admin scripts on the Miguel settings tab.
+	 *
+	 * @param string $hook Current admin page hook suffix.
+	 */
+	public function enqueue_admin_scripts( $hook ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'woocommerce_page_wc-settings' !== $hook || ! isset( $_GET['tab'] ) || 'miguel' !== $_GET['tab'] ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			'miguel-admin',
+			plugin_dir_url( MIGUEL_PLUGIN_FILE ) . 'assets/js/admin.js',
+			array( 'jquery' ),
+			miguel()->version,
+			true
+		);
 	}
 
 	/**
