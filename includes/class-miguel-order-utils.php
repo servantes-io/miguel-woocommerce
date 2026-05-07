@@ -44,7 +44,7 @@ class Miguel_Order_Utils {
 	public static function get_address_for_order( $order, $enhanced = false ) {
 		if ( $enhanced ) {
 			$billing_country = $order->get_billing_country();
-			$country_name    = WC()->countries->countries[ $billing_country ] ?? $billing_country;
+			$country_name    = isset( WC()->countries->countries[ $billing_country ] ) ? WC()->countries->countries[ $billing_country ] : $billing_country;
 			if ( ! $country_name ) {
 				$country_name = $billing_country;
 			}
