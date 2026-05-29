@@ -233,6 +233,11 @@ class Miguel {
 	 * @param array  $context Additional context.
 	 */
 	public static function debug_log( $message, $context = array() ) {
+		$debug_enabled = apply_filters( 'miguel_enable_debug_log', false );
+		if ( true !== $debug_enabled ) {
+			return;
+		}
+
 		$log_file = self::resolve_debug_log_path( true );
 		$payload = array(
 			'timestamp' => gmdate( 'c' ),

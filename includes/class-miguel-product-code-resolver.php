@@ -45,7 +45,7 @@ class Miguel_Product_Code_Resolver {
 				'Collected product code details map',
 				array(
 					'product_code_count' => count( $this->product_code_details_map ),
-					'product_code_details' => $this->product_code_details_map,
+					'sample_product_codes' => array_slice( array_keys( $this->product_code_details_map ), 0, 20 ),
 				)
 			);
 		}
@@ -137,7 +137,6 @@ class Miguel_Product_Code_Resolver {
 		);
 
 		$product_code_entries = array();
-		$collected_products = array();
 
 		foreach ( $query->posts as $product_id ) {
 			$product = wc_get_product( $product_id );
@@ -146,23 +145,17 @@ class Miguel_Product_Code_Resolver {
 			}
 
 			$product_codes = $this->get_product_codes_from_product( $product );
-			$collected_products[] = array(
-				'product_id' => $product->get_id(),
-				'sku' => $product->get_sku(),
-				'name' => $product->get_name(),
-				'product_codes' => $product_codes,
-			);
 
 			foreach ( $product_codes as $product_code ) {
 				if ( ! isset( $product_code_entries[ $product_code ] ) ) {
 					$product_code_entries[ $product_code ] = array();
 				}
 
-				if ( in_array( $product->get_id(), $product_code_entries[ $product_code ], true ) ) {
+				if ( in_array( $product_id, $product_code_entries[ $product_code ], true ) ) {
 					continue;
 				}
 
-				$product_code_entries[ $product_code ][] = $product->get_id();
+				$product_code_entries[ $product_code ][] = $product_id;
 			}
 		}
 
@@ -184,7 +177,8 @@ class Miguel_Product_Code_Resolver {
 		Miguel::debug_log(
 			'Collected products for product code resolution',
 			array(
-				'products' => $collected_products,
+				'product_post_count' => count( $query->posts ),
+				'resolved_code_count' => count( $product_code_details_map ),
 			)
 		);
 

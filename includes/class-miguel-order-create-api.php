@@ -12,6 +12,11 @@ class Miguel_Order_Create_Api {
 	use Miguel_Rest_Auth_Trait;
 
 	/**
+	 * Action hook used for asynchronous order email dispatch.
+	 */
+	const ASYNC_EMAIL_DISPATCH_ACTION = 'miguel_async_dispatch_order_emails';
+
+	/**
 	 * Hook manager instance.
 	 *
 	 * @var Miguel_Hook_Manager_Interface
@@ -41,6 +46,7 @@ class Miguel_Order_Create_Api {
 	 */
 	public function register_hooks() {
 		$this->hook_manager->add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+		$this->hook_manager->add_action( self::ASYNC_EMAIL_DISPATCH_ACTION, array( $this, 'handle_async_order_email_dispatch' ), 10, 2 );
 	}
 
 	/**
@@ -78,7 +84,10 @@ class Miguel_Order_Create_Api {
 			array(
 				'idempotency_key' => isset( $payload['idempotency_key'] ) ? $payload['idempotency_key'] : '',
 				'line_items_count' => isset( $payload['line_items'] ) && is_array( $payload['line_items'] ) ? count( $payload['line_items'] ) : 0,
-				'payload' => $payload,
+				'payment_method' => isset( $payload['payment_method'] ) ? (string) $payload['payment_method'] : '',
+				'set_paid' => isset( $payload['set_paid'] ) ? $payload['set_paid'] : null,
+				'send_emails' => isset( $payload['send_emails'] ) ? $payload['send_emails'] : ( isset( $payload['send_email'] ) ? $payload['send_email'] : null ),
+				'email_template' => isset( $payload['email_template'] ) ? (string) $payload['email_template'] : null,
 			)
 		);
 
@@ -154,7 +163,10 @@ class Miguel_Order_Create_Api {
 			Miguel::debug_log(
 				'Prepared WooCommerce order payload',
 				array(
-					'payload' => $payload,
+					'payment_method' => isset( $payload['payment_method'] ) ? (string) $payload['payment_method'] : '',
+					'status' => isset( $payload['status'] ) ? (string) $payload['status'] : '',
+					'line_items_count' => isset( $payload['line_items'] ) && is_array( $payload['line_items'] ) ? count( $payload['line_items'] ) : 0,
+					'shipping_lines_count' => isset( $payload['shipping_lines'] ) && is_array( $payload['shipping_lines'] ) ? count( $payload['shipping_lines'] ) : 0,
 				)
 			);
 
@@ -197,16 +209,17 @@ class Miguel_Order_Create_Api {
 				$order->save_meta_data();
 			}
 
-			$emails_dispatched = false;
+			$emails_queued = false;
 			if ( $send_emails && $order ) {
-				$emails_dispatched = $this->dispatch_order_emails( $order, $email_template );
+				$emails_queued = $this->queue_order_email_dispatch( $order->get_id(), $email_template );
 			}
 
 			$data = $this->extract_response_data( $response );
 			$data['idempotent_replay'] = false;
 			$data['debug_log_path'] = Miguel::get_debug_log_path();
 			$data['emails_requested'] = $send_emails;
-			$data['emails_dispatched'] = $emails_dispatched;
+			$data['emails_dispatched'] = false;
+			$data['emails_queued'] = $emails_queued;
 			$data['email_template'] = $email_template;
 
 			Miguel::debug_log(
@@ -215,9 +228,12 @@ class Miguel_Order_Create_Api {
 					'order_id' => $order_id,
 					'idempotency_key' => $idempotency_key,
 					'emails_requested' => $send_emails,
-					'emails_dispatched' => $emails_dispatched,
+					'emails_dispatched' => false,
+					'emails_queued' => $emails_queued,
 					'email_template' => $email_template,
-					'response_payload' => $data,
+					'order_status' => isset( $data['status'] ) ? (string) $data['status'] : '',
+					'order_total' => isset( $data['total'] ) ? (string) $data['total'] : '',
+					'line_items_count' => isset( $data['line_items'] ) && is_array( $data['line_items'] ) ? count( $data['line_items'] ) : 0,
 				)
 			);
 
@@ -815,6 +831,109 @@ class Miguel_Order_Create_Api {
 		}
 
 		return 1 === $value;
+	}
+
+	/**
+	 * Queue WooCommerce order email dispatch in the background.
+	 *
+	 * @param int         $order_id WooCommerce order ID.
+	 * @param string|null $email_template Optional explicit email template identifier.
+	 * @return bool
+	 */
+	private function queue_order_email_dispatch( $order_id, $email_template = null ) {
+		$order_id = absint( $order_id );
+		if ( $order_id <= 0 ) {
+			return false;
+		}
+
+		$args = array(
+			'order_id' => $order_id,
+			'email_template' => null !== $email_template ? sanitize_key( (string) $email_template ) : null,
+		);
+
+		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( self::ASYNC_EMAIL_DISPATCH_ACTION, $args, 'miguel' ) ) {
+			Miguel::debug_log(
+				'Skipped enqueueing duplicate asynchronous order email dispatch',
+				array(
+					'order_id' => $order_id,
+					'email_template' => $args['email_template'],
+				)
+			);
+
+			return true;
+		}
+
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			$action_id = as_enqueue_async_action( self::ASYNC_EMAIL_DISPATCH_ACTION, $args, 'miguel', false );
+			if ( is_int( $action_id ) && $action_id > 0 ) {
+				Miguel::debug_log(
+					'Queued asynchronous order email dispatch via Action Scheduler',
+					array(
+						'action_id' => $action_id,
+						'order_id' => $order_id,
+						'email_template' => $args['email_template'],
+					)
+				);
+
+				return true;
+			}
+		}
+
+		$scheduled = wp_schedule_single_event( time(), self::ASYNC_EMAIL_DISPATCH_ACTION, array( $order_id, $args['email_template'] ) );
+		if ( false === $scheduled ) {
+			Miguel::debug_log(
+				'Failed to schedule asynchronous order email dispatch',
+				array(
+					'order_id' => $order_id,
+					'email_template' => $args['email_template'],
+				)
+			);
+
+			return false;
+		}
+
+		Miguel::debug_log(
+			'Queued asynchronous order email dispatch via WP-Cron fallback',
+			array(
+				'order_id' => $order_id,
+				'email_template' => $args['email_template'],
+			)
+		);
+
+		return true;
+	}
+
+	/**
+	 * Handle asynchronous order email dispatch.
+	 *
+	 * @param int         $order_id WooCommerce order ID.
+	 * @param string|null $email_template Optional explicit email template identifier.
+	 * @return void
+	 */
+	public function handle_async_order_email_dispatch( $order_id, $email_template = null ) {
+		$order_id = absint( $order_id );
+		if ( $order_id <= 0 ) {
+			return;
+		}
+
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			Miguel::debug_log(
+				'Asynchronous order email dispatch skipped because order no longer exists',
+				array(
+					'order_id' => $order_id,
+				)
+			);
+
+			return;
+		}
+
+		$template = null;
+		if ( is_string( $email_template ) && '' !== trim( $email_template ) ) {
+			$template = sanitize_key( $email_template );
+		}
+
+		$this->dispatch_order_emails( $order, $template );
 	}
 
 	/**

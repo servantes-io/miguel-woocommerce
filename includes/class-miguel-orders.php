@@ -15,6 +15,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @package Miguel
  */
 class Miguel_Orders {
+	/**
+	 * Action hook used for asynchronous order synchronization.
+	 */
+	const ASYNC_SYNC_ACTION = 'miguel_async_sync_order';
 
 	/**
 	 * Hook manager instance
@@ -45,8 +49,81 @@ class Miguel_Orders {
 	 * Register WordPress hooks
 	 */
 	public function register_hooks() {
-		$this->hook_manager->add_action( 'woocommerce_order_status_changed', array( $this, 'sync_order' ), 10, 4 );
-		$this->hook_manager->add_action( 'woocommerce_update_order', array( $this, 'handle_order_update' ), 10, 1 );
+		$this->hook_manager->add_action( 'woocommerce_order_status_changed', array( $this, 'queue_order_sync' ), 10, 4 );
+		$this->hook_manager->add_action( 'woocommerce_update_order', array( $this, 'queue_order_update_sync' ), 10, 1 );
+		$this->hook_manager->add_action( self::ASYNC_SYNC_ACTION, array( $this, 'handle_async_order_sync' ), 10, 3 );
+	}
+
+	/**
+	 * Queue order synchronization after status change.
+	 *
+	 * @param int      $order_id Order ID.
+	 * @param string   $from_state Previous status.
+	 * @param string   $to_state New status.
+	 * @param WC_Order $order Order object.
+	 * @return void
+	 */
+	public function queue_order_sync( $order_id, $from_state, $to_state, $order ) {
+		$order_id = absint( $order_id );
+		if ( $order_id <= 0 ) {
+			return;
+		}
+
+		$args = array(
+			'order_id' => $order_id,
+			'from_state' => (string) $from_state,
+			'to_state' => (string) $to_state,
+		);
+
+		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( self::ASYNC_SYNC_ACTION, $args, 'miguel' ) ) {
+			return;
+		}
+
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			as_enqueue_async_action( self::ASYNC_SYNC_ACTION, $args, 'miguel', false );
+			return;
+		}
+
+		wp_schedule_single_event( time(), self::ASYNC_SYNC_ACTION, array( $order_id, (string) $from_state, (string) $to_state ) );
+	}
+
+	/**
+	 * Queue order synchronization for generic order updates.
+	 *
+	 * @param int $order_id Order ID.
+	 * @return void
+	 */
+	public function queue_order_update_sync( $order_id ) {
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			return;
+		}
+
+		$this->queue_order_sync( $order_id, '', $order->get_status(), $order );
+	}
+
+	/**
+	 * Handle asynchronous order sync callback.
+	 *
+	 * @param int    $order_id Order ID.
+	 * @param string $from_state Previous status.
+	 * @param string $to_state New status.
+	 * @return void
+	 */
+	public function handle_async_order_sync( $order_id, $from_state = '', $to_state = '' ) {
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			Miguel::debug_log(
+				'Asynchronous order sync skipped because order no longer exists',
+				array(
+					'order_id' => absint( $order_id ),
+				)
+			);
+
+			return;
+		}
+
+		$this->sync_order( absint( $order_id ), (string) $from_state, (string) $to_state, $order );
 	}
 
 	/**
