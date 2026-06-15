@@ -1,79 +1,38 @@
 <?php
 /**
- * Test API
+ * Test API configuration helpers.
  *
  * @package Miguel\Tests
  */
 class Miguel_Test_API extends WP_UnitTestCase {
 
-	/**
-	 * Setup.
-	 */
-	public function setUp(): void {
-		parent::setUp();
-
-		$this->token = '1a2b3c4d5e6f7g8h9';
-		$this->sut = new Miguel_API( 'https://miguel.servantes.cz', $this->token );
+	public function test_get_server_url_for_environments(): void {
+		$this->assertSame( 'https://miguel.servantes.cz', Miguel_API::getServerUrl( Miguel_API::ENV_PROD ) );
+		$this->assertSame( 'https://miguel-test.servantes.cz', Miguel_API::getServerUrl( Miguel_API::ENV_TEST ) );
+		$this->assertFalse( Miguel_API::getServerUrl( 'nonsense' ) );
 	}
 
-	/**
-	 * Test get_url().
-	 */
-	public function test_get_url(): void {
-		$this->assertEquals( 'https://miguel.servantes.cz/', $this->sut->get_url() );
+	public function test_get_enabled_reflects_api_key_option(): void {
+		update_option( Miguel_API::API_KEY_OPTION, '' );
+		$this->assertFalse( Miguel_API::getEnabled() );
+
+		update_option( Miguel_API::API_KEY_OPTION, 'abc123' );
+		$this->assertTrue( Miguel_API::getEnabled() );
+
+		delete_option( Miguel_API::API_KEY_OPTION );
 	}
 
-	/**
-	 * Data provider for test_generate__url().
-	 */
-	public function data_provider_test_generate__url() {
-		return array(
-			array( 'dummy-book', 'https://miguel.servantes.cz/v1/generate_epub/dummy-book' ),
-			array( 'dummy/book', 'https://miguel.servantes.cz/v1/generate_epub/dummy%2Fbook' ),
-		);
-	}
+	public function test_get_current_api_configuration(): void {
+		update_option( Miguel_API::API_KEY_OPTION, 'abc123' );
+		update_option( Miguel_API::SERVER_OPTION, Miguel_API::ENV_TEST );
 
-	/**
-	 * Test generate(), request url.
-	 *
-	 * @dataProvider data_provider_test_generate__url
-	 */
-	public function test_generate__url( $id, $url ): void {
-		Miguel_Helper_Http::mock_server_response( '__return__url' );
+		$config = Miguel_API::getCurrentApiConfiguration();
 
-		$response = $this->sut->generate( $id, 'epub', array() );
+		$this->assertSame( 'https://miguel-test.servantes.cz', $config['url'] );
+		$this->assertSame( 'abc123', $config['token'] );
+		$this->assertSame( Miguel_API::ENV_TEST, $config['environment'] );
 
-		$this->assertEquals( $url, $response['body'] );
-
-		Miguel_Helper_Http::clear();
-	}
-
-	/**
-	 * Test generate(), request headers.
-	 */
-	public function test_generate__headers(): void {
-		Miguel_Helper_Http::mock_server_response( '__return__headers' );
-
-		$response = $this->sut->generate( 'dummy-book', 'epub', array() );
-
-		$want = array(
-			'Content-Type' => 'application/json; charset=utf-8',
-			'Authorization' => 'Bearer ' . $this->token,
-			'Accept-Language' => 'en_US',
-		);
-
-		$this->assertEquals( $want, $response['body'] );
-
-		Miguel_Helper_Http::clear();
-	}
-
-	/**
-	 * Test generate(), invalid format.
-	 */
-	public function test_generate__format(): void {
-		$response = $this->sut->generate( 'dummy-book', 'doc', null );
-
-		$this->assertEquals( true, is_wp_error( $response ) );
-		$this->assertEquals( __( 'Format is not allowed.', 'miguel' ), $response->get_error_message() );
+		delete_option( Miguel_API::API_KEY_OPTION );
+		delete_option( Miguel_API::SERVER_OPTION );
 	}
 }

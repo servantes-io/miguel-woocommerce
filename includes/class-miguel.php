@@ -69,11 +69,19 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-hook-manager.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-container.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/miguel-functions.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-watermark-user.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-order-address.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-order-create-item.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-order-create.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-watermarked-file-request.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-connect-request.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/mappers/class-miguel-watermark-mapper.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/mappers/class-miguel-order-mapper.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/class-miguel-v2-client.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-file.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-install.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-utils.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-request.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-download.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-orders.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/trait-miguel-rest-auth.php';
@@ -98,30 +106,30 @@ class Miguel {
 			return $this->hook_manager;
 		} );
 
-		$this->container->register( 'api', function () {
+		$this->container->register( 'v2_client', function () {
 			$configuration = Miguel_API::getCurrentApiConfiguration();
-			$url = Miguel_API::MIGUEL_API_BASE_URL;
-			$token = '';
+			$url           = Miguel_API::MIGUEL_API_BASE_URL;
+			$token         = '';
 
 			if ( false !== $configuration ) {
-				$url = $configuration['url'];
+				$url   = $configuration['url'];
 				$token = $configuration['token'];
 			}
 
-			return new Miguel_API( $url, $token );
+			return new Miguel_V2_Client( $url, $token );
 		} );
 
 		$this->container->register( 'download', function ( $container ) {
 			return new Miguel_Download(
 				$container->get( 'hook_manager' ),
-				$container->get( 'api' )
+				$container->get( 'v2_client' )
 			);
 		} );
 
 		$this->container->register( 'orders', function ( $container ) {
 			return new Miguel_Orders(
 				$container->get( 'hook_manager' ),
-				$container->get( 'api' )
+				$container->get( 'v2_client' )
 			);
 		} );
 

@@ -10,16 +10,16 @@ class Miguel_Order_Utils {
 
 	/**
 	 * Get user ID for order
-	 * @return string
+	 * @return string|null
 	 */
 	public static function get_user_id_for_order( $order ) {
 		$user_id = $order->get_user_id();
 		if ( $user_id > 0 ) {
 			$user = get_user_by( 'id', $user_id );
-			return $user ? strval( $user->ID ) : md5( self::get_email_for_order( $order ) );
+			return $user ? strval( $user->ID ) : null;
 		}
 
-		return md5( self::get_email_for_order( $order ) );
+		return null;
 	}
 
 	/**
