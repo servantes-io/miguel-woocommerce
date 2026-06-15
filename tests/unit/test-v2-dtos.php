@@ -157,4 +157,18 @@ class Miguel_Test_V2_Dtos extends WP_UnitTestCase {
 			$req->to_array()
 		);
 	}
+
+	public function test_connect_request(): void {
+		$req = new Miguel_V2_Connect_Request( '8.0.0', '1.6.3', 'https://shop.cz/', '/' );
+
+		$this->assertEquals(
+			array(
+				'wcVersion'     => '8.0.0',
+				'moduleVersion' => '1.6.3',
+				'baseUrl'       => 'https://shop.cz/',
+				'baseUri'       => '/',
+			),
+			$req->to_array()
+		);
+	}
 }
