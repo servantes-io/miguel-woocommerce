@@ -130,4 +130,31 @@ class Miguel_Test_V2_Dtos extends WP_UnitTestCase {
 		$this->assertSame( $billing->to_array(), $arr['billingAddress'] );
 		$this->assertArrayNotHasKey( 'shippingAddress', $arr );
 	}
+
+	public function test_watermarked_file_request(): void {
+		$user = new Miguel_V2_Watermark_User( 'a@b.cz', 'cs_CZ', '42', 'John', 'Main St' );
+
+		$req = new Miguel_V2_Watermarked_File_Request(
+			'epub',
+			$user,
+			'2023-01-15T10:00:00+00:00',
+			'1001',
+			'CZK',
+			10.0
+		);
+
+		$this->assertEquals(
+			array(
+				'target'      => 'epub',
+				'userInfo'    => $user->to_array(),
+				'purchaseDate' => '2023-01-15T10:00:00+00:00',
+				'orderInfo'   => array(
+					'code'         => '1001',
+					'currencyCode' => 'CZK',
+					'soldPrice'    => 10.0,
+				),
+			),
+			$req->to_array()
+		);
+	}
 }
