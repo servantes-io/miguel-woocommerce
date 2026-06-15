@@ -120,17 +120,30 @@ class Miguel {
 			return new Miguel_API( $url, $token );
 		} );
 
+		$this->container->register( 'v2_client', function () {
+			$configuration = Miguel_API::getCurrentApiConfiguration();
+			$url           = Miguel_API::MIGUEL_API_BASE_URL;
+			$token         = '';
+
+			if ( false !== $configuration ) {
+				$url   = $configuration['url'];
+				$token = $configuration['token'];
+			}
+
+			return new Miguel_V2_Client( $url, $token );
+		} );
+
 		$this->container->register( 'download', function ( $container ) {
 			return new Miguel_Download(
 				$container->get( 'hook_manager' ),
-				$container->get( 'api' )
+				$container->get( 'v2_client' )
 			);
 		} );
 
 		$this->container->register( 'orders', function ( $container ) {
 			return new Miguel_Orders(
 				$container->get( 'hook_manager' ),
-				$container->get( 'api' )
+				$container->get( 'v2_client' )
 			);
 		} );
 
