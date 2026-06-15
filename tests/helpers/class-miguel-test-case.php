@@ -35,23 +35,22 @@ class Miguel_Test_Case extends WC_Unit_Test_Case {
 
 		switch ( $service_class ) {
 			case 'Miguel_Download':
-				$api_mock         = $mocks['api'] ?? $this->createMock( Miguel_API::class );
+				$client_mock      = $mocks['client'] ?? $this->createMock( Miguel_V2_Client::class );
 				$file_factory     = $mocks['file_factory'] ?? null;
 				$error_handler    = $mocks['error_handler'] ?? null;
 				$redirect_handler = $mocks['redirect_handler'] ?? null;
 
 				return new Miguel_Download(
 					$hook_manager,
-					$api_mock,
+					$client_mock,
 					$file_factory,
 					$error_handler,
 					$redirect_handler
 				);
 
 			case 'Miguel_Orders':
-				$api_mock    = $mocks['api'] ?? $this->createMock( Miguel_API::class );
-				$logger_mock = $mocks['logger'] ?? $this->createMock( WC_Logger::class );
-				return new Miguel_Orders( $hook_manager, $api_mock, $logger_mock );
+				$client_mock = $mocks['client'] ?? $this->createMock( Miguel_V2_Client::class );
+				return new Miguel_Orders( $hook_manager, $client_mock );
 
 			case 'Miguel_Settings':
 				return new Miguel_Settings( $hook_manager );

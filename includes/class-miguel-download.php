@@ -24,11 +24,18 @@ class Miguel_Download {
 	private $hook_manager;
 
 	/**
-	 * API instance
+	 * v2 client instance
 	 *
-	 * @var Miguel_API
+	 * @var Miguel_V2_Client
 	 */
-	private $api;
+	private $client;
+
+	/**
+	 * Watermark request mapper
+	 *
+	 * @var Miguel_Watermark_Mapper
+	 */
+	private $mapper;
 
 	/**
 	 * File factory function
@@ -55,20 +62,21 @@ class Miguel_Download {
 	 * Constructor with dependency injection
 	 *
 	 * @param Miguel_Hook_Manager_Interface $hook_manager    Hook manager for registering actions.
-	 * @param Miguel_API          $api             API instance for file generation.
+	 * @param Miguel_V2_Client    $client          v2 client instance for file generation.
 	 * @param callable            $file_factory    Function to get file (default: miguel_get_file).
 	 * @param callable            $error_handler   Function to handle errors (default: wp_die).
 	 * @param callable            $redirect_handler Function to handle redirects (default: wp_redirect + exit).
 	 */
 	public function __construct(
 		Miguel_Hook_Manager_Interface $hook_manager,
-		Miguel_API $api,
+		Miguel_V2_Client $client,
 		$file_factory = null,
 		$error_handler = null,
 		$redirect_handler = null
 	) {
 		$this->hook_manager     = $hook_manager;
-		$this->api              = $api;
+		$this->client           = $client;
+		$this->mapper           = new Miguel_Watermark_Mapper();
 		$this->file_factory     = $file_factory ? $file_factory : 'miguel_get_file';
 		$this->error_handler    = $error_handler ? $error_handler : 'wp_die';
 		$this->redirect_handler = $redirect_handler ? $redirect_handler : array( $this, 'default_redirect_handler' );
@@ -136,8 +144,8 @@ class Miguel_Download {
 	 * @throws Exception If request is invalid.
 	 */
 	public function serve( $file, $order, $item ) {
-		$request = new Miguel_Request( $order, $item );
-		if ( ! $request->is_valid() ) {
+		$request = $this->mapper->map( $order, $item, $file );
+		if ( null === $request ) {
 			call_user_func( $this->error_handler, esc_html__( 'Invalid request.', 'miguel' ) );
 			return;
 		}
@@ -148,37 +156,23 @@ class Miguel_Download {
 	/**
 	 * Serve file
 	 *
-	 * @param Miguel_File    $file
-	 * @param Miguel_Request $request
+	 * @param Miguel_File                        $file
+	 * @param Miguel_V2_Watermarked_File_Request $request
 	 */
 	public function serve_file( $file, $request ) {
-		$response = $this->api->generate( $file->get_name(), $file->get_format(), $request->to_array() );
+		$result = $this->client->get_watermarked_file( $file->get_name(), $request );
 
-		if ( is_wp_error( $response ) ) {
-			call_user_func( $this->error_handler, esc_html( $response->get_error_message() ) );
+		if ( is_wp_error( $result ) ) {
+			call_user_func( $this->error_handler, esc_html( $result->get_error_message() ) );
 			return;
 		}
 
-		$json = json_decode( $response['body'] );
-		if ( ! $json ) {
+		if ( empty( $result['downloadUrl'] ) ) {
 			call_user_func( $this->error_handler, esc_html__( 'Something went wrong.', 'miguel' ) );
 			return;
 		}
 
-		if ( property_exists( $json, 'reason' ) && $json->reason ) {
-			call_user_func( $this->error_handler, esc_html( $json->reason ) );
-			return;
-		} elseif ( property_exists( $json, 'error' ) && $json->error ) {
-			call_user_func( $this->error_handler, esc_html( $json->error . ': ' . $json->message ) );
-			return;
-		} elseif ( property_exists( $json, 'download_url' ) ) {
-			$url = $json->download_url;
-			call_user_func( $this->redirect_handler, $url );
-			return;
-		} else {
-			call_user_func( $this->error_handler, esc_html__( 'Something went wrong.', 'miguel' ) );
-			return;
-		}
+		call_user_func( $this->redirect_handler, $result['downloadUrl'] );
 	}
 
 	/**
