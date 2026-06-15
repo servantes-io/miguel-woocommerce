@@ -31,4 +31,35 @@ class Miguel_Test_V2_Dtos extends WP_UnitTestCase {
 		$this->assertSame( 'guest@b.cz', $arr['email'] );
 		$this->assertSame( 'en_US', $arr['language'] );
 	}
+
+	public function test_order_address_maps_known_keys(): void {
+		$address = new Miguel_V2_Order_Address(
+			array(
+				'fullName' => 'John Doe',
+				'company'  => 'Acme',
+				'address1' => 'Main St 1',
+				'address2' => null,
+				'city'     => 'Prague',
+				'state'    => '',
+				'zip'      => '11000',
+				'country'  => 'CZ',
+				'phone'    => '+420123',
+			)
+		);
+
+		$this->assertEquals(
+			array(
+				'fullName' => 'John Doe',
+				'company'  => 'Acme',
+				'address1' => 'Main St 1',
+				'address2' => null,
+				'city'     => 'Prague',
+				'state'    => null,
+				'zip'      => '11000',
+				'country'  => 'CZ',
+				'phone'    => '+420123',
+			),
+			$address->to_array()
+		);
+	}
 }
