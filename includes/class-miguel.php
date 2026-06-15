@@ -106,19 +106,6 @@ class Miguel {
 			return $this->hook_manager;
 		} );
 
-		$this->container->register( 'api', function () {
-			$configuration = Miguel_API::getCurrentApiConfiguration();
-			$url = Miguel_API::MIGUEL_API_BASE_URL;
-			$token = '';
-
-			if ( false !== $configuration ) {
-				$url = $configuration['url'];
-				$token = $configuration['token'];
-			}
-
-			return new Miguel_API( $url, $token );
-		} );
-
 		$this->container->register( 'v2_client', function () {
 			$configuration = Miguel_API::getCurrentApiConfiguration();
 			$url           = Miguel_API::MIGUEL_API_BASE_URL;

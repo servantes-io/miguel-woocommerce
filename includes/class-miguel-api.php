@@ -22,31 +22,6 @@ class Miguel_API {
 	const MIGUEL_API_BASE_URL = 'https://miguel.servantes.cz';
 
 	/**
-	 * URL
-	 *
-	 * @var string
-	 */
-	protected $url;
-
-	/**
-	 * Token
-	 *
-	 * @var string
-	 */
-	protected $token;
-
-	/**
-	 * Constructor
-	 *
-	 * @param string $url
-	 * @param string $token
-	 */
-	public function __construct( $url, $token ) {
-		$this->url = $url;
-		$this->token = $token;
-	}
-
-	/**
 	 * Get default values for API configuration options.
 	 *
 	 * @return array
@@ -208,14 +183,5 @@ class Miguel_API {
 	 */
 	public static function get_current_api_configuration() {
 		return self::getCurrentApiConfiguration();
-	}
-
-	/**
-	 * Get URL
-	 *
-	 * @return string
-	 */
-	public function get_url() {
-		return trailingslashit( $this->url );
 	}
 }

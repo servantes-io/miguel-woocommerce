@@ -225,4 +225,77 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 			$order->delete();
 		}
 	}
+
+	/**
+	 * Test that the dedupe hash is NOT stored when the create-order request fails.
+	 */
+	public function test_sync_order_does_not_store_hash_on_failure() {
+		// Mock failing POST response (5xx).
+		Miguel_Helper_HTTP::mock_api_responses(
+			array(
+				'POST' => array(
+					'body'     => '{"title":"Server error"}',
+					'response' => array( 'code' => 500, 'message' => 'Internal Server Error' ),
+				),
+			)
+		);
+
+		// Create paid order with Miguel product.
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$order->add_product( $product, 1 );
+		$order->set_status( 'processing' );
+		$order->set_date_paid( '2023-01-15 10:00:00' );
+		$order->save();
+
+		$this->get_sut()->sync_order( $order->get_id(), 'new', 'processing', $order );
+
+		// Verify the POST request was attempted.
+		$requests = Miguel_Helper_HTTP::get_requests();
+		$this->assertCount( 1, $requests, 'Different number of requests: ' . print_r( $requests, true ) );
+		$this->assertEquals( 'POST', $requests[0]['method'] );
+
+		// Verify the dedupe hash was NOT stored on failure.
+		$this->assertEmpty( $order->get_meta( '_miguel_last_sync_hash', true ) );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * Test that a second sync of an unchanged order makes no additional HTTP request.
+	 */
+	public function test_sync_order_dedupes_unchanged_order() {
+		// Mock successful POST response.
+		Miguel_Helper_HTTP::mock_api_responses(
+			array(
+				'POST' => array(
+					'body'     => '{}',
+					'response' => array( 'code' => 201, 'message' => 'Created' ),
+				),
+			)
+		);
+
+		// Create paid order with Miguel product.
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$order->add_product( $product, 1 );
+		$order->set_status( 'processing' );
+		$order->set_date_paid( '2023-01-15 10:00:00' );
+		$order->save();
+
+		$sut = $this->get_sut();
+
+		// First sync should make one POST request and store the dedupe hash.
+		$sut->sync_order( $order->get_id(), 'new', 'processing', $order );
+		$count_after_first = count( Miguel_Helper_HTTP::get_requests() );
+		$this->assertEquals( 1, $count_after_first, 'First sync should make exactly one request.' );
+		$this->assertNotEmpty( $order->get_meta( '_miguel_last_sync_hash', true ) );
+
+		// Second sync of the same unchanged order (same in-memory instance) should be deduped.
+		$sut->sync_order( $order->get_id(), 'new', 'processing', $order );
+		$count_after_second = count( Miguel_Helper_HTTP::get_requests() );
+		$this->assertEquals( $count_after_first, $count_after_second, 'Second sync should not make an additional request.' );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
 }
