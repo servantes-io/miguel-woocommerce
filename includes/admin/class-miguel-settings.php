@@ -130,73 +130,51 @@ class Miguel_Settings extends WC_Settings_Page {
 			return;
 		}
 
-		$api = new Miguel_API( $api_url, $api_key );
-		$response = $api->connect_woocommerce(
-			$this->get_woocommerce_version(),
-			$this->get_module_version(),
-			$this->get_canonical_shop_url()
+		$base_url = $this->get_canonical_shop_url();
+		$client   = new Miguel_V2_Client( $api_url, $api_key );
+		$result   = $client->connect(
+			new Miguel_V2_Connect_Request(
+				$this->get_woocommerce_version(),
+				$this->get_module_version(),
+				$base_url,
+				$this->build_base_uri( $base_url )
+			)
 		);
 
-		if ( is_wp_error( $response ) ) {
-			Miguel::log( 'Miguel connect request failed: ' . $response->get_error_code() . ' ' . $response->get_error_message(), 'error' );
-			WC_Admin_Settings::add_error( __( 'Connection to Miguel API failed due to network error. Please verify API key and try again.', 'miguel' ) );
-			update_option( 'miguel_api_connected', 'no' );
-			return;
-		}
-
-		$status_code = (int) wp_remote_retrieve_response_code( $response );
-		$body = wp_remote_retrieve_body( $response );
-		$response_message = wp_remote_retrieve_response_message( $response );
-		$decoded_body = json_decode( $body, true );
-		$body_is_json = JSON_ERROR_NONE === json_last_error();
-
-		if ( 200 === $status_code ) {
+		if ( true === $result ) {
 			update_option( 'miguel_api_connected', 'yes' );
 			update_option( 'miguel_api_last_connected_at', gmdate( 'c' ) );
 			WC_Admin_Settings::add_message( __( 'Miguel API connection successful.', 'miguel' ) );
-
 			return;
 		}
 
-		if ( 401 === $status_code || 403 === $status_code ) {
-			Miguel::log( 'Miguel connect unauthorized response: HTTP ' . $status_code, 'error' );
+		$code = $result->get_error_code();
+		if ( 'miguel.http_401' === $code || 'miguel.http_403' === $code ) {
+			Miguel::log( 'Miguel connect unauthorized: ' . $result->get_error_message(), 'error' );
 			WC_Admin_Settings::add_error( __( 'Miguel API key is invalid or unauthorized.', 'miguel' ) );
 			update_option( 'miguel_api_connected', 'no' );
 			return;
 		}
 
-		$error_detail = '';
-		if ( $body_is_json && is_array( $decoded_body ) ) {
-			if ( ! empty( $decoded_body['message'] ) ) {
-				$error_detail = (string) $decoded_body['message'];
-			} elseif ( ! empty( $decoded_body['error'] ) ) {
-				$error_detail = (string) $decoded_body['error'];
-			}
-		} elseif ( '' === trim( $body ) ) {
-			$error_detail = __( 'Empty response body.', 'miguel' );
-		} else {
-			$error_detail = __( 'Unexpected non-JSON response received.', 'miguel' );
-		}
-
-		if ( '' === $error_detail && '' !== $response_message ) {
-			$error_detail = $response_message;
-		}
-
-		if ( '' === $error_detail ) {
-			$error_detail = __( 'Unexpected API response.', 'miguel' );
-		}
-
-		WC_Admin_Settings::add_error(
-			sprintf(
-				/* translators: 1: HTTP status code, 2: API error detail. */
-				__( 'Miguel API connection failed (HTTP %1$d): %2$s', 'miguel' ),
-				$status_code,
-				$error_detail
-			)
-		);
+		Miguel::log( 'Miguel connect request failed: ' . $code . ' ' . $result->get_error_message(), 'error' );
+		WC_Admin_Settings::add_error( __( 'Connection to Miguel API failed. Please verify API key and try again.', 'miguel' ) );
 		update_option( 'miguel_api_connected', 'no' );
+	}
 
-		Miguel::log( 'Miguel connect failed: HTTP ' . $status_code . ' ' . sanitize_text_field( (string) $error_detail ), 'error' );
+	/**
+	 * Build a canonical base URI path from an absolute shop URL.
+	 *
+	 * @param string $base_url Absolute shop base URL.
+	 * @return string
+	 */
+	private function build_base_uri( $base_url ) {
+		$path = wp_parse_url( (string) $base_url, PHP_URL_PATH );
+
+		if ( ! is_string( $path ) || '' === $path ) {
+			return '/';
+		}
+
+		return trailingslashit( '/' . ltrim( $path, '/' ) );
 	}
 
 	/**
