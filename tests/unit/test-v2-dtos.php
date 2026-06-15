@@ -62,4 +62,26 @@ class Miguel_Test_V2_Dtos extends WP_UnitTestCase {
 			$address->to_array()
 		);
 	}
+
+	public function test_order_create_item_without_delivery_method(): void {
+		$item = new Miguel_V2_Order_Create_Item( 'book-1', 10.0, 2 );
+
+		$this->assertEquals(
+			array(
+				'code'      => 'book-1',
+				'soldPrice' => 10.0,
+				'quantity'  => 2,
+			),
+			$item->to_array()
+		);
+	}
+
+	public function test_order_create_item_with_delivery_method(): void {
+		$item = new Miguel_V2_Order_Create_Item( 'book-1', 9.5, 1, 7 );
+
+		$arr = $item->to_array();
+		$this->assertSame( 7, $arr['deliveryMethodId'] );
+		$this->assertSame( 9.5, $arr['soldPrice'] );
+		$this->assertSame( 1, $arr['quantity'] );
+	}
 }

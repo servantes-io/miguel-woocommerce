@@ -71,6 +71,7 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/miguel-functions.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-watermark-user.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-order-address.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-order-create-item.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-file.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-install.php';
