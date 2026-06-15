@@ -6,6 +6,17 @@
  */
 class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 
+	/**
+	 * Set a JSON request body so WP_REST_Request::get_json_params() can parse it.
+	 *
+	 * @param WP_REST_Request $request Request to populate.
+	 * @param array           $params  Parameters to encode as the JSON body.
+	 */
+	private function set_json_body( $request, $params ) {
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body( wp_json_encode( $params ) );
+	}
+
 	public function test_registers_rest_api_init_hook() {
 		$hook_manager = $this->createMock( Miguel_Hook_Manager_Interface::class );
 		$hook_manager->expects( $this->once() )
@@ -25,7 +36,7 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$request = new WP_REST_Request( 'PATCH', '/miguel/v1/orders/' . $order->get_id() . '/status' );
 		$request->set_param( 'id', $order->get_id() );
 		$request->set_header( 'Idempotency-Key', 'idem-status-' . wp_generate_uuid4() );
-		$request->set_json_params(
+		$this->set_json_body( $request,
 			array()
 		);
 
@@ -42,7 +53,7 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$request = new WP_REST_Request( 'PATCH', '/miguel/v1/orders/' . $order->get_id() . '/status' );
 		$request->set_param( 'id', $order->get_id() );
 		$request->set_header( 'Idempotency-Key', 'idem-status-' . wp_generate_uuid4() );
-		$request->set_json_params(
+		$this->set_json_body( $request,
 			array(
 				'status' => 'definitely-not-valid',
 			)
@@ -60,7 +71,7 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$api = new Miguel_Order_Status_Update_Api( new Miguel_Hook_Manager() );
 		$request = new WP_REST_Request( 'PATCH', '/miguel/v1/orders/' . $order->get_id() . '/status' );
 		$request->set_param( 'id', $order->get_id() );
-		$request->set_json_params(
+		$this->set_json_body( $request,
 			array(
 				'status' => 'completed',
 			)
@@ -78,7 +89,7 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$request = new WP_REST_Request( 'PATCH', '/miguel/v1/orders/999999/status' );
 		$request->set_param( 'id', 999999 );
 		$request->set_header( 'Idempotency-Key', 'idem-status-' . wp_generate_uuid4() );
-		$request->set_json_params(
+		$this->set_json_body( $request,
 			array(
 				'status' => 'completed',
 			)
@@ -97,7 +108,7 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$request = new WP_REST_Request( 'PATCH', '/miguel/v1/orders/' . $order->get_id() . '/status' );
 		$request->set_param( 'id', $order->get_id() );
 		$request->set_header( 'Idempotency-Key', 'idem-status-' . wp_generate_uuid4() );
-		$request->set_json_params(
+		$this->set_json_body( $request,
 			array(
 				'status' => 'completed',
 			)
@@ -120,7 +131,7 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$request = new WP_REST_Request( 'PATCH', '/miguel/v1/orders/' . $order->get_id() . '/status' );
 		$request->set_param( 'id', $order->get_id() );
 		$request->set_header( 'Idempotency-Key', $idempotency_key );
-		$request->set_json_params(
+		$this->set_json_body( $request,
 			array(
 				'status' => 'completed',
 			)
@@ -144,7 +155,7 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$first_request = new WP_REST_Request( 'PATCH', '/miguel/v1/orders/' . $order->get_id() . '/status' );
 		$first_request->set_param( 'id', $order->get_id() );
 		$first_request->set_header( 'Idempotency-Key', $idempotency_key );
-		$first_request->set_json_params(
+		$this->set_json_body( $first_request,
 			array(
 				'status' => 'completed',
 			)
@@ -154,7 +165,7 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$second_request = new WP_REST_Request( 'PATCH', '/miguel/v1/orders/' . $order->get_id() . '/status' );
 		$second_request->set_param( 'id', $order->get_id() );
 		$second_request->set_header( 'Idempotency-Key', $idempotency_key );
-		$second_request->set_json_params(
+		$this->set_json_body( $second_request,
 			array(
 				'status' => 'processing',
 			)
@@ -173,7 +184,7 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$request = new WP_REST_Request( 'PATCH', '/miguel/v1/orders/' . $order->get_id() . '/status' );
 		$request->set_param( 'id', $order->get_id() );
 		$request->set_header( 'Idempotency-Key', 'idem-status-' . wp_generate_uuid4() );
-		$request->set_json_params(
+		$this->set_json_body( $request,
 			array(
 				'status' => 'completed',
 			)
@@ -190,7 +201,7 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$api = new Miguel_Order_Status_Update_Api( new Miguel_Hook_Manager() );
 		$request = new WP_REST_Request( 'PATCH', '/miguel/v1/orders/' . $order->get_id() . '/status' );
 		$request->set_param( 'id', $order->get_id() );
-		$request->set_json_params(
+		$this->set_json_body( $request,
 			array(
 				'idempotency_key' => 'idem-status-body-only',
 				'status' => 'completed',
@@ -214,7 +225,7 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$request = new WP_REST_Request( 'PATCH', '/miguel/v1/orders/' . $order->get_id() . '/status' );
 		$request->set_param( 'id', $order->get_id() );
 		$request->set_header( 'Idempotency-Key', 'idem-status-' . wp_generate_uuid4() );
-		$request->set_json_params(
+		$this->set_json_body( $request,
 			array(
 				'status' => 'paid',
 			)
