@@ -84,4 +84,50 @@ class Miguel_Test_V2_Dtos extends WP_UnitTestCase {
 		$this->assertSame( 9.5, $arr['soldPrice'] );
 		$this->assertSame( 1, $arr['quantity'] );
 	}
+
+	public function test_order_create_serializes_nested_and_omits_empty_addresses(): void {
+		$user  = new Miguel_V2_Watermark_User( 'a@b.cz', 'cs_CZ', '42', 'John', 'Main St' );
+		$items = array( new Miguel_V2_Order_Create_Item( 'book-1', 10.0, 1 ) );
+
+		$order = new Miguel_V2_Order_Create(
+			'1001',                       // code
+			$user,
+			'2023-01-15T10:00:00+00:00',  // purchasedAt
+			'CZK',                        // currencyCode
+			$items,
+			'disable',                    // sendEmail
+			'1001',                       // eshopId
+			'2023-01-14T09:00:00+00:00',  // eshopCreatedAt
+			'2023-01-15T10:00:00+00:00',  // eshopUpdatedAt
+			null,                         // source
+			null,                         // socialDrmContent
+			null,                         // billingAddress
+			null                          // shippingAddress
+		);
+
+		$arr = $order->to_array();
+
+		$this->assertSame( '1001', $arr['code'] );
+		$this->assertSame( 'disable', $arr['sendEmail'] );
+		$this->assertSame( 'CZK', $arr['currencyCode'] );
+		$this->assertNull( $arr['source'] );
+		$this->assertNull( $arr['socialDrmContent'] );
+		$this->assertSame( $user->to_array(), $arr['user'] );
+		$this->assertSame( array( $items[0]->to_array() ), $arr['items'] );
+		$this->assertArrayNotHasKey( 'billingAddress', $arr );
+		$this->assertArrayNotHasKey( 'shippingAddress', $arr );
+	}
+
+	public function test_order_create_includes_non_empty_addresses(): void {
+		$user    = new Miguel_V2_Watermark_User( 'a@b.cz', 'cs_CZ' );
+		$billing = new Miguel_V2_Order_Address( array( 'city' => 'Prague' ) );
+
+		$order = new Miguel_V2_Order_Create(
+			'1', $user, null, 'CZK', array(), 'disable', '1', null, null, null, null, $billing, null
+		);
+
+		$arr = $order->to_array();
+		$this->assertSame( $billing->to_array(), $arr['billingAddress'] );
+		$this->assertArrayNotHasKey( 'shippingAddress', $arr );
+	}
 }
