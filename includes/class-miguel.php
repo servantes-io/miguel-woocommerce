@@ -75,6 +75,7 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-order-create.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-watermarked-file-request.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/dto/class-miguel-v2-connect-request.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/mappers/class-miguel-watermark-mapper.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-file.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-install.php';
