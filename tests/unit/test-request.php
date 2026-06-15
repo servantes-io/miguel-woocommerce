@@ -13,7 +13,7 @@ class Miguel_Test_Request extends Miguel_Test_Case {
 
 		$want = array(
 			'user' => array(
-				'id' => md5( $order->get_billing_email() ),
+				'id' => null,
 				'email' => $order->get_billing_email(),
 				'full_name' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
 				'address' => $order->get_billing_address_1() . ' ' . $order->get_billing_city(),

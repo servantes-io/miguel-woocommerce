@@ -34,8 +34,7 @@ class Test_Miguel_Order_Utils extends Miguel_Test_Case {
 		$order->save();
 
 		$result = Miguel_Order_Utils::get_user_id_for_order( $order );
-		$expected = md5( 'guest@example.com' );
-		$this->assertEquals( $expected, $result );
+		$this->assertNull( $result );
 	}
 
 	/**
