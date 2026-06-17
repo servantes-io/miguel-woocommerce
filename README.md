@@ -32,7 +32,9 @@ Authentication uses `Authorization: Bearer <token>` with the token configured in
 - `status` is optional (if omitted, WooCommerce determines the resulting status).
 - `send_emails` is optional; if set to `true`, the API attempts to dispatch standard WooCommerce order emails after the order is created.
 - `email_template` is optional; if provided, the API sends that specific WooCommerce email template after order creation and treats email sending as enabled.
-- `customer_id` is optional; if provided, it must reference an existing WordPress user.
+- `customer_id` is optional; if provided and valid, the order is linked to that WordPress user.
+- If `customer_id` is missing or invalid, the API falls back to `user_email` and links the order to a matching user when one exists.
+- If neither `customer_id` nor `user_email` resolves to a user, the order is created as a guest order.
 - `payment_method` is required.
 - `billing` is required and must be a non-empty object.
 - `shipping` is required and must be a non-empty object.
@@ -88,7 +90,6 @@ Error messages are returned in English and use stable dot-separated codes.
 - `line_item.product_reference_required` - line item is missing both `product_id` and `product_code`, HTTP `409`
 - `line_item.product_reference_conflict` - `product_id` and `product_code` resolve to different products, HTTP `409`
 - `order.email_template_invalid` - request contains unsupported `email_template`, HTTP `409`
-- `order.customer_id_invalid` - request contains invalid `customer_id`, HTTP `409`
 - `order.payment_method_required` - request is missing `payment_method`, HTTP `409`
 - `order.billing_required` - request is missing valid `billing`, HTTP `409`
 - `order.shipping_required` - request is missing valid `shipping`, HTTP `409`

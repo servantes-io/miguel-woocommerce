@@ -467,13 +467,77 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	}
 
 	/**
-	 * Test that invalid customer_id is rejected when provided.
+	 * Test that invalid customer_id falls back to user_email when it matches an existing user.
 	 */
-	public function test_validate_required_order_fields_rejects_invalid_customer_id() {
+	public function test_prepare_payload_for_wc_order_falls_back_from_invalid_customer_id_to_user_email() {
+		Miguel_Helper_Product::create_downloadable_product();
+		$user_id = $this->factory->user->create(
+			array(
+				'user_login' => 'fallback-user',
+				'user_email' => 'fallback@example.com',
+			)
+		);
+
 		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
 
 		$reflection = new ReflectionClass( $api );
-		$method = $reflection->getMethod( 'validate_required_order_fields' );
+		$method = $reflection->getMethod( 'prepare_payload_for_wc_order' );
+		$method->setAccessible( true );
+
+		$payload = $this->get_minimal_valid_payload();
+		$payload['customer_id'] = 999999;
+		$payload['user_email'] = 'fallback@example.com';
+
+		try {
+			$result = $method->invoke( $api, $payload );
+
+			$this->assertIsArray( $result );
+			$this->assertEquals( $user_id, $result['customer_id'] );
+			$this->assertArrayHasKey( 'line_items', $result );
+		} finally {
+			wp_delete_user( $user_id );
+		}
+	}
+
+	/**
+	 * Test that a valid customer_id is preserved.
+	 */
+	public function test_prepare_payload_for_wc_order_keeps_valid_customer_id() {
+		Miguel_Helper_Product::create_downloadable_product();
+		$user_id = $this->factory->user->create(
+			array(
+				'user_login' => 'kept-user',
+				'user_email' => 'kept@example.com',
+			)
+		);
+
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$reflection = new ReflectionClass( $api );
+		$method = $reflection->getMethod( 'prepare_payload_for_wc_order' );
+		$method->setAccessible( true );
+
+		try {
+			$payload = $this->get_minimal_valid_payload();
+			$payload['customer_id'] = $user_id;
+
+			$result = $method->invoke( $api, $payload );
+
+			$this->assertIsArray( $result );
+			$this->assertEquals( $user_id, $result['customer_id'] );
+		} finally {
+			wp_delete_user( $user_id );
+		}
+	}
+
+	/**
+	 * Test that invalid customer_id and missing user_email produce a guest order payload.
+	 */
+	public function test_prepare_payload_for_wc_order_removes_customer_id_when_no_email_match_exists() {
+		Miguel_Helper_Product::create_downloadable_product();
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$reflection = new ReflectionClass( $api );
+		$method = $reflection->getMethod( 'prepare_payload_for_wc_order' );
 		$method->setAccessible( true );
 
 		$payload = $this->get_minimal_valid_payload();
@@ -481,9 +545,8 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 
 		$result = $method->invoke( $api, $payload );
 
-		$this->assertTrue( is_wp_error( $result ) );
-		$this->assertEquals( 'order.customer_id_invalid', $result->get_error_code() );
-		$this->assertEquals( 409, $result->get_error_data()['status'] );
+		$this->assertIsArray( $result );
+		$this->assertArrayNotHasKey( 'customer_id', $result );
 	}
 
 	/**

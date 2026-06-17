@@ -433,7 +433,15 @@ components:
           example: Direct Bank Transfer
         customer_id:
           type: integer
-          description: WordPress user ID. Must reference an existing user when supplied.
+          description: >
+            WordPress user ID. When valid, the order is linked to that user.
+            If missing or invalid, the API falls back to `user_email` and
+            links the order to a matching user when one exists.
+        user_email:
+          type: string
+          format: email
+          description: >
+            Top-level customer email used as the fallback for user matching.
         status:
           type: string
           description: Initial order status. Defaults to WooCommerce default (pending).

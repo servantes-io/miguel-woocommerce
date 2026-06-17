@@ -363,6 +363,7 @@ class Miguel_Order_Create_Api {
 	 */
 	private function prepare_payload_for_wc_order( $payload ) {
 		unset( $payload['send_emails'], $payload['send_email'], $payload['email_template'] );
+		$payload = $this->prepare_customer_id_for_wc_order( $payload );
 
 		if ( ! array_key_exists( 'line_items', $payload ) ) {
 			return $this->build_line_item_error(
@@ -400,6 +401,72 @@ class Miguel_Order_Create_Api {
 		}
 
 		return $payload;
+	}
+
+	/**
+	 * Resolve the order customer from an explicit customer_id or the payload user_email.
+	 *
+	 * If customer_id is invalid or missing, the payload falls back to an existing
+	 * user matched by user_email. If no matching user exists, the order remains a guest order.
+	 *
+	 * @param array $payload Request payload.
+	 * @return array
+	 */
+	private function prepare_customer_id_for_wc_order( $payload ) {
+		$resolved_customer_id = 0;
+		$customer_id_provided = array_key_exists( 'customer_id', $payload );
+		$original_customer_id = $customer_id_provided ? $payload['customer_id'] : null;
+
+		if ( $customer_id_provided ) {
+			$customer_id = absint( $payload['customer_id'] );
+			if ( $customer_id > 0 ) {
+				$customer = get_user_by( 'id', $customer_id );
+				if ( $customer ) {
+					$resolved_customer_id = (int) $customer->ID;
+				}
+			}
+		}
+
+		if ( $resolved_customer_id <= 0 ) {
+			$user_email = $this->get_user_email_from_payload( $payload );
+			if ( '' !== $user_email ) {
+				$customer = get_user_by( 'email', $user_email );
+				if ( $customer ) {
+					$resolved_customer_id = (int) $customer->ID;
+				}
+			}
+		}
+
+		if ( $resolved_customer_id > 0 ) {
+			$payload['customer_id'] = $resolved_customer_id;
+			Miguel::debug_log(
+				'Resolved order customer_id for WooCommerce order payload',
+				array(
+					'provided_customer_id' => $original_customer_id,
+					'resolved_customer_id' => $resolved_customer_id,
+					'user_email' => $this->get_user_email_from_payload( $payload ),
+				)
+			);
+		} else {
+			unset( $payload['customer_id'] );
+		}
+
+		return $payload;
+	}
+
+	/**
+	 * Extract the order user email from the request payload.
+	 *
+	 * @param array $payload Request payload.
+	 * @return string
+	 */
+	private function get_user_email_from_payload( $payload ) {
+		if ( ! isset( $payload['user_email'] ) ) {
+			return '';
+		}
+
+		$email = sanitize_email( trim( (string) $payload['user_email'] ) );
+		return is_email( $email ) ? $email : '';
 	}
 
 	/**
@@ -593,17 +660,6 @@ class Miguel_Order_Create_Api {
 					'allowed_values' => $this->get_supported_email_templates(),
 				)
 			);
-		}
-
-		if ( array_key_exists( 'customer_id', $payload ) ) {
-			$customer_id = absint( $payload['customer_id'] );
-			if ( $customer_id <= 0 || ! get_user_by( 'id', $customer_id ) ) {
-				return $this->build_order_payload_error(
-					'order.customer_id_invalid',
-					esc_html__( 'Order customer_id must reference an existing user.', 'miguel' ),
-					array( 'field' => 'customer_id', 'customer_id' => $payload['customer_id'] )
-				);
-			}
 		}
 
 		if ( ! array_key_exists( 'payment_method', $payload ) || '' === trim( (string) $payload['payment_method'] ) ) {
