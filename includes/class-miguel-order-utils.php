@@ -78,11 +78,6 @@ class Miguel_Order_Utils {
 			return $paid_date->format( DateTime::ATOM );
 		}
 
-		$created_date = $order->get_date_created();
-		if ( $created_date ) {
-			return $created_date->format( DateTime::ATOM );
-		}
-
 		return null;
 	}
 

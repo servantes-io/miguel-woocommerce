@@ -64,7 +64,7 @@ class Miguel_Order_Mapper {
 			strval( $order->get_id() ),
 			$this->format_date( $order->get_date_created() ),
 			$this->format_date( $order->get_date_modified() ),
-			null,
+			'woocommerce',
 			null,
 			$this->build_billing_address( $order ),
 			$this->build_shipping_address( $order )
