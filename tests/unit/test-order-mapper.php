@@ -25,7 +25,7 @@ class Miguel_Test_Order_Mapper extends Miguel_Test_Case {
 		$this->assertSame( strval( $order->get_id() ), $arr['eshopId'] );
 		$this->assertSame( 'disable', $arr['sendEmail'] );
 		$this->assertSame( $order->get_currency(), $arr['currencyCode'] );
-		$this->assertNull( $arr['source'] );
+		$this->assertSame( $arr['source'], 'woocommerce' );
 		$this->assertNull( $arr['socialDrmContent'] );
 
 		$this->assertCount( 1, $arr['items'] );
