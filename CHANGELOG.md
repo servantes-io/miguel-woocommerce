@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.4
+
+Released 2026-07-05
+
+* Upgraded communication to Miguel API v2
+* Implemented API endpoint for creating orders from Miguel (future feature)
+
 ## 1.6.1
 
 Released 2026-05-05

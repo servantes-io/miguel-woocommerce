@@ -100,4 +100,8 @@ The interactive wizard allows you to set the screen size for which the resulting
 * Added support for connecting to the Miguel API using an access token (API key)
 * Implemented API endpoint for retrieving all products including prices and stock information
 
+= 1.6.4 =
+* Upgraded communication to Miguel API v2
+* Implemented API endpoint for creating orders from Miguel (future feature)
+
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
