@@ -255,7 +255,7 @@ msgid "Product code is required."
 msgstr "Kód produktu je povinný."
 
 msgid "Send order emails from Miguel"
-msgstr "Odesílat e-maily o objednávce z Miguela"
+msgstr "Odesílat e-maily o objednávce z Miguela"
 
 msgid "When enabled, Miguel sends an email to the customer with links to download the books. When disabled, Miguel does not send any email."
 msgstr "Když je zapnuto, Miguel odešle zákazníkovi e-mail s odkazy pro stažení knih. Když je vypnuto, Miguel neodešle žádný e-mail."
