@@ -32,5 +32,5 @@ msgstr "Enable asynchronous generation. Async generation handles large load on M
 msgid "Send order emails from Miguel"
 msgstr "Send order emails from Miguel"
 
-msgid "When enabled, Miguel's server sends the order/delivery email to the customer. When disabled, Miguel does not send any email."
-msgstr "When enabled, Miguel's server sends the order/delivery email to the customer. When disabled, Miguel does not send any email."
+msgid "When enabled, Miguel sends an email to the customer with links to download the books. When disabled, Miguel does not send any email."
+msgstr "When enabled, Miguel sends an email to the customer with links to download the books. When disabled, Miguel does not send any email."
