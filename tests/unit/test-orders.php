@@ -5,6 +5,13 @@
  * @package Miguel\Tests
  */
 
+// Miguel_Settings is normally lazy-loaded via the admin container's "settings"
+// factory, which never runs under MIGUEL_TESTS. Load it explicitly so tests
+// can reference Miguel_Settings::SEND_EMAIL_OPTION directly.
+if ( ! class_exists( 'Miguel_Settings' ) ) {
+	include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php';
+}
+
 class Test_Miguel_Orders extends Miguel_Test_Case {
 	private function get_sut() {
 		return $this->create_service_with_mocks(
@@ -295,6 +302,68 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$sut->sync_order( $order->get_id(), 'new', 'processing', $order );
 		$count_after_second = count( Miguel_Helper_HTTP::get_requests() );
 		$this->assertEquals( $count_after_first, $count_after_second, 'Second sync should not make an additional request.' );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * When the setting is enabled, the synced order carries sendEmail = "auto".
+	 */
+	public function test_sync_order_sends_auto_email_flag_when_setting_enabled() {
+		update_option( Miguel_Settings::SEND_EMAIL_OPTION, 'yes' );
+
+		Miguel_Helper_HTTP::mock_api_responses(
+			array(
+				'POST' => array(
+					'body'     => '{}',
+					'response' => array( 'code' => 201, 'message' => 'Created' ),
+				),
+			)
+		);
+
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$order->add_product( $product, 1 );
+		$order->set_status( 'processing' );
+		$order->set_date_paid( '2023-01-15 10:00:00' );
+		$order->save();
+
+		$this->get_sut()->sync_order( $order->get_id(), 'new', 'processing', $order );
+
+		$requests = Miguel_Helper_HTTP::get_requests();
+		$this->assertCount( 1, $requests, 'Different number of requests: ' . print_r( $requests, true ) );
+		$body = json_decode( $requests[0]['body'], true );
+		$this->assertSame( 'auto', $body['sendEmail'] );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * With the setting unset (default), the synced order carries sendEmail = "disable".
+	 */
+	public function test_sync_order_sends_disable_email_flag_by_default() {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array(
+				'POST' => array(
+					'body'     => '{}',
+					'response' => array( 'code' => 201, 'message' => 'Created' ),
+				),
+			)
+		);
+
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$order->add_product( $product, 1 );
+		$order->set_status( 'processing' );
+		$order->set_date_paid( '2023-01-15 10:00:00' );
+		$order->save();
+
+		$this->get_sut()->sync_order( $order->get_id(), 'new', 'processing', $order );
+
+		$requests = Miguel_Helper_HTTP::get_requests();
+		$this->assertCount( 1, $requests, 'Different number of requests: ' . print_r( $requests, true ) );
+		$body = json_decode( $requests[0]['body'], true );
+		$this->assertSame( 'disable', $body['sendEmail'] );
 
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 	}

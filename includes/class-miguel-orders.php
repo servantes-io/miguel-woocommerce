@@ -144,6 +144,19 @@ class Miguel_Orders {
 	}
 
 	/**
+	 * Whether Miguel's backend should send order emails.
+	 *
+	 * @return bool
+	 */
+	private function is_send_order_email_enabled() {
+		if ( ! class_exists( 'Miguel_Settings' ) ) {
+			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php';
+		}
+
+		return 'yes' === get_option( Miguel_Settings::SEND_EMAIL_OPTION, 'no' );
+	}
+
+	/**
 	 * Generate hash of order data for deduplication
 	 *
 	 * @param WC_Order $order Order object.
@@ -157,7 +170,7 @@ class Miguel_Orders {
 				'order_id' => $order->get_id(),
 			);
 		} else {
-			$order_create = $this->mapper->map( $order );
+			$order_create = $this->mapper->map( $order, $this->is_send_order_email_enabled() );
 			$hash_data    = array(
 				'action'   => 'sync',
 				'order_id' => $order->get_id(),
@@ -222,7 +235,7 @@ class Miguel_Orders {
 				return;
 			}
 
-			$order_create = $this->mapper->map( $order );
+			$order_create = $this->mapper->map( $order, $this->is_send_order_email_enabled() );
 			if ( null === $order_create ) {
 				return;
 			}

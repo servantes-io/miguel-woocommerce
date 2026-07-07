@@ -11,6 +11,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Miguel_Settings extends WC_Settings_Page {
 
 	/**
+	 * Option name controlling whether Miguel's backend sends order emails.
+	 */
+	const SEND_EMAIL_OPTION = 'miguel_send_order_email';
+
+	/**
 	 * Hook manager instance
 	 *
 	 * @var Miguel_Hook_Manager_Interface
@@ -79,6 +84,13 @@ class Miguel_Settings extends WC_Settings_Page {
 						Miguel_API::ENV_TEST    => __( 'Test', 'miguel' ),
 					),
 					'default' => Miguel_API::ENV_PROD,
+				),
+				array(
+					'id'      => self::SEND_EMAIL_OPTION,
+					'type'    => 'checkbox',
+					'title'   => __( 'Send order emails from Miguel', 'miguel' ),
+					'desc'    => __( "When enabled, Miguel's server sends the order/delivery email to the customer. When disabled, Miguel does not send any email.", 'miguel' ),
+					'default' => 'no',
 				),
 				array(
 					'id' => 'miguel_api_options',
