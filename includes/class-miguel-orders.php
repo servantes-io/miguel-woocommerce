@@ -21,6 +21,11 @@ class Miguel_Orders {
 	const ASYNC_SYNC_ACTION = 'miguel_async_sync_order';
 
 	/**
+	 * Option name controlling whether Miguel's backend sends order emails.
+	 */
+	const SEND_EMAIL_OPTION = 'miguel_send_order_email';
+
+	/**
 	 * Hook manager instance
 	 *
 	 * @var Miguel_Hook_Manager_Interface
@@ -144,6 +149,15 @@ class Miguel_Orders {
 	}
 
 	/**
+	 * Whether Miguel's backend should send order emails.
+	 *
+	 * @return bool
+	 */
+	private function is_send_order_email_enabled() {
+		return 'yes' === get_option( self::SEND_EMAIL_OPTION, 'no' );
+	}
+
+	/**
 	 * Generate hash of order data for deduplication
 	 *
 	 * @param WC_Order $order Order object.
@@ -157,7 +171,7 @@ class Miguel_Orders {
 				'order_id' => $order->get_id(),
 			);
 		} else {
-			$order_create = $this->mapper->map( $order );
+			$order_create = $this->mapper->map( $order, $this->is_send_order_email_enabled() );
 			$hash_data    = array(
 				'action'   => 'sync',
 				'order_id' => $order->get_id(),
@@ -222,7 +236,7 @@ class Miguel_Orders {
 				return;
 			}
 
-			$order_create = $this->mapper->map( $order );
+			$order_create = $this->mapper->map( $order, $this->is_send_order_email_enabled() );
 			if ( null === $order_create ) {
 				return;
 			}

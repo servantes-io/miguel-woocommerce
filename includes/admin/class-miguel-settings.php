@@ -81,6 +81,13 @@ class Miguel_Settings extends WC_Settings_Page {
 					'default' => Miguel_API::ENV_PROD,
 				),
 				array(
+					'id'      => Miguel_Orders::SEND_EMAIL_OPTION,
+					'type'    => 'checkbox',
+					'title'   => __( 'Send order emails from Miguel', 'miguel' ),
+					'desc'    => __( 'When enabled, Miguel sends an email to the customer with links to download the books. When disabled, Miguel does not send any email.', 'miguel' ),
+					'default' => 'no',
+				),
+				array(
 					'id' => 'miguel_api_options',
 					'type' => 'sectionend',
 				),

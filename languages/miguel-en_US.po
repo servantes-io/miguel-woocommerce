@@ -28,3 +28,9 @@ msgstr ""
 
 msgid "Enable asynchronous generation"
 msgstr "Enable asynchronous generation. Async generation handles large load on Miguel side. This setting is not required to set, Miguel handles large loads very well nowadays."
+
+msgid "Send order emails from Miguel"
+msgstr "Send order emails from Miguel"
+
+msgid "When enabled, Miguel sends an email to the customer with links to download the books. When disabled, Miguel does not send any email."
+msgstr "When enabled, Miguel sends an email to the customer with links to download the books. When disabled, Miguel does not send any email."

@@ -3,7 +3,7 @@ Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 4.9
 Tested up to: 6.8
-Stable tag: 1.6.4
+Stable tag: 1.7.0
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -103,5 +103,8 @@ The interactive wizard allows you to set the screen size for which the resulting
 = 1.6.4 =
 * Upgraded communication to Miguel API v2
 * Implemented API endpoint for creating orders from Miguel (future feature)
+
+= 1.7.0 =
+* Add option to enable sending emails from Miguel (instead of WooCommerce)
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

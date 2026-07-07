@@ -43,6 +43,28 @@ class Miguel_Test_Order_Mapper extends Miguel_Test_Case {
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 	}
 
+	public function test_send_email_flag_controls_send_email_value(): void {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+
+		$order = Miguel_Helper_Order::create_order();
+		$order->add_product( $product, 1 );
+		$order->set_status( 'processing' );
+		$order->set_date_paid( '2023-01-15 10:00:00' );
+		$order->save();
+
+		$mapper = new Miguel_Order_Mapper();
+
+		$enabled  = $mapper->map( $order, true );
+		$disabled = $mapper->map( $order, false );
+		$default  = $mapper->map( $order );
+
+		$this->assertSame( 'auto', $enabled->to_array()['sendEmail'] );
+		$this->assertSame( 'disable', $disabled->to_array()['sendEmail'] );
+		$this->assertSame( 'disable', $default->to_array()['sendEmail'] );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
 	public function test_maps_bundle_with_proportional_sold_prices(): void {
 		// Two downloadable Miguel products with distinct codes and regular prices.
 		$book1 = Miguel_Helper_Product::create_downloadable_product();
