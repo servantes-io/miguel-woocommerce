@@ -5,13 +5,6 @@
  * @package Miguel\Tests
  */
 
-// Miguel_Settings is normally lazy-loaded via the admin container's "settings"
-// factory, which never runs under MIGUEL_TESTS. Load it explicitly so tests
-// can reference Miguel_Settings::SEND_EMAIL_OPTION directly.
-if ( ! class_exists( 'Miguel_Settings' ) ) {
-	include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php';
-}
-
 class Test_Miguel_Orders extends Miguel_Test_Case {
 	private function get_sut() {
 		return $this->create_service_with_mocks(
@@ -310,7 +303,7 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 	 * When the setting is enabled, the synced order carries sendEmail = "auto".
 	 */
 	public function test_sync_order_sends_auto_email_flag_when_setting_enabled() {
-		update_option( Miguel_Settings::SEND_EMAIL_OPTION, 'yes' );
+		update_option( Miguel_Orders::SEND_EMAIL_OPTION, 'yes' );
 
 		Miguel_Helper_HTTP::mock_api_responses(
 			array(

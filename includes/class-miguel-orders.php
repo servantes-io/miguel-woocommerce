@@ -21,6 +21,11 @@ class Miguel_Orders {
 	const ASYNC_SYNC_ACTION = 'miguel_async_sync_order';
 
 	/**
+	 * Option name controlling whether Miguel's backend sends order emails.
+	 */
+	const SEND_EMAIL_OPTION = 'miguel_send_order_email';
+
+	/**
 	 * Hook manager instance
 	 *
 	 * @var Miguel_Hook_Manager_Interface
@@ -149,11 +154,7 @@ class Miguel_Orders {
 	 * @return bool
 	 */
 	private function is_send_order_email_enabled() {
-		if ( ! class_exists( 'Miguel_Settings' ) ) {
-			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-settings.php';
-		}
-
-		return 'yes' === get_option( Miguel_Settings::SEND_EMAIL_OPTION, 'no' );
+		return 'yes' === get_option( self::SEND_EMAIL_OPTION, 'no' );
 	}
 
 	/**
