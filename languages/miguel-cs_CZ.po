@@ -253,3 +253,9 @@ msgstr "Kód produktu \"%s\" odpovídá více produktům."
 
 msgid "Product code is required."
 msgstr "Kód produktu je povinný."
+
+msgid "Send order emails from Miguel"
+msgstr "Odesílat e-maily o objednávce z Miguela"
+
+msgid "When enabled, Miguel's server sends the order/delivery email to the customer. When disabled, Miguel does not send any email."
+msgstr "Když je zapnuto, server Miguel odešle zákazníkovi e-mail o objednávce/doručení. Když je vypnuto, Miguel neodešle žádný e-mail."
