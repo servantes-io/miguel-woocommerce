@@ -13,10 +13,11 @@ class Miguel_Order_Mapper {
 	/**
 	 * Build the OrderCreate DTO.
 	 *
-	 * @param WC_Order $order Order object.
+	 * @param WC_Order $order      Order object.
+	 * @param bool     $send_email Whether Miguel's backend should send order emails.
 	 * @return Miguel_V2_Order_Create|null Null when there are no Miguel items.
 	 */
-	public function map( $order ) {
+	public function map( $order, $send_email = false ) {
 		$items = array();
 
 		foreach ( $order->get_items() as $item ) {
@@ -60,7 +61,7 @@ class Miguel_Order_Mapper {
 			Miguel_Order_Utils::get_purchase_date_for_order( $order ),
 			$order->get_currency(),
 			$items,
-			'disable',
+			$send_email ? 'auto' : 'disable',
 			strval( $order->get_id() ),
 			$this->format_date( $order->get_date_created() ),
 			$this->format_date( $order->get_date_modified() ),
