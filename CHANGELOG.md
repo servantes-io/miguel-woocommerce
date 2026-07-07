@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.0
+
+Release 2026-07-07
+
+* Add option to enable sending emails from Miguel (instead of WooCommerce)
+
 ## 1.6.4
 
 Released 2026-07-05
