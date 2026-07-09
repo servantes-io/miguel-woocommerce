@@ -47,6 +47,16 @@ class Miguel_Orders_Api {
 				'permission_callback' => array( $this, 'validate_api_access' ),
 			)
 		);
+
+		register_rest_route(
+			'miguel/v1',
+			'/orders/(?P<id>\d+)',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_order' ),
+				'permission_callback' => array( $this, 'validate_api_access' ),
+			)
+		);
 	}
 
 	/**
@@ -101,6 +111,27 @@ class Miguel_Orders_Api {
 	}
 
 	/**
+	 * Return a single order by ID with a richer detail view.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function get_order( $request ) {
+		$order_id = absint( $request->get_param( 'id' ) );
+		$order    = wc_get_order( $order_id );
+
+		if ( ! $order || 'shop_order' !== $order->get_type() ) {
+			return new WP_Error(
+				'order.not_found',
+				esc_html__( 'Order was not found.', 'miguel' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		return new WP_REST_Response( $this->format_order_detail( $order ), 200 );
+	}
+
+	/**
 	 * Format a single WooCommerce order for the API response.
 	 *
 	 * @param WC_Order $order WooCommerce order.
@@ -122,6 +153,33 @@ class Miguel_Orders_Api {
 	}
 
 	/**
+	 * Format a single order with the richer detail field set.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return array
+	 */
+	private function format_order_detail( $order ) {
+		return array_merge(
+			$this->format_order( $order ),
+			array(
+				'line_items'           => $this->format_line_items( $order ),
+				'total'                => wc_format_decimal( $order->get_total() ),
+				'subtotal'             => wc_format_decimal( $order->get_subtotal() ),
+				'total_tax'            => wc_format_decimal( $order->get_total_tax() ),
+				'shipping_total'       => wc_format_decimal( $order->get_shipping_total() ),
+				'discount_total'       => wc_format_decimal( $order->get_discount_total() ),
+				'billing'              => $this->format_billing_address( $order ),
+				'shipping'             => $this->format_shipping_address( $order ),
+				'payment_method'       => $order->get_payment_method(),
+				'payment_method_title' => $order->get_payment_method_title(),
+				'transaction_id'       => $order->get_transaction_id(),
+				'shipping_lines'       => $this->format_shipping_lines( $order ),
+				'customer_note'        => $order->get_customer_note(),
+			)
+		);
+	}
+
+	/**
 	 * Extract Miguel product codes and prices from an order.
 	 * Only downloadable line items with a Miguel shortcode are included; other items are omitted.
 	 *
@@ -132,38 +190,154 @@ class Miguel_Orders_Api {
 		$products = array();
 
 		foreach ( $order->get_items() as $item ) {
-			if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
-				continue;
-			}
-
-			$product = $item->get_product();
-			if ( ! $product || ! $product->is_downloadable() ) {
+			$codes = $this->get_miguel_codes_for_item( $item );
+			if ( empty( $codes ) ) {
 				continue;
 			}
 
 			$item_total = $order->get_item_total( $item, false, false ); // exc. tax, exc. rounding
 
-			foreach ( $product->get_downloads() as $download ) {
-				$file = is_array( $download )
-					? ( isset( $download['file'] ) ? $download['file'] : '' )
-					: ( method_exists( $download, 'get_file' ) ? $download->get_file() : '' );
-
-				if ( empty( $file ) || ! Miguel_Order_Utils::is_miguel_shortcode( $file ) ) {
-					continue;
-				}
-
-				$code = Miguel_Order_Utils::extract_miguel_code( $file );
-				if ( $code ) {
-					$products[] = array(
-						'code'  => $code,
-						'price' => array(
-							'sold_without_vat' => $item_total,
-						),
-					);
-				}
+			foreach ( $codes as $code ) {
+				$products[] = array(
+					'code'  => $code,
+					'price' => array(
+						'sold_without_vat' => $item_total,
+					),
+				);
 			}
 		}
 
 		return $products;
+	}
+
+	/**
+	 * Collect Miguel product codes from a single order line item.
+	 * Returns an empty array for non-product, non-downloadable, or non-Miguel items.
+	 *
+	 * @param WC_Order_Item $item Order line item.
+	 * @return array List of Miguel codes (strings).
+	 */
+	private function get_miguel_codes_for_item( $item ) {
+		$codes = array();
+
+		if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
+			return $codes;
+		}
+
+		$product = $item->get_product();
+		if ( ! $product || ! $product->is_downloadable() ) {
+			return $codes;
+		}
+
+		foreach ( $product->get_downloads() as $download ) {
+			$file = is_array( $download )
+				? ( isset( $download['file'] ) ? $download['file'] : '' )
+				: ( method_exists( $download, 'get_file' ) ? $download->get_file() : '' );
+
+			if ( empty( $file ) || ! Miguel_Order_Utils::is_miguel_shortcode( $file ) ) {
+				continue;
+			}
+
+			$code = Miguel_Order_Utils::extract_miguel_code( $file );
+			if ( $code ) {
+				$codes[] = $code;
+			}
+		}
+
+		return $codes;
+	}
+
+	/**
+	 * Format all product line items of an order.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return array
+	 */
+	private function format_line_items( $order ) {
+		$line_items = array();
+
+		foreach ( $order->get_items() as $item ) {
+			if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
+				continue;
+			}
+
+			$product = $item->get_product();
+			$codes   = $this->get_miguel_codes_for_item( $item );
+
+			$line_items[] = array(
+				'product_id' => $item->get_product_id(),
+				'name'       => $item->get_name(),
+				'sku'        => $product ? $product->get_sku() : '',
+				'quantity'   => $item->get_quantity(),
+				'total'      => wc_format_decimal( $item->get_total() ),
+				'tax'        => wc_format_decimal( $item->get_total_tax() ),
+				'code'       => ! empty( $codes ) ? $codes[0] : null,
+			);
+		}
+
+		return $line_items;
+	}
+
+	/**
+	 * Format the billing address of an order.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return array
+	 */
+	private function format_billing_address( $order ) {
+		return array(
+			'first_name' => $order->get_billing_first_name(),
+			'last_name'  => $order->get_billing_last_name(),
+			'company'    => $order->get_billing_company(),
+			'address_1'  => $order->get_billing_address_1(),
+			'address_2'  => $order->get_billing_address_2(),
+			'city'       => $order->get_billing_city(),
+			'state'      => $order->get_billing_state(),
+			'postcode'   => $order->get_billing_postcode(),
+			'country'    => $order->get_billing_country(),
+			'email'      => $order->get_billing_email(),
+			'phone'      => $order->get_billing_phone(),
+		);
+	}
+
+	/**
+	 * Format the shipping address of an order.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return array
+	 */
+	private function format_shipping_address( $order ) {
+		return array(
+			'first_name' => $order->get_shipping_first_name(),
+			'last_name'  => $order->get_shipping_last_name(),
+			'company'    => $order->get_shipping_company(),
+			'address_1'  => $order->get_shipping_address_1(),
+			'address_2'  => $order->get_shipping_address_2(),
+			'city'       => $order->get_shipping_city(),
+			'state'      => $order->get_shipping_state(),
+			'postcode'   => $order->get_shipping_postcode(),
+			'country'    => $order->get_shipping_country(),
+			'phone'      => method_exists( $order, 'get_shipping_phone' ) ? $order->get_shipping_phone() : '',
+		);
+	}
+
+	/**
+	 * Format the shipping lines of an order.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return array
+	 */
+	private function format_shipping_lines( $order ) {
+		$shipping_lines = array();
+
+		foreach ( $order->get_shipping_methods() as $shipping_item ) {
+			$shipping_lines[] = array(
+				'method_id'    => $shipping_item->get_method_id(),
+				'method_title' => $shipping_item->get_name(),
+				'total'        => wc_format_decimal( $shipping_item->get_total() ),
+			);
+		}
+
+		return $shipping_lines;
 	}
 }

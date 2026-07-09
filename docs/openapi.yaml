@@ -232,6 +232,109 @@ components:
             Only downloadable line items with a Miguel shortcode are included.
             Non-Miguel or non-downloadable items are omitted.
 
+    OrderLineItem:
+      type: object
+      properties:
+        product_id:
+          type: integer
+          example: 15
+        name:
+          type: string
+          example: My eBook
+        sku:
+          type: string
+        quantity:
+          type: integer
+          example: 1
+        total:
+          type: string
+          description: Line total excluding tax (store currency).
+          example: "199.00"
+        tax:
+          type: string
+          description: Line tax total (store currency).
+          example: "0.00"
+        code:
+          type: string
+          nullable: true
+          description: >
+            First Miguel product code on the line, or null when the line is not
+            a Miguel downloadable. Full code+price detail is in the order's products array.
+          example: "9788024271101"
+
+    OrderShippingAddress:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        company:
+          type: string
+        address_1:
+          type: string
+        address_2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postcode:
+          type: string
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code.
+        phone:
+          type: string
+          description: Empty string on WooCommerce versions without shipping-phone support.
+
+    OrderDetail:
+      description: >
+        Richer single-order view returned by GET /orders/{id}. Includes all
+        properties of Order plus totals, structured addresses, payment/shipping
+        metadata, and a full line-item breakdown.
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        - type: object
+          properties:
+            total:
+              type: string
+              example: "228.00"
+            subtotal:
+              type: string
+              example: "199.00"
+            total_tax:
+              type: string
+              example: "0.00"
+            shipping_total:
+              type: string
+              example: "29.00"
+            discount_total:
+              type: string
+              example: "0.00"
+            billing:
+              $ref: '#/components/schemas/BillingAddress'
+            shipping:
+              $ref: '#/components/schemas/OrderShippingAddress'
+            payment_method:
+              type: string
+              example: bacs
+            payment_method_title:
+              type: string
+              example: Direct Bank Transfer
+            transaction_id:
+              type: string
+            shipping_lines:
+              type: array
+              items:
+                $ref: '#/components/schemas/ShippingLine'
+            customer_note:
+              type: string
+            line_items:
+              type: array
+              items:
+                $ref: '#/components/schemas/OrderLineItem'
+
     MiguelItem:
       type: object
       properties:
@@ -716,6 +819,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        "401":
+          description: Missing bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /orders/{id}:
+    get:
+      summary: Get a single order by ID
+      operationId: getOrder
+      description: >
+        Returns a single WooCommerce order by ID with a richer detail view: the
+        same base fields as a list item plus order totals, structured
+        billing/shipping addresses, payment and shipping metadata, and a full
+        line-item breakdown. Only top-level shop orders are returned; refunds and
+        other types yield 404.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: WooCommerce order ID.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+        "404":
+          description: Order not found (unknown ID or non-shop_order type).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: order.not_found
+                message: Order was not found.
+                data:
+                  status: 404
         "401":
           description: Missing bearer token.
           content:
