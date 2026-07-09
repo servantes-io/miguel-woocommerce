@@ -262,4 +262,36 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 		$this->assertArrayHasKey( 'shipping_lines', $data );
 		$this->assertIsArray( $data['shipping_lines'] );
 	}
+
+	public function test_get_order_shipping_lines_include_method_details() {
+		$order = Miguel_Helper_Order::create_order();
+
+		$shipping_item = new WC_Order_Item_Shipping();
+		$shipping_item->set_method_id( 'flat_rate' );
+		$shipping_item->set_method_title( 'Flat Rate' );
+		$shipping_item->set_total( '5.00' );
+		$order->add_item( $shipping_item );
+		$order->calculate_totals();
+		$order->save();
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/' . $order->get_id() );
+		$request->set_param( 'id', $order->get_id() );
+
+		$data = $api->get_order( $request )->get_data();
+
+		$this->assertNotEmpty( $data['shipping_lines'] );
+
+		$found = null;
+		foreach ( $data['shipping_lines'] as $line ) {
+			if ( 'flat_rate' === $line['method_id'] ) {
+				$found = $line;
+				break;
+			}
+		}
+
+		$this->assertNotNull( $found, 'Expected shipping line not found.' );
+		$this->assertSame( 'Flat Rate', $found['method_title'] );
+		$this->assertSame( wc_format_decimal( '5.00' ), $found['total'] );
+	}
 }
