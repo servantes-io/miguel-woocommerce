@@ -162,14 +162,19 @@ class Miguel_Orders_Api {
 		return array_merge(
 			$this->format_order( $order ),
 			array(
-				'line_items'     => $this->format_line_items( $order ),
-				'total'          => wc_format_decimal( $order->get_total() ),
-				'subtotal'       => wc_format_decimal( $order->get_subtotal() ),
-				'total_tax'      => wc_format_decimal( $order->get_total_tax() ),
-				'shipping_total' => wc_format_decimal( $order->get_shipping_total() ),
-				'discount_total' => wc_format_decimal( $order->get_discount_total() ),
-				'billing'        => $this->format_billing_address( $order ),
-				'shipping'       => $this->format_shipping_address( $order ),
+				'line_items'           => $this->format_line_items( $order ),
+				'total'                => wc_format_decimal( $order->get_total() ),
+				'subtotal'             => wc_format_decimal( $order->get_subtotal() ),
+				'total_tax'            => wc_format_decimal( $order->get_total_tax() ),
+				'shipping_total'       => wc_format_decimal( $order->get_shipping_total() ),
+				'discount_total'       => wc_format_decimal( $order->get_discount_total() ),
+				'billing'              => $this->format_billing_address( $order ),
+				'shipping'             => $this->format_shipping_address( $order ),
+				'payment_method'       => $order->get_payment_method(),
+				'payment_method_title' => $order->get_payment_method_title(),
+				'transaction_id'       => $order->get_transaction_id(),
+				'shipping_lines'       => $this->format_shipping_lines( $order ),
+				'customer_note'        => $order->get_customer_note(),
 			)
 		);
 	}
@@ -314,5 +319,25 @@ class Miguel_Orders_Api {
 			'country'    => $order->get_shipping_country(),
 			'phone'      => method_exists( $order, 'get_shipping_phone' ) ? $order->get_shipping_phone() : '',
 		);
+	}
+
+	/**
+	 * Format the shipping lines of an order.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return array
+	 */
+	private function format_shipping_lines( $order ) {
+		$shipping_lines = array();
+
+		foreach ( $order->get_shipping_methods() as $shipping_item ) {
+			$shipping_lines[] = array(
+				'method_id'    => $shipping_item->get_method_id(),
+				'method_title' => $shipping_item->get_name(),
+				'total'        => wc_format_decimal( $shipping_item->get_total() ),
+			);
+		}
+
+		return $shipping_lines;
 	}
 }

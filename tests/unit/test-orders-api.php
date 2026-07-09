@@ -241,4 +241,25 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 			$this->assertArrayHasKey( $key, $data['shipping'] );
 		}
 	}
+
+	public function test_get_order_includes_payment_and_shipping_meta() {
+		$order = Miguel_Helper_Order::create_order();
+		$order->set_payment_method( 'bacs' );
+		$order->set_payment_method_title( 'Direct Bank Transfer' );
+		$order->set_customer_note( 'Leave at the door' );
+		$order->save();
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/' . $order->get_id() );
+		$request->set_param( 'id', $order->get_id() );
+
+		$data = $api->get_order( $request )->get_data();
+
+		$this->assertSame( 'bacs', $data['payment_method'] );
+		$this->assertSame( 'Direct Bank Transfer', $data['payment_method_title'] );
+		$this->assertSame( 'Leave at the door', $data['customer_note'] );
+		$this->assertArrayHasKey( 'transaction_id', $data );
+		$this->assertArrayHasKey( 'shipping_lines', $data );
+		$this->assertIsArray( $data['shipping_lines'] );
+	}
 }
