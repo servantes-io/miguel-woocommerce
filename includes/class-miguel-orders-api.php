@@ -161,7 +161,9 @@ class Miguel_Orders_Api {
 	private function format_order_detail( $order ) {
 		return array_merge(
 			$this->format_order( $order ),
-			array()
+			array(
+				'line_items' => $this->format_line_items( $order ),
+			)
 		);
 	}
 
@@ -231,5 +233,36 @@ class Miguel_Orders_Api {
 		}
 
 		return $codes;
+	}
+
+	/**
+	 * Format all product line items of an order.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return array
+	 */
+	private function format_line_items( $order ) {
+		$line_items = array();
+
+		foreach ( $order->get_items() as $item ) {
+			if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
+				continue;
+			}
+
+			$product = $item->get_product();
+			$codes   = $this->get_miguel_codes_for_item( $item );
+
+			$line_items[] = array(
+				'product_id' => $item->get_product_id(),
+				'name'       => $item->get_name(),
+				'sku'        => $product ? $product->get_sku() : '',
+				'quantity'   => $item->get_quantity(),
+				'total'      => wc_format_decimal( $item->get_total() ),
+				'tax'        => wc_format_decimal( $item->get_total_tax() ),
+				'code'       => ! empty( $codes ) ? $codes[0] : null,
+			);
+		}
+
+		return $line_items;
 	}
 }

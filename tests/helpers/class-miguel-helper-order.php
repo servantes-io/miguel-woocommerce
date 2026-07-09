@@ -57,13 +57,15 @@ class Miguel_Helper_Order {
 		$order->save();
 
 		$item = $order->get_item( $item_id );
-		$downloads = $item->get_item_downloads();
+		$product_obj = $item->get_product();
+		$downloads = $product_obj ? $product_obj->get_downloads() : array();
 		$download = reset( $downloads );
+		$download_url = is_array( $download ) ? ( isset( $download['file'] ) ? $download['file'] : '' ) : ( method_exists( $download, 'get_file' ) ? $download->get_file() : '' );
 
 		return array(
-			'order_id' => $order->id,
-			'product_id' => $product->id,
-			'download_url' => $download->get_file(),
+			'order_id' => $order->get_id(),
+			'product_id' => $product->get_id(),
+			'download_url' => $download_url,
 		);
 	}
 
