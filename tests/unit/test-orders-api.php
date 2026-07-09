@@ -129,4 +129,52 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 		$this->assertArrayHasKey( 'address', $found['user'] );
 		$this->assertArrayHasKey( 'lang', $found['user'] );
 	}
+
+	public function test_get_order_returns_404_when_not_found() {
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/999999' );
+		$request->set_param( 'id', 999999 );
+
+		$response = $api->get_order( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $response );
+		$this->assertEquals( 'order.not_found', $response->get_error_code() );
+		$data = $response->get_error_data();
+		$this->assertSame( 404, $data['status'] );
+	}
+
+	public function test_get_order_returns_404_for_refund() {
+		$order  = Miguel_Helper_Order::create_order();
+		$refund = wc_create_refund( array( 'order_id' => $order->get_id() ) );
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/' . $refund->get_id() );
+		$request->set_param( 'id', $refund->get_id() );
+
+		$response = $api->get_order( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $response );
+		$this->assertEquals( 'order.not_found', $response->get_error_code() );
+		$data = $response->get_error_data();
+		$this->assertSame( 404, $data['status'] );
+	}
+
+	public function test_get_order_returns_base_fields() {
+		$order = Miguel_Helper_Order::create_order();
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/' . $order->get_id() );
+		$request->set_param( 'id', $order->get_id() );
+
+		$response = $api->get_order( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+
+		$data = $response->get_data();
+		foreach ( array( 'id', 'status', 'currency_code', 'paid', 'purchase_date', 'update_date', 'user', 'products' ) as $key ) {
+			$this->assertArrayHasKey( $key, $data );
+		}
+		$this->assertSame( strval( $order->get_id() ), $data['id'] );
+	}
 }

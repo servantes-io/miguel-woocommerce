@@ -47,6 +47,16 @@ class Miguel_Orders_Api {
 				'permission_callback' => array( $this, 'validate_api_access' ),
 			)
 		);
+
+		register_rest_route(
+			'miguel/v1',
+			'/orders/(?P<id>\d+)',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_order' ),
+				'permission_callback' => array( $this, 'validate_api_access' ),
+			)
+		);
 	}
 
 	/**
@@ -101,6 +111,27 @@ class Miguel_Orders_Api {
 	}
 
 	/**
+	 * Return a single order by ID with a richer detail view.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function get_order( $request ) {
+		$order_id = absint( $request->get_param( 'id' ) );
+		$order    = wc_get_order( $order_id );
+
+		if ( ! $order || 'shop_order' !== $order->get_type() ) {
+			return new WP_Error(
+				'order.not_found',
+				esc_html__( 'Order was not found.', 'miguel' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		return new WP_REST_Response( $this->format_order_detail( $order ), 200 );
+	}
+
+	/**
 	 * Format a single WooCommerce order for the API response.
 	 *
 	 * @param WC_Order $order WooCommerce order.
@@ -118,6 +149,19 @@ class Miguel_Orders_Api {
 			'update_date'   => $update_date ? $update_date->format( DateTime::ATOM ) : null,
 			'user'          => Miguel_Order_Utils::get_user_data_for_order( $order, true ),
 			'products'      => $this->collect_products_from_order( $order ),
+		);
+	}
+
+	/**
+	 * Format a single order with the richer detail field set.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return array
+	 */
+	private function format_order_detail( $order ) {
+		return array_merge(
+			$this->format_order( $order ),
+			array()
 		);
 	}
 
