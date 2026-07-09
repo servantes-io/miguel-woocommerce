@@ -202,6 +202,28 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 		$this->assertTrue( in_array( null, $codes, true ), 'Expected a line item with null code.' ); // virtual non-Miguel product
 	}
 
+	public function test_get_order_products_deduplicate_multiple_format_downloads() {
+		// A single ebook product carries one download per format (epub, mobi) that
+		// all share the same Miguel id, so it must appear only once in products.
+		$created  = Miguel_Helper_Order::create_order_downloadable();
+		$order_id = $created['order_id'];
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/' . $order_id );
+		$request->set_param( 'id', $order_id );
+
+		$data = $api->get_order( $request )->get_data();
+
+		$codes            = array_column( $data['products'], 'code' );
+		$dummy_name_count = count( array_keys( $codes, 'dummy-name', true ) );
+
+		$this->assertSame(
+			1,
+			$dummy_name_count,
+			'Expected the multi-format ebook to appear once, got ' . $dummy_name_count . ' duplicate product entries.'
+		);
+	}
+
 	public function test_get_order_includes_totals() {
 		$order = Miguel_Helper_Order::create_order();
 

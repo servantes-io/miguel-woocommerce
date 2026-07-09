@@ -239,7 +239,7 @@ class Miguel_Orders_Api {
 			}
 
 			$code = Miguel_Order_Utils::extract_miguel_code( $file );
-			if ( $code ) {
+			if ( $code && ! in_array( $code, $codes, true ) ) {
 				$codes[] = $code;
 			}
 		}
