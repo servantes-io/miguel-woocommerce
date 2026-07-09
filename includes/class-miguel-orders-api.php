@@ -176,38 +176,60 @@ class Miguel_Orders_Api {
 		$products = array();
 
 		foreach ( $order->get_items() as $item ) {
-			if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
-				continue;
-			}
-
-			$product = $item->get_product();
-			if ( ! $product || ! $product->is_downloadable() ) {
+			$codes = $this->get_miguel_codes_for_item( $item );
+			if ( empty( $codes ) ) {
 				continue;
 			}
 
 			$item_total = $order->get_item_total( $item, false, false ); // exc. tax, exc. rounding
 
-			foreach ( $product->get_downloads() as $download ) {
-				$file = is_array( $download )
-					? ( isset( $download['file'] ) ? $download['file'] : '' )
-					: ( method_exists( $download, 'get_file' ) ? $download->get_file() : '' );
-
-				if ( empty( $file ) || ! Miguel_Order_Utils::is_miguel_shortcode( $file ) ) {
-					continue;
-				}
-
-				$code = Miguel_Order_Utils::extract_miguel_code( $file );
-				if ( $code ) {
-					$products[] = array(
-						'code'  => $code,
-						'price' => array(
-							'sold_without_vat' => $item_total,
-						),
-					);
-				}
+			foreach ( $codes as $code ) {
+				$products[] = array(
+					'code'  => $code,
+					'price' => array(
+						'sold_without_vat' => $item_total,
+					),
+				);
 			}
 		}
 
 		return $products;
+	}
+
+	/**
+	 * Collect Miguel product codes from a single order line item.
+	 * Returns an empty array for non-product, non-downloadable, or non-Miguel items.
+	 *
+	 * @param WC_Order_Item $item Order line item.
+	 * @return array List of Miguel codes (strings).
+	 */
+	private function get_miguel_codes_for_item( $item ) {
+		$codes = array();
+
+		if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
+			return $codes;
+		}
+
+		$product = $item->get_product();
+		if ( ! $product || ! $product->is_downloadable() ) {
+			return $codes;
+		}
+
+		foreach ( $product->get_downloads() as $download ) {
+			$file = is_array( $download )
+				? ( isset( $download['file'] ) ? $download['file'] : '' )
+				: ( method_exists( $download, 'get_file' ) ? $download->get_file() : '' );
+
+			if ( empty( $file ) || ! Miguel_Order_Utils::is_miguel_shortcode( $file ) ) {
+				continue;
+			}
+
+			$code = Miguel_Order_Utils::extract_miguel_code( $file );
+			if ( $code ) {
+				$codes[] = $code;
+			}
+		}
+
+		return $codes;
 	}
 }
