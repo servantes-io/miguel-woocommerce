@@ -216,4 +216,29 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 			$this->assertIsString( $data[ $key ] );
 		}
 	}
+
+	public function test_get_order_includes_structured_addresses() {
+		$order = Miguel_Helper_Order::create_order();
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/' . $order->get_id() );
+		$request->set_param( 'id', $order->get_id() );
+
+		$data = $api->get_order( $request )->get_data();
+
+		$this->assertArrayHasKey( 'billing', $data );
+		$this->assertArrayHasKey( 'shipping', $data );
+
+		$billing = $data['billing'];
+		$this->assertSame( 'Jan', $billing['first_name'] );
+		$this->assertSame( 'Miguel', $billing['last_name'] );
+		$this->assertSame( 'CZ', $billing['country'] );
+		$this->assertSame( 'Brno', $billing['city'] );
+		$this->assertSame( '60200', $billing['postcode'] );
+		$this->assertSame( 'test@melvil.cz', $billing['email'] );
+
+		foreach ( array( 'first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country', 'phone' ) as $key ) {
+			$this->assertArrayHasKey( $key, $data['shipping'] );
+		}
+	}
 }

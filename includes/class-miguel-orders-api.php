@@ -168,6 +168,8 @@ class Miguel_Orders_Api {
 				'total_tax'      => wc_format_decimal( $order->get_total_tax() ),
 				'shipping_total' => wc_format_decimal( $order->get_shipping_total() ),
 				'discount_total' => wc_format_decimal( $order->get_discount_total() ),
+				'billing'        => $this->format_billing_address( $order ),
+				'shipping'       => $this->format_shipping_address( $order ),
 			)
 		);
 	}
@@ -269,5 +271,48 @@ class Miguel_Orders_Api {
 		}
 
 		return $line_items;
+	}
+
+	/**
+	 * Format the billing address of an order.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return array
+	 */
+	private function format_billing_address( $order ) {
+		return array(
+			'first_name' => $order->get_billing_first_name(),
+			'last_name'  => $order->get_billing_last_name(),
+			'company'    => $order->get_billing_company(),
+			'address_1'  => $order->get_billing_address_1(),
+			'address_2'  => $order->get_billing_address_2(),
+			'city'       => $order->get_billing_city(),
+			'state'      => $order->get_billing_state(),
+			'postcode'   => $order->get_billing_postcode(),
+			'country'    => $order->get_billing_country(),
+			'email'      => $order->get_billing_email(),
+			'phone'      => $order->get_billing_phone(),
+		);
+	}
+
+	/**
+	 * Format the shipping address of an order.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return array
+	 */
+	private function format_shipping_address( $order ) {
+		return array(
+			'first_name' => $order->get_shipping_first_name(),
+			'last_name'  => $order->get_shipping_last_name(),
+			'company'    => $order->get_shipping_company(),
+			'address_1'  => $order->get_shipping_address_1(),
+			'address_2'  => $order->get_shipping_address_2(),
+			'city'       => $order->get_shipping_city(),
+			'state'      => $order->get_shipping_state(),
+			'postcode'   => $order->get_shipping_postcode(),
+			'country'    => $order->get_shipping_country(),
+			'phone'      => method_exists( $order, 'get_shipping_phone' ) ? $order->get_shipping_phone() : '',
+		);
 	}
 }
