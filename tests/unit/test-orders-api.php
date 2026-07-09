@@ -201,4 +201,19 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 		$this->assertContains( 'dummy-name', $codes );                         // downloadable Miguel product
 		$this->assertTrue( in_array( null, $codes, true ), 'Expected a line item with null code.' ); // virtual non-Miguel product
 	}
+
+	public function test_get_order_includes_totals() {
+		$order = Miguel_Helper_Order::create_order();
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/' . $order->get_id() );
+		$request->set_param( 'id', $order->get_id() );
+
+		$data = $api->get_order( $request )->get_data();
+
+		foreach ( array( 'total', 'subtotal', 'total_tax', 'shipping_total', 'discount_total' ) as $key ) {
+			$this->assertArrayHasKey( $key, $data );
+			$this->assertIsString( $data[ $key ] );
+		}
+	}
 }

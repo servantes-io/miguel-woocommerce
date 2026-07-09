@@ -162,7 +162,12 @@ class Miguel_Orders_Api {
 		return array_merge(
 			$this->format_order( $order ),
 			array(
-				'line_items' => $this->format_line_items( $order ),
+				'line_items'     => $this->format_line_items( $order ),
+				'total'          => wc_format_decimal( $order->get_total() ),
+				'subtotal'       => wc_format_decimal( $order->get_subtotal() ),
+				'total_tax'      => wc_format_decimal( $order->get_total_tax() ),
+				'shipping_total' => wc_format_decimal( $order->get_shipping_total() ),
+				'discount_total' => wc_format_decimal( $order->get_discount_total() ),
 			)
 		);
 	}
