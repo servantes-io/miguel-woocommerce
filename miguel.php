@@ -9,7 +9,7 @@
  * Text Domain: miguel
  * Author: Servantes, s.r.o.
  * Author URI: https://servantes.io
- * Version: 1.7.0
+ * Version: 1.7.1
  * License: GPLv3
  *
  * WC requires at least: 3.9
