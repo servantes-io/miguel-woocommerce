@@ -70,6 +70,8 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		$this->assertArrayHasKey( 'title', $method );
 		$this->assertArrayHasKey( 'description', $method );
 		$this->assertArrayHasKey( 'enabled', $method );
+		$this->assertArrayHasKey( 'currency', $method );
+		$this->assertEquals( get_woocommerce_currency(), $method['currency'] );
 		$this->assertArrayHasKey( 'cost', $method );
 		$this->assertArrayHasKey( 'min_amount', $method );
 		$this->assertArrayHasKey( 'free_shipping', $method );

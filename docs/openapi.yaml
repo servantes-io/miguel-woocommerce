@@ -76,6 +76,10 @@ components:
           type: boolean
           description: Whether the method is enabled.
           example: true
+        currency:
+          type: string
+          description: ISO 4217 store currency code the monetary values are expressed in.
+          example: CZK
         cost:
           type: string
           nullable: true
@@ -941,12 +945,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "409":
-          description: Conflict (invalid status, idempotency mismatch, or in-progress request).
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         "401":
           description: Missing bearer token.
           content:
@@ -961,13 +959,20 @@ paths:
                 $ref: '#/components/schemas/Error'
         "409":
           description: >
-            Conflict — idempotency key already used with a different payload,
-            or the same request is currently being processed concurrently.
+            Conflict — the requested order status is not supported by WooCommerce,
+            the idempotency key was already used with a different payload, or the same
+            request is currently being processed concurrently.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               examples:
+                status_invalid:
+                  value:
+                    code: order.status_invalid
+                    message: Order status is not supported by WooCommerce.
+                    data:
+                      status: 409
                 payload_mismatch:
                   value:
                     code: idempotency.payload_mismatch

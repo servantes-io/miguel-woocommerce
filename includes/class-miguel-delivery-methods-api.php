@@ -74,11 +74,12 @@ class Miguel_Delivery_Methods_Api {
 	 * @return array
 	 */
 	private function collect_zones() {
-		$zones = array();
+		$zones    = array();
+		$currency = get_woocommerce_currency();
 
 		foreach ( WC_Shipping_Zones::get_zones() as $zone_data ) {
 			$zone    = new WC_Shipping_Zone( $zone_data['id'] );
-			$methods = $this->collect_zone_methods( $zone );
+			$methods = $this->collect_zone_methods( $zone, $currency );
 			if ( ! empty( $methods ) ) {
 				$zones[] = $this->format_zone( $zone, $methods );
 			}
@@ -86,7 +87,7 @@ class Miguel_Delivery_Methods_Api {
 
 		// Zone 0 is "Rest of World" and is not included in get_zones().
 		$rest_zone = new WC_Shipping_Zone( 0 );
-		$methods   = $this->collect_zone_methods( $rest_zone );
+		$methods   = $this->collect_zone_methods( $rest_zone, $currency );
 		if ( ! empty( $methods ) ) {
 			$zones[] = $this->format_zone( $rest_zone, $methods );
 		}
@@ -130,13 +131,14 @@ class Miguel_Delivery_Methods_Api {
 	/**
 	 * Collect formatted shipping methods for a zone.
 	 *
-	 * @param WC_Shipping_Zone $zone Shipping zone.
+	 * @param WC_Shipping_Zone $zone     Shipping zone.
+	 * @param string           $currency ISO 4217 store currency code.
 	 * @return array
 	 */
-	private function collect_zone_methods( $zone ) {
+	private function collect_zone_methods( $zone, $currency ) {
 		$methods = array();
 		foreach ( $zone->get_shipping_methods() as $method ) {
-			$methods[] = $this->format_method( $method );
+			$methods[] = $this->format_method( $method, $currency );
 		}
 		return $methods;
 	}
@@ -144,16 +146,18 @@ class Miguel_Delivery_Methods_Api {
 	/**
 	 * Format a single shipping method for the API response.
 	 *
-	 * @param WC_Shipping_Method $method Shipping method instance.
+	 * @param WC_Shipping_Method $method   Shipping method instance.
+	 * @param string             $currency ISO 4217 store currency code.
 	 * @return array
 	 */
-	private function format_method( $method ) {
+	private function format_method( $method, $currency ) {
 		return array(
 			'instance_id'      => $method->get_instance_id(),
 			'method_id'        => $method->id,
 			'title'            => $method->get_title(),
 			'description'      => $method->get_method_description(),
 			'enabled'          => $method->is_enabled(),
+			'currency'         => $currency,
 			'cost'             => $method->get_option( 'cost', null ),
 			'min_amount'       => $method->get_option( 'min_amount', null ),
 			'free_shipping'    => $method->get_option( 'free_shipping', null ),
