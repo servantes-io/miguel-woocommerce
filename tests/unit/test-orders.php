@@ -360,4 +360,41 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 	}
+
+	/**
+	 * The miguel_suppress_order_sync filter must prevent the sync from being queued.
+	 *
+	 * This is what stops orders created via the Miguel order create API from being
+	 * synced straight back to Miguel (which would create a duplicate order).
+	 */
+	public function test_queue_order_sync_is_suppressed_by_filter() {
+		$order = Miguel_Helper_Order::create_order();
+		$sut   = $this->get_sut();
+
+		$args = array(
+			'order_id'   => $order->get_id(),
+			'from_state' => 'pending',
+			'to_state'   => 'processing',
+		);
+
+		// With the suppression filter active, no async sync action is queued.
+		add_filter( 'miguel_suppress_order_sync', '__return_true' );
+		$sut->queue_order_sync( $order->get_id(), 'pending', 'processing', $order );
+		remove_filter( 'miguel_suppress_order_sync', '__return_true' );
+
+		$this->assertFalse(
+			as_has_scheduled_action( Miguel_Orders::ASYNC_SYNC_ACTION, $args, 'miguel' ),
+			'Suppression filter must prevent the order sync from being queued.'
+		);
+
+		// Without the filter, the sync action is queued as usual.
+		$sut->queue_order_sync( $order->get_id(), 'pending', 'processing', $order );
+
+		$this->assertTrue(
+			as_has_scheduled_action( Miguel_Orders::ASYNC_SYNC_ACTION, $args, 'miguel' ),
+			'Without suppression, the order sync must be queued.'
+		);
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
 }

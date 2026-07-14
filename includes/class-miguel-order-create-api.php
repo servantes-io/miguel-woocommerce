@@ -138,6 +138,10 @@ class Miguel_Order_Create_Api {
 		}
 
 		try {
+			// Suppress the WooCommerce -> Miguel sync-back for this order: Miguel already
+			// owns it (it triggered this creation), so syncing it back would duplicate it.
+			add_filter( 'miguel_suppress_order_sync', '__return_true' );
+
 			$replay_after_lock = $this->read_idempotent_result( $result_option, $payload_hash );
 			if ( is_wp_error( $replay_after_lock ) ) {
 				return $replay_after_lock;
@@ -239,6 +243,7 @@ class Miguel_Order_Create_Api {
 
 			return new WP_REST_Response( $data, 201 );
 		} finally {
+			remove_filter( 'miguel_suppress_order_sync', '__return_true' );
 			delete_option( $lock_option );
 		}
 	}

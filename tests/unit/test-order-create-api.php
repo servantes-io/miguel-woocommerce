@@ -643,4 +643,68 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 
 		$this->assertTrue( true === $result );
 	}
+
+	/**
+	 * Creating an order through the Miguel create API must NOT queue a WooCommerce -> Miguel
+	 * sync-back for that order. Miguel already owns the order (it triggered the creation), so
+	 * syncing it back would create a duplicate order in Miguel with a different order code.
+	 */
+	public function test_create_order_does_not_queue_sync_back_to_miguel() {
+		// Wire the real WooCommerce -> Miguel sync hooks so order saves would normally queue a sync.
+		$orders = new Miguel_Orders(
+			new Miguel_Hook_Manager(),
+			new Miguel_V2_Client( 'https://example.com', 'test-token' )
+		);
+		$orders->register_hooks();
+
+		$product = Miguel_Helper_Product::create_downloadable_product();
+
+		$payload = array(
+			'idempotency_key' => 'idem-' . $product->get_id(),
+			'payment_method'  => 'cod',
+			'billing'         => array(
+				'first_name' => 'Test',
+				'last_name'  => 'User',
+				'email'      => 'buyer@example.com',
+			),
+			'shipping'        => array(
+				'first_name' => 'Test',
+				'last_name'  => 'User',
+			),
+			'shipping_lines'  => array(
+				array(
+					'method_id'    => 'flat_rate',
+					'method_title' => 'Flat rate',
+					'total'        => '0.00',
+				),
+			),
+			'line_items'      => array(
+				array(
+					'product_id' => $product->get_id(),
+					'quantity'   => 1,
+				),
+			),
+		);
+
+		$request = new WP_REST_Request( 'POST', '/miguel/v1/orders' );
+		$request->add_header( 'content-type', 'application/json' );
+		$request->set_body( wp_json_encode( $payload ) );
+
+		$api      = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$response = $api->create_order( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Order creation should succeed.' );
+		$data = $response->get_data();
+		$this->assertArrayHasKey( 'id', $data );
+		$this->assertGreaterThan( 0, $data['id'], 'A WooCommerce order should have been created.' );
+
+		// The just-created order must not have been queued for sync back to Miguel.
+		$this->assertFalse(
+			as_has_scheduled_action( Miguel_Orders::ASYNC_SYNC_ACTION, null, 'miguel' ),
+			'Creating an order via the Miguel API must not queue a sync-back to Miguel.'
+		);
+
+		$orders->get_hook_manager()->remove_all_hooks();
+		Miguel_Helper_Order::delete_order( $data['id'] );
+	}
 }

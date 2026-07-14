@@ -82,6 +82,27 @@ class Miguel_Orders {
 			return;
 		}
 
+		/**
+		 * Filters whether the WooCommerce -> Miguel order sync should be skipped.
+		 *
+		 * Orders created through the Miguel order create API already exist in
+		 * Miguel's backend, so syncing them back would create a duplicate order
+		 * with a different order code. The create API activates this filter while
+		 * it creates the WooCommerce order to suppress that initial sync-back.
+		 * Later updates to the order sync as usual, matched by the WooCommerce ID.
+		 *
+		 * @param bool $suppress Whether to skip queuing the sync. Default false.
+		 * @param int  $order_id Order ID being processed.
+		 */
+		if ( apply_filters( 'miguel_suppress_order_sync', false, $order_id ) ) {
+			Miguel::debug_log(
+				'Skipped queuing order sync because suppression filter is active',
+				array( 'order_id' => $order_id )
+			);
+
+			return;
+		}
+
 		$args = array(
 			'order_id' => $order_id,
 			'from_state' => (string) $from_state,
