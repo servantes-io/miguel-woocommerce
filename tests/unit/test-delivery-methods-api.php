@@ -319,6 +319,46 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * @param array  $atts    Shortcode attributes.
+	 * @param string $content Enclosed content.
+	 * @return string
+	 */
+	public function render_preorder_shortcode( $atts, $content = '' ) {
+		return $content;
+	}
+
+	public function test_description_shortcodes_are_processed() {
+		add_shortcode( 'miguel_test_preorder', array( $this, 'render_preorder_shortcode' ) );
+		add_filter( 'woocommerce_shipping_instance_form_fields_flat_rate', array( $this, 'add_description_field' ) );
+
+		$method = $this->get_method_for_settings(
+			'Shortcode Zone',
+			array(
+				'title'       => 'Balikovna',
+				'description' => 'Před [miguel_test_preorder]vydáním[/miguel_test_preorder] knihy',
+			)
+		);
+
+		remove_shortcode( 'miguel_test_preorder' );
+
+		$this->assertSame( 'Před vydáním knihy', $method['description'] );
+	}
+
+	public function test_description_without_shortcodes_is_unchanged() {
+		add_filter( 'woocommerce_shipping_instance_form_fields_flat_rate', array( $this, 'add_description_field' ) );
+
+		$method = $this->get_method_for_settings(
+			'Plain Description Zone',
+			array(
+				'title'       => 'Balikovna',
+				'description' => 'Doručení na vámi vybranou adresu',
+			)
+		);
+
+		$this->assertSame( 'Doručení na vámi vybranou adresu', $method['description'] );
+	}
+
+	/**
 	 * @param array $methods Registered shipping methods.
 	 * @return array
 	 */
