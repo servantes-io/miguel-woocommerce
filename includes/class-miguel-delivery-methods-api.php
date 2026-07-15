@@ -154,8 +154,8 @@ class Miguel_Delivery_Methods_Api {
 		return array(
 			'instance_id'      => $method->get_instance_id(),
 			'method_id'        => $method->id,
-			'title'            => $method->get_title(),
-			'description'      => $method->get_method_description(),
+			'title'            => $method->get_option( 'title' ),
+			'description'      => $method->get_option( 'description' ),
 			'enabled'          => $method->is_enabled(),
 			'currency'         => $currency,
 			'cost'             => $method->get_option( 'cost', null ),
