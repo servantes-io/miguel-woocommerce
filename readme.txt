@@ -7,7 +7,7 @@ Stable tag: 1.7.1
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
-WC requires at least: 3.9
+WC requires at least: 6.0
 WC tested up to: 10.0
 
 Sell watermarked e-books and audiobooks directly from your WooCommerce e-shop.
