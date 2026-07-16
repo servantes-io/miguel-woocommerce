@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.8.0
+
+Released 2026-07-16
+
+* Added `GET /orders/{id}` endpoint returning a single order with line items, totals, billing and shipping addresses, and payment and shipping metadata
+* Added currency to the delivery methods endpoint
+* Delivery method title and description are now read from the method settings (with shortcodes expanded) instead of the internal method labels
+* Orders created from Miguel are no longer reported back to Miguel as new orders
+* Fixed duplicate line items caused by repeated Miguel codes across multi-format downloads
+* BREAKING: Raised the minimum required WooCommerce version to 6.0
+
 ## 1.7.0
 
 Release 2026-07-07

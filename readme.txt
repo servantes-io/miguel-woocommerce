@@ -3,7 +3,7 @@ Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 4.9
 Tested up to: 6.8
-Stable tag: 1.7.1
+Stable tag: 1.8.0
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -48,7 +48,7 @@ All servers are located in the EU and under our domain servantes.io and servante
 
 ## Minimum Requirements ##
 
-- WooCommerce 3.9 or greater
+- WooCommerce 6.0 or greater
 - WordPress 4.9 or greater
 
 ## Automatic installation ##
@@ -106,5 +106,12 @@ The interactive wizard allows you to set the screen size for which the resulting
 
 = 1.7.0 =
 * Add option to enable sending emails from Miguel (instead of WooCommerce)
+
+= 1.8.0 =
+* Added an API endpoint for retrieving a single order including its line items, totals and addresses
+* Added currency to delivery methods and now read their title and description from the method settings
+* Orders created from Miguel are no longer reported back as new orders
+* Fixed duplicate line items for products offered in multiple formats
+* Now requires WooCommerce 6.0 or newer
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

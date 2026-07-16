@@ -5,11 +5,11 @@
  * Description: Sell your e-books and audiobooks directly on your e-shop.
  * Requires at least: 4.9
  * Requires PHP: 7.2
- * Tested up to: 6.8
+ * Tested up to: 7.0
  * Text Domain: miguel
  * Author: Servantes, s.r.o.
  * Author URI: https://servantes.io
- * Version: 1.7.1
+ * Version: 1.8.0
  * License: GPLv3
  *
  * WC requires at least: 6.0
