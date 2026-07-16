@@ -155,7 +155,7 @@ class Miguel_Delivery_Methods_Api {
 			'instance_id'      => $method->get_instance_id(),
 			'method_id'        => $method->id,
 			'title'            => $method->get_option( 'title' ),
-			'description'      => $method->get_option( 'description' ),
+			'description'      => do_shortcode( (string) $method->get_option( 'description' ) ),
 			'enabled'          => $method->is_enabled(),
 			'currency'         => $currency,
 			'cost'             => $method->get_option( 'cost', null ),

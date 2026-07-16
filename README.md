@@ -2,7 +2,7 @@
 
 Sell watermarked e-books and audiobooks directly from WooCommerce e-shop via [Miguel](https://servantes.cz/en/miguel).
 
-- **Requires at least:** WooCommerce 3.9
+- **Requires at least:** WooCommerce 6.0
 - **Tested up to:** WooCommerce 10.0
 - **Version:** 1.7.1
 
@@ -18,13 +18,23 @@ Currently supported formats are: `epub`, `mobi`, `pdf` and `audio`.
 
 ## REST API
 
-The plugin exposes three authenticated REST endpoints:
+The plugin exposes the following authenticated REST endpoints under the `miguel/v1` namespace:
 
 - `GET /wp-json/miguel/v1/products` returns WooCommerce products with pricing, stock data, SKU, and extracted Miguel items.
-- `POST /wp-json/miguel/v1/orders` creates a WooCommerce order.
 - `GET /wp-json/miguel/v1/product-code-map` returns the current `product_code -> product_id` mapping.
+- `POST /wp-json/miguel/v1/orders` creates a WooCommerce order.
+- `GET /wp-json/miguel/v1/orders?updated_since=<datetime>` returns all orders modified on or after the given datetime (`updated_since` is required).
+- `GET /wp-json/miguel/v1/orders/{id}` returns a single order by ID.
+- `PUT /wp-json/miguel/v1/orders/{id}/status` updates the status of an order.
+- `GET /wp-json/miguel/v1/delivery-methods` returns the configured WooCommerce shipping methods grouped by zone.
 
 Authentication uses `Authorization: Bearer <token>` with the token configured in WooCommerce > Settings > Miguel.
+
+### Delivery Methods Response Notes
+
+- `GET /wp-json/miguel/v1/delivery-methods` returns `{ "count": <n>, "zones": [...] }`, one entry per shipping zone that has methods (including "Rest of World").
+- Each method includes `instance_id`, `method_id`, `title`, `description`, `enabled`, `currency`, and cost-related settings (`cost`, `min_amount`, `free_shipping`, `requires`, `ignore_discounts`).
+- `title` and `description` come from the method's saved settings; when a saved value is empty, its configured field default is used, and shortcodes in the description are expanded.
 
 ### Order Request Rules
 

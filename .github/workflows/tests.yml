@@ -46,19 +46,8 @@ jobs:
             wordpress-version: 6.5.8
             php-version: 8.2
             phpunit-version: ^9
+          # Minimum supported version (WC 6.0 — first with Action Scheduler 3.3+)
           - woocommerce-version: 6.9.4
-            wordpress-version: 6.5.8
-            php-version: 7.2
-            phpunit-version: 7.5.20
-          - woocommerce-version: 5.9.1
-            wordpress-version: 6.5.8
-            php-version: 7.2
-            phpunit-version: 7.5.20
-          - woocommerce-version: 4.9.5
-            wordpress-version: 6.5.8
-            php-version: 7.2
-            phpunit-version: 7.5.20
-          - woocommerce-version: 3.9.5
             wordpress-version: 6.5.8
             php-version: 7.2
             phpunit-version: 7.5.20

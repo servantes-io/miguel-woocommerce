@@ -4,6 +4,52 @@
  *
  * @package Miguel\Tests
  */
+
+/**
+ * Replica of a third-party method such as toret_tcp_balikovna: title and description are
+ * instance settings, and the method title differs from the customer facing title.
+ */
+class Miguel_Test_Balikovna_Shipping_Method extends WC_Shipping_Method {
+
+	/**
+	 * @param int $instance_id Instance ID.
+	 */
+	public function __construct( $instance_id = 0 ) {
+		$this->id                 = 'miguel_test_balikovna';
+		$this->instance_id        = absint( $instance_id );
+		$this->method_title       = 'Doručení Balíkovna';
+		$this->method_description = 'Toret plugin pro Balíkovna dopravní metoda';
+		$this->supports           = array( 'shipping-zones', 'instance-settings' );
+		$this->init();
+	}
+
+	/**
+	 * Declare instance settings and hydrate them.
+	 */
+	public function init() {
+		$this->instance_form_fields = array(
+			'enabled'     => array(
+				'title'   => 'Povolit',
+				'type'    => 'checkbox',
+				'default' => 'yes',
+			),
+			'title'       => array(
+				'title'   => 'Titulek',
+				'type'    => 'text',
+				'default' => 'Balíkovna',
+			),
+			'description' => array(
+				'title'   => 'Popisek',
+				'type'    => 'text',
+				'default' => 'Doručení Balíkovna',
+			),
+		);
+		$this->init_instance_settings();
+		$this->enabled = $this->get_option( 'enabled' );
+		$this->title   = $this->get_option( 'title' );
+	}
+}
+
 class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 
 	public function test_registers_rest_api_init_hook() {
@@ -270,5 +316,93 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 	 */
 	public function override_internal_title( $title ) {
 		return 'Internal Title';
+	}
+
+	/**
+	 * @param array  $atts    Shortcode attributes.
+	 * @param string $content Enclosed content.
+	 * @return string
+	 */
+	public function render_preorder_shortcode( $atts, $content = '' ) {
+		return $content;
+	}
+
+	public function test_description_shortcodes_are_processed() {
+		add_shortcode( 'miguel_test_preorder', array( $this, 'render_preorder_shortcode' ) );
+		add_filter( 'woocommerce_shipping_instance_form_fields_flat_rate', array( $this, 'add_description_field' ) );
+
+		$method = $this->get_method_for_settings(
+			'Shortcode Zone',
+			array(
+				'title'       => 'Balikovna',
+				'description' => 'Před [miguel_test_preorder]vydáním[/miguel_test_preorder] knihy',
+			)
+		);
+
+		remove_shortcode( 'miguel_test_preorder' );
+
+		$this->assertSame( 'Před vydáním knihy', $method['description'] );
+	}
+
+	public function test_description_without_shortcodes_is_unchanged() {
+		add_filter( 'woocommerce_shipping_instance_form_fields_flat_rate', array( $this, 'add_description_field' ) );
+
+		$method = $this->get_method_for_settings(
+			'Plain Description Zone',
+			array(
+				'title'       => 'Balikovna',
+				'description' => 'Doručení na vámi vybranou adresu',
+			)
+		);
+
+		$this->assertSame( 'Doručení na vámi vybranou adresu', $method['description'] );
+	}
+
+	/**
+	 * @param array $methods Registered shipping methods.
+	 * @return array
+	 */
+	public function register_balikovna_method( $methods ) {
+		$methods['miguel_test_balikovna'] = 'Miguel_Test_Balikovna_Shipping_Method';
+		return $methods;
+	}
+
+	/**
+	 * End to end replica of the reported Balikovna instance: the settings section declares
+	 * title and description, description is saved as empty text, and the method title and
+	 * method description differ from both.
+	 */
+	public function test_balikovna_instance_reports_setting_title_and_empty_description() {
+		add_filter( 'woocommerce_shipping_methods', array( $this, 'register_balikovna_method' ) );
+
+		$zone = new WC_Shipping_Zone();
+		$zone->set_zone_name( 'Balikovna Zone' );
+		$zone->save();
+		$instance_id = $zone->add_shipping_method( 'miguel_test_balikovna' );
+
+		update_option(
+			'woocommerce_miguel_test_balikovna_' . $instance_id . '_settings',
+			array(
+				'enabled'     => 'yes',
+				'title'       => 'Balikovna',
+				'description' => '',
+			)
+		);
+
+		$api     = new Miguel_Delivery_Methods_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/delivery-methods' );
+		$data    = $api->get_delivery_methods( $request )->get_data();
+
+		$method = null;
+		foreach ( $data['zones'] as $z ) {
+			if ( $z['id'] === $zone->get_id() ) {
+				$method = $z['methods'][0];
+			}
+		}
+
+		$this->assertNotNull( $method, 'Expected Balikovna zone not found in response' );
+		$this->assertSame( 'miguel_test_balikovna', $method['method_id'] );
+		$this->assertSame( 'Balikovna', $method['title'] );
+		$this->assertSame( '', $method['description'] );
 	}
 }
