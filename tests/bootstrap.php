@@ -36,6 +36,29 @@ function _manually_load_plugin() {
 
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
+/**
+ * Autoload WooCommerce's REST API unit-test helpers.
+ *
+ * These classes are only registered through the `classmap` entry in WooCommerce's
+ * `autoload-dev`, which is absent from the pre-built WordPress.org release we install
+ * in CI. WooCommerce 10.9 made its test bootstrap call OrderHelper unconditionally
+ * (previously only when HPOS=1 was set), so without this the bootstrap fatals.
+ */
+spl_autoload_register( function ( $class ) {
+	$prefix = 'Automattic\\WooCommerce\\RestApi\\UnitTests\\Helpers\\';
+
+	if ( 0 !== strpos( $class, $prefix ) ) {
+		return;
+	}
+
+	$file = MIGUEL_WC_DIR . '/tests/legacy/unit-tests/rest-api/Helpers/'
+		. substr( $class, strlen( $prefix ) ) . '.php';
+
+	if ( file_exists( $file ) ) {
+		require_once $file;
+	}
+} );
+
 // WooCommerce helpers
 if ( file_exists(MIGUEL_WC_DIR . '/tests/legacy/bootstrap.php') ) {
 	require_once MIGUEL_WC_DIR . '/tests/legacy/bootstrap.php';
