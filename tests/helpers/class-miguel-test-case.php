@@ -10,6 +10,13 @@ class Miguel_Test_Case extends WC_Unit_Test_Case {
 	public function setUp(): void {
 		parent::setUp();
 
+		// WP's test case unregisters every non-builtin post status, which drops
+		// WooCommerce's wc-* order statuses. Under HPOS the order data store checks
+		// get_post_stati() to decide whether to prefix the stored status, so without
+		// them orders are written as "processing" while queries look for
+		// "wc-processing" and match nothing. Restore the production state.
+		WC_Post_Types::register_post_status();
+
 		Miguel::reset_instance();
 
 		// Mock successful API responses
