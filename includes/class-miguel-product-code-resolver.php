@@ -18,6 +18,22 @@ class Miguel_Product_Code_Resolver {
 	private $product_code_details_map = null;
 
 	/**
+	 * Product code source.
+	 *
+	 * @var Miguel_Product_Code_Source
+	 */
+	private $code_source;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param Miguel_Product_Code_Source|null $code_source Product code source.
+	 */
+	public function __construct( $code_source = null ) {
+		$this->code_source = $code_source instanceof Miguel_Product_Code_Source ? $code_source : new Miguel_Product_Code_Source();
+	}
+
+	/**
 	 * Get simple code to product ID map.
 	 *
 	 * @return array
@@ -192,38 +208,6 @@ class Miguel_Product_Code_Resolver {
 	 * @return array
 	 */
 	private function get_product_codes_from_product( $product ) {
-		$product_codes = array();
-		$downloads = $product->get_downloads();
-
-		foreach ( $downloads as $download ) {
-			$shortcode = '';
-
-			if ( is_array( $download ) && isset( $download['file'] ) ) {
-				$shortcode = $download['file'];
-			} elseif ( is_object( $download ) && method_exists( $download, 'get_file' ) ) {
-				$shortcode = $download->get_file();
-			}
-
-			if ( empty( $shortcode ) || ! Miguel_Order_Utils::is_miguel_shortcode( $shortcode ) ) {
-				continue;
-			}
-
-			$product_code = Miguel_Order_Utils::extract_miguel_code( $shortcode );
-			if ( empty( $product_code ) || in_array( $product_code, $product_codes, true ) ) {
-				continue;
-			}
-
-			$product_codes[] = $product_code;
-		}
-
-		// Fall back to SKU when no shortcode-based codes were found.
-		if ( empty( $product_codes ) ) {
-			$sku = $product->get_sku();
-			if ( ! empty( $sku ) ) {
-				$product_codes[] = $sku;
-			}
-		}
-
-		return $product_codes;
+		return $this->code_source->get_codes( $product, true );
 	}
 }
