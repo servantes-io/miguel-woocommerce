@@ -88,6 +88,14 @@ class Miguel_Settings extends WC_Settings_Page {
 					'default' => 'no',
 				),
 				array(
+					'id'      => Miguel_Product_Code_Source::SUFFIX_OPTION,
+					'css'     => 'min-width: 350px;',
+					'type'    => 'text',
+					'title'   => __( 'Printed-book code suffix', 'miguel' ),
+					'desc'    => __( 'Appended to a printed book\'s SKU to form its Miguel product code — e.g. ":print" makes SKU "harry-potter" resolve as "harry-potter:print". Leave empty to disable printed-book pairing. Must match the suffix configured on the Miguel platform.', 'miguel' ),
+					'default' => '',
+				),
+				array(
 					'id' => 'miguel_api_options',
 					'type' => 'sectionend',
 				),

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+* Added support for selling printed books through Miguel: a non-downloadable product's Miguel product code is derived from its SKU plus a configurable suffix, keeping it distinct from the e-book edition that shares the same slug
+* Added the "Printed-book code suffix" setting (WooCommerce → Settings → Miguel); leave empty to disable printed-book pairing
+* Added optional per-product `_miguel_code` meta to override a product's Miguel code
+
 ## 1.8.0
 
 Released 2026-07-16

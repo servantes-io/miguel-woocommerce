@@ -259,3 +259,11 @@ msgstr "Odesílat e-maily o objednávce z Miguela"
 
 msgid "When enabled, Miguel sends an email to the customer with links to download the books. When disabled, Miguel does not send any email."
 msgstr "Když je zapnuto, Miguel odešle zákazníkovi e-mail s odkazy pro stažení knih. Když je vypnuto, Miguel neodešle žádný e-mail."
+
+#: includes/admin/class-miguel-settings.php:94
+msgid "Printed-book code suffix"
+msgstr "Přípona kódu tištěné knihy"
+
+#: includes/admin/class-miguel-settings.php:95
+msgid "Appended to a printed book's SKU to form its Miguel product code — e.g. \":print\" makes SKU \"harry-potter\" resolve as \"harry-potter:print\". Leave empty to disable printed-book pairing. Must match the suffix configured on the Miguel platform."
+msgstr "Přidá se za SKU tištěné knihy a vytvoří tak její kód produktu v Miguelovi — např. \":print\" změní SKU \"harry-potter\" na \"harry-potter:print\". Ponechte prázdné pro vypnutí párování tištěných knih. Musí odpovídat příponě nastavené na platformě Miguel."

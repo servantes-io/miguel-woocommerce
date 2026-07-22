@@ -173,4 +173,30 @@ class Miguel_Test_Order_Mapper extends Miguel_Test_Case {
 
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 	}
+
+	public function test_maps_physical_product_as_print_code(): void {
+		add_filter( 'miguel_print_code_suffix', function () {
+			return ':print';
+		} );
+
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_downloadable( false );
+		$product->set_virtual( false );
+		$product->set_sku( 'printed-book-1' );
+		$product->save();
+
+		$order = wc_create_order( array( 'status' => 'processing' ) );
+		$order->add_product( $product, 1 );
+		$order->set_billing_email( 'test@melvil.cz' );
+		$order->set_date_paid( '2023-01-15 10:00:00' );
+		$order->save();
+
+		$dto = ( new Miguel_Order_Mapper() )->map( $order );
+
+		$this->assertInstanceOf( Miguel_V2_Order_Create::class, $dto );
+		$codes = array_column( $dto->to_array()['items'], 'code' );
+		$this->assertContains( 'printed-book-1:print', $codes );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
 }
