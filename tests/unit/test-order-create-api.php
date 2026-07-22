@@ -745,4 +745,134 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 		$orders->get_hook_manager()->remove_all_hooks();
 		Miguel_Helper_Order::delete_order( $data['id'] );
 	}
+
+	/**
+	 * The real-eshop scenario: with NO print suffix configured, a printed
+	 * (non-downloadable) product with SKU "musk" ordered by its bare
+	 * product_code "musk" resolves to that product and the order is created.
+	 */
+	public function test_create_order_for_printed_book_musk_succeeds_by_bare_sku_when_no_suffix() {
+		$print = WC_Helper_Product::create_simple_product();
+		$print->set_downloadable( false );
+		$print->set_virtual( false );
+		$print->set_sku( 'musk' );
+		$print->save();
+
+		$request = $this->build_musk_order_request( 'musk' );
+
+		$api      = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$response = $api->create_order( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Order creation should succeed.' );
+		$this->assertSame( 201, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertArrayHasKey( 'id', $data );
+		$this->assertGreaterThan( 0, $data['id'] );
+
+		$order       = wc_get_order( $data['id'] );
+		$product_ids = array();
+		foreach ( $order->get_items() as $item ) {
+			$product_ids[] = $item->get_product_id();
+		}
+		$this->assertContains( $print->get_id(), $product_ids, 'Bare "musk" should resolve to the printed product.' );
+
+		Miguel_Helper_Order::delete_order( $data['id'] );
+	}
+
+	/**
+	 * The correct printed-book flow: with the suffix configured, the printed
+	 * product SKU "musk" is addressable as "musk:print" and the order is
+	 * created successfully, resolving to the printed product.
+	 */
+	public function test_create_order_for_printed_book_musk_succeeds_with_suffixed_code() {
+		add_filter(
+			'miguel_print_code_suffix',
+			function () {
+				return ':print';
+			}
+		);
+
+		$print = WC_Helper_Product::create_simple_product();
+		$print->set_downloadable( false );
+		$print->set_virtual( false );
+		$print->set_sku( 'musk' );
+		$print->save();
+
+		$request = $this->build_musk_order_request( 'musk:print' );
+
+		$api      = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$response = $api->create_order( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Order creation should succeed.' );
+		$this->assertSame( 201, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertArrayHasKey( 'id', $data );
+		$this->assertGreaterThan( 0, $data['id'] );
+
+		$order = wc_get_order( $data['id'] );
+		$this->assertInstanceOf( WC_Order::class, $order );
+
+		$product_ids = array();
+		foreach ( $order->get_items() as $item ) {
+			$product_ids[] = $item->get_product_id();
+		}
+		$this->assertContains( $print->get_id(), $product_ids, 'Order line item should resolve to the printed "musk" product.' );
+
+		Miguel_Helper_Order::delete_order( $data['id'] );
+	}
+
+	/**
+	 * Build the real-eshop order request for the "musk" printed book, varying
+	 * only the line-item product_code.
+	 *
+	 * @param string $product_code Product code to send in the single line item.
+	 * @return WP_REST_Request
+	 */
+	private function build_musk_order_request( $product_code ) {
+		$payload = array(
+			'idempotency_key' => 'musk-' . $product_code,
+			'payment_method'  => 'miguel',
+			'user_email'      => 'roman@kriz.io',
+			'currency'        => 'CZK',
+			'send_emails'     => false,
+			'billing'         => array(
+				'first_name' => 'Roman Kriz',
+				'address_1'  => 'Sivice 254',
+				'city'       => 'sivice',
+				'postcode'   => '66407',
+				'country'    => 'CZ',
+				'email'      => 'roman@kriz.io',
+				'phone'      => '+420723276729',
+			),
+			'shipping'        => array(
+				'first_name' => 'Roman Kriz',
+				'address_1'  => 'Sivice 254',
+				'city'       => 'sivice',
+				'postcode'   => '66407',
+				'country'    => 'CZ',
+			),
+			'shipping_lines'  => array(
+				array(
+					'method_id'    => 'wc_zasilkovna',
+					'method_title' => 'Zásilkovna',
+				),
+			),
+			'line_items'      => array(
+				array(
+					'product_code' => $product_code,
+					'quantity'     => 1,
+					'subtotal'     => '373.00',
+					'total'        => '373.00',
+				),
+			),
+		);
+
+		$request = new WP_REST_Request( 'POST', '/miguel/v1/orders' );
+		$request->add_header( 'content-type', 'application/json' );
+		$request->set_body( wp_json_encode( $payload ) );
+
+		return $request;
+	}
 }

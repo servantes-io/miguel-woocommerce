@@ -43,7 +43,7 @@ class Miguel_Product_Code_Source {
 	 * Get the Miguel code entries a product exposes.
 	 *
 	 * @param WC_Product $product                       Product object.
-	 * @param bool       $include_digital_sku_fallback  Whether a downloadable product with no shortcode falls back to its bare SKU. Resolver only.
+	 * @param bool       $include_digital_sku_fallback  Whether a shortcode-less product falls back to its bare SKU — a downloadable product (digital) or, when no suffix is configured, a non-downloadable one (print). Resolver only.
 	 * @return array List of array{ code:string, book_id:string, format:string, type:string }.
 	 */
 	public function get_items( $product, $include_digital_sku_fallback = false ) {
@@ -99,20 +99,42 @@ class Miguel_Product_Code_Source {
 			return array();
 		}
 
-		// Rule 4: printed book — non-downloadable + SKU + configured suffix.
-		$suffix = self::get_print_suffix();
-		if ( '' === $sku || '' === $suffix ) {
+		// Printed book — non-downloadable + SKU.
+		if ( '' === $sku ) {
 			return array();
 		}
 
-		return array(
-			array(
-				'code'    => $sku . $suffix,
-				'book_id' => $sku,
-				'format'  => 'print',
-				'type'    => 'print',
-			),
-		);
+		// Rule 4: a configured suffix namespaces the print code (collision-proof
+		// against a same-slug e-book twin).
+		$suffix = self::get_print_suffix();
+		if ( '' !== $suffix ) {
+			return array(
+				array(
+					'code'    => $sku . $suffix,
+					'book_id' => $sku,
+					'format'  => 'print',
+					'type'    => 'print',
+				),
+			);
+		}
+
+		// Rule 5: print-by-SKU fallback (resolver only). With no suffix configured,
+		// the printed book is addressable by its bare SKU, mirroring the digital-by-SKU
+		// fallback. Export stays strict (nothing) so we never invent an unnamespaced
+		// code for outbound sync/discovery. If a same-slug e-book also exposes this
+		// SKU, the resolver reports product_code.ambiguous — configure a suffix to split them.
+		if ( $include_digital_sku_fallback ) {
+			return array(
+				array(
+					'code'    => $sku,
+					'book_id' => $sku,
+					'format'  => 'print',
+					'type'    => 'print',
+				),
+			);
+		}
+
+		return array();
 	}
 
 	/**

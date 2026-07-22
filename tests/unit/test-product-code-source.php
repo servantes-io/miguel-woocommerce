@@ -50,13 +50,40 @@ class Test_Miguel_Product_Code_Source extends Miguel_Test_Case {
 		$this->assertSame( 'print', $items[0]['type'] );
 	}
 
-	public function test_physical_product_exposes_nothing_when_suffix_empty() {
+	public function test_physical_product_exposes_nothing_outbound_when_suffix_empty() {
 		$product = WC_Helper_Product::create_simple_product();
 		$product->set_downloadable( false );
 		$product->set_sku( 'harry-potter' );
 		$product->save();
 
+		// Outbound/export mode (default flag) stays strict: no invented code.
 		$this->assertSame( array(), ( new Miguel_Product_Code_Source() )->get_codes( $product ) );
+	}
+
+	/**
+	 * With no suffix configured, a printed (non-downloadable) product falls
+	 * back to its bare SKU in resolver mode, mirroring the digital-by-SKU
+	 * fallback. Export mode still exposes nothing.
+	 */
+	public function test_physical_product_falls_back_to_bare_sku_in_resolver_mode_when_suffix_empty() {
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_downloadable( false );
+		$product->set_virtual( false );
+		$product->set_sku( 'musk' );
+		$product->save();
+
+		$source = new Miguel_Product_Code_Source();
+
+		// Export mode (default): nothing.
+		$this->assertSame( array(), $source->get_codes( $product ) );
+
+		// Resolver mode: bare SKU.
+		$items = $source->get_items( $product, true );
+		$this->assertCount( 1, $items );
+		$this->assertSame( 'musk', $items[0]['code'] );
+		$this->assertSame( 'musk', $items[0]['book_id'] );
+		$this->assertSame( 'print', $items[0]['type'] );
+		$this->assertSame( array( 'musk' ), $source->get_codes( $product, true ) );
 	}
 
 	public function test_override_meta_is_used_verbatim() {

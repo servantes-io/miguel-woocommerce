@@ -69,6 +69,55 @@ class Test_Miguel_Product_Code_Resolver extends Miguel_Test_Case {
 	}
 
 	/**
+	 * With no suffix configured, a printed (non-downloadable) product resolves
+	 * by its bare SKU — so an order referencing the SKU maps to the product.
+	 */
+	public function test_printed_book_resolves_by_bare_sku_when_no_suffix() {
+		$print = WC_Helper_Product::create_simple_product();
+		$print->set_downloadable( false );
+		$print->set_virtual( false );
+		$print->set_sku( 'musk' );
+		$print->save();
+
+		$res = ( new Miguel_Product_Code_Resolver() )->resolve_product_code( 'musk' );
+
+		$this->assertIsArray( $res );
+		$this->assertSame( $print->get_id(), $res['product_id'] );
+		$this->assertTrue( $res['is_unique'] );
+	}
+
+	/**
+	 * Trade-off of the bare-SKU print fallback: when an e-book and a printed
+	 * book share a slug and NO suffix is configured, the code is ambiguous.
+	 * Setting the suffix namespaces the print code and resolves the clash.
+	 */
+	public function test_ebook_and_print_sharing_slug_without_suffix_are_ambiguous() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+		$ebook->set_sku( 'harry-potter-ebook-sku' );
+		$ebook->save();
+		Miguel_Helper_Product::set_product_downloads_bypass_validation(
+			$ebook,
+			array(
+				'hp_epub_' . wp_generate_uuid4() => array(
+					'name' => 'HP epub',
+					'file' => '[miguel id="harry-potter" format="epub"]',
+				),
+			)
+		);
+
+		$print = WC_Helper_Product::create_simple_product();
+		$print->set_downloadable( false );
+		$print->set_virtual( false );
+		$print->set_sku( 'harry-potter' );
+		$print->save();
+
+		$res = ( new Miguel_Product_Code_Resolver() )->resolve_product_code( 'harry-potter' );
+
+		$this->assertInstanceOf( WP_Error::class, $res );
+		$this->assertSame( 'product_code.ambiguous', $res->get_error_code() );
+	}
+
+	/**
 	 * Test that debug logging is disabled by default.
 	 */
 	public function test_debug_log_is_disabled_by_default() {

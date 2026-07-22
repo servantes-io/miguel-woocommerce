@@ -204,8 +204,9 @@ class Miguel_Product_Code_Resolver {
 	/**
 	 * Extract the Miguel codes a product exposes, via the shared product code source.
 	 *
-	 * The resolver enables the digital-by-SKU fallback (second argument true): a
-	 * downloadable product with no Miguel shortcode falls back to its bare SKU.
+	 * The resolver enables the bare-SKU fallback (second argument true): a
+	 * shortcode-less product falls back to its bare SKU — a downloadable product
+	 * (digital) or, when no suffix is configured, a non-downloadable one (print).
 	 * Shortcode codes, printed-book codes (SKU + configured suffix), and the
 	 * `_miguel_code` override are handled uniformly by the source.
 	 *
