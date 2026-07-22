@@ -193,7 +193,10 @@ components:
       properties:
         code:
           type: string
-          description: Miguel product code extracted from the downloadable file shortcode.
+          description: >
+            Miguel product code for the line. Derived from the downloadable file
+            shortcode for digital items, or from the product SKU plus the configured
+            printed-book suffix for printed books.
           example: ABC123
         price:
           $ref: '#/components/schemas/OrderProductPrice'
@@ -233,8 +236,9 @@ components:
           items:
             $ref: '#/components/schemas/OrderProduct'
           description: >
-            Only downloadable line items with a Miguel shortcode are included.
-            Non-Miguel or non-downloadable items are omitted.
+            Line items whose product exposes a Miguel code are included: digital items
+            with a Miguel shortcode, and printed books when a printed-book suffix is
+            configured. Items with no Miguel code are omitted.
 
     OrderLineItem:
       type: object
@@ -262,8 +266,9 @@ components:
           type: string
           nullable: true
           description: >
-            First Miguel product code on the line, or null when the line is not
-            a Miguel downloadable. Full code+price detail is in the order's products array.
+            First Miguel product code on the line — a digital shortcode code, or a
+            printed book's SKU plus the configured suffix — or null when the line has
+            no Miguel code. Full code+price detail is in the order's products array.
           example: "9788024271101"
 
     OrderShippingAddress:
@@ -344,12 +349,24 @@ components:
       properties:
         book_id:
           type: string
-          description: Miguel book ID from the shortcode.
+          description: >
+            Miguel book ID. From the shortcode for digital items; the product SKU
+            for printed books.
           example: "9788024271101"
         format:
           type: string
-          description: File format from the shortcode (e.g. epub, pdf). Empty string if not specified.
+          description: >
+            Item format. For digital items, the file format from the shortcode
+            (e.g. epub, mobi, pdf, audio) or an empty string if unspecified.
+            "print" for printed (non-downloadable) books.
           example: epub
+        code:
+          type: string
+          description: >
+            Exact Miguel product code used to reference this item on order line
+            items. For digital items this equals book_id; for printed books it is
+            the SKU plus the configured printed-book suffix (e.g. "harry-potter:print").
+          example: "9788024271101"
 
     Product:
       type: object
@@ -422,7 +439,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MiguelItem'
-          description: Miguel shortcodes found in the product's downloadable files.
+          description: >
+            Miguel items exposed by the product: shortcodes found in a downloadable
+            product's files, plus — when a printed-book suffix is configured — a
+            "print" item for a non-downloadable product, derived from its SKU.
 
     ProductCodeDetail:
       type: object
@@ -449,7 +469,9 @@ components:
           type: string
           description: >
             Miguel product code. Resolved to product_id before passing to WooCommerce.
-            Use either product_id or productCode, not both (unless they refer to the same product).
+            Accepts a digital shortcode code, a printed book's SKU plus the configured
+            suffix, or a bare product SKU. Use either product_id or productCode, not both
+            (unless they refer to the same product).
         product_code:
           type: string
           description: Snake-case alias for productCode.
@@ -681,8 +703,9 @@ paths:
       description: >
         Returns all WooCommerce orders whose modification date is on or after
         `updated_since`, ordered by modification date ascending.
-        Only line items that are downloadable and contain a Miguel shortcode
-        are included in each order's `products` array.
+        Line items whose product exposes a Miguel code — digital shortcode items,
+        and printed books when a printed-book suffix is configured — are included in
+        each order's `products` array.
       parameters:
         - in: query
           name: updated_since
@@ -750,8 +773,9 @@ paths:
 
 
         Line items may reference products by `product_id` (WooCommerce ID) or `productCode`
-        (Miguel shortcode code attribute). When `productCode` is supplied it is resolved to
-        a `product_id` before the order is created.
+        (a Miguel code: a digital shortcode code, a printed book's SKU plus the configured
+        printed-book suffix, or a bare product SKU). When `productCode` is supplied it is
+        resolved to a `product_id` before the order is created.
       parameters:
         - in: header
           name: Idempotency-Key
@@ -998,8 +1022,9 @@ paths:
       operationId: getProducts
       description: >
         Returns all WooCommerce products and product variations (published, private, draft,
-        pending, future) with pricing, stock, and any Miguel shortcodes found in
-        their downloadable files.
+        pending, future) with pricing, stock, and their Miguel items — shortcodes found in
+        downloadable files, plus a "print" item for non-downloadable products when a
+        printed-book suffix is configured.
       responses:
         "200":
           description: OK
@@ -1036,9 +1061,10 @@ paths:
       summary: Get Miguel product code to WooCommerce product ID mapping
       operationId: getProductCodeMap
       description: >
-        Returns a map of all Miguel product codes found in downloadable product files,
-        with their resolved WooCommerce product IDs. Useful for detecting duplicate
-        codes (same code on multiple products).
+        Returns a map of all Miguel product codes with their resolved WooCommerce
+        product IDs: codes from downloadable product files, plus printed-book codes
+        (SKU plus the configured suffix) when a printed-book suffix is configured.
+        Useful for detecting duplicate codes (same code on multiple products).
       responses:
         "200":
           description: OK
