@@ -6,6 +6,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Single source of truth for the Miguel code(s) a WooCommerce product exposes.
  *
+ * NOTE: get_items()/get_codes() reload the product fresh via wc_get_product()
+ * by ID before reading its downloads and meta. WC_Product caches the
+ * `downloads` prop in memory, so a caller holding an object whose downloadable
+ * files were written out-of-band (the resolver builds products from a WP_Query
+ * ID list; test helpers write `_downloadable_files` via update_post_meta) could
+ * otherwise read stale downloads. The reload keeps this single source of truth
+ * correct regardless of the caller's object state. Cost: one extra WC_Product
+ * hydration per call — no extra DB round-trips when the post/meta object cache
+ * is warm.
+ *
  * @package Miguel
  */
 class Miguel_Product_Code_Source {
