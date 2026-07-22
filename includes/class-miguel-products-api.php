@@ -19,12 +19,20 @@ class Miguel_Products_Api {
 	private $hook_manager;
 
 	/**
+	 * Product code source.
+	 *
+	 * @var Miguel_Product_Code_Source
+	 */
+	private $code_source;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager.
 	 */
 	public function __construct( Miguel_Hook_Manager_Interface $hook_manager ) {
 		$this->hook_manager = $hook_manager;
+		$this->code_source  = new Miguel_Product_Code_Source();
 	}
 
 	/**
@@ -132,33 +140,12 @@ class Miguel_Products_Api {
 	 */
 	private function get_miguel_items_from_product( $product ) {
 		$items = array();
-		$downloads = $product->get_downloads();
 
-		foreach ( $downloads as $download ) {
-			$shortcode = '';
-
-			if ( is_array( $download ) && isset( $download['file'] ) ) {
-				$shortcode = $download['file'];
-			} elseif ( is_object( $download ) && method_exists( $download, 'get_file' ) ) {
-				$shortcode = $download->get_file();
-			}
-
-			if ( empty( $shortcode ) ) {
-				continue;
-			}
-
-			if ( ! Miguel_Order_Utils::is_miguel_shortcode( $shortcode ) ) {
-				continue;
-			}
-
-			$atts = Miguel_Order_Utils::parse_shortcode_atts( $shortcode );
-			if ( ! $atts || empty( $atts['id'] ) ) {
-				continue;
-			}
-
+		foreach ( $this->code_source->get_items( $product ) as $entry ) {
 			$items[] = array(
-				'book_id' => $atts['id'],
-				'format' => isset( $atts['format'] ) ? $atts['format'] : '',
+				'book_id' => $entry['book_id'],
+				'format'  => $entry['format'],
+				'code'    => $entry['code'],
 			);
 		}
 
