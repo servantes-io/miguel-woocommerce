@@ -11,6 +11,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Miguel_Order_Mapper {
 
 	/**
+	 * Product code source.
+	 *
+	 * @var Miguel_Product_Code_Source
+	 */
+	private $code_source;
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->code_source = new Miguel_Product_Code_Source();
+	}
+
+	/**
 	 * Build the OrderCreate DTO.
 	 *
 	 * @param WC_Order $order      Order object.
@@ -137,20 +151,17 @@ class Miguel_Order_Mapper {
 	 * @return array Array of array{code:string, sold_price:float}.
 	 */
 	private function get_miguel_products_from_item( $product, $item_total ) {
-		$products = array();
-
 		$bundle_ids = $product->get_meta( '_bundle_ids', true );
 		if ( ! empty( $bundle_ids ) ) {
-			$products = $this->get_miguel_products_from_bundle( $bundle_ids, $item_total );
+			return $this->get_miguel_products_from_bundle( $bundle_ids, $item_total );
 		}
 
-		if ( $product->is_downloadable() ) {
-			foreach ( $this->extract_miguel_codes_from_product( $product ) as $code ) {
-				$products[] = array(
-					'code'       => $code,
-					'sold_price' => $item_total,
-				);
-			}
+		$products = array();
+		foreach ( $this->code_source->get_codes( $product ) as $code ) {
+			$products[] = array(
+				'code'       => $code,
+				'sold_price' => $item_total,
+			);
 		}
 
 		return $products;
@@ -233,32 +244,9 @@ class Miguel_Order_Mapper {
 			}
 		}
 
-		if ( $product->is_downloadable() ) {
-			foreach ( $this->extract_miguel_codes_from_product( $product ) as $code ) {
-				if ( ! in_array( $code, $miguel_codes, true ) ) {
-					$miguel_codes[] = $code;
-				}
-			}
-		}
-
-		return $miguel_codes;
-	}
-
-	/**
-	 * Extract Miguel codes from a product's downloadable files.
-	 *
-	 * @param WC_Product $product Product object.
-	 * @return array Unique Miguel codes.
-	 */
-	private function extract_miguel_codes_from_product( $product ) {
-		$miguel_codes = array();
-
-		foreach ( $product->get_downloads() as $download ) {
-			if ( Miguel_Order_Utils::is_miguel_shortcode( $download['file'] ) ) {
-				$code = Miguel_Order_Utils::extract_miguel_code( $download['file'] );
-				if ( $code && ! in_array( $code, $miguel_codes, true ) ) {
-					$miguel_codes[] = $code;
-				}
+		foreach ( $this->code_source->get_codes( $product ) as $code ) {
+			if ( ! in_array( $code, $miguel_codes, true ) ) {
+				$miguel_codes[] = $code;
 			}
 		}
 
