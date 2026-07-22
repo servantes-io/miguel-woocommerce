@@ -34,3 +34,11 @@ msgstr "Send order emails from Miguel"
 
 msgid "When enabled, Miguel sends an email to the customer with links to download the books. When disabled, Miguel does not send any email."
 msgstr "When enabled, Miguel sends an email to the customer with links to download the books. When disabled, Miguel does not send any email."
+
+#: includes/admin/class-miguel-settings.php:94
+msgid "Printed-book code suffix"
+msgstr "Printed-book code suffix"
+
+#: includes/admin/class-miguel-settings.php:95
+msgid "Appended to a printed book's SKU to form its Miguel product code — e.g. \":print\" makes SKU \"harry-potter\" resolve as \"harry-potter:print\". Leave empty to disable printed-book pairing. Must match the suffix configured on the Miguel platform."
+msgstr "Appended to a printed book's SKU to form its Miguel product code — e.g. \":print\" makes SKU \"harry-potter\" resolve as \"harry-potter:print\". Leave empty to disable printed-book pairing. Must match the suffix configured on the Miguel platform."
