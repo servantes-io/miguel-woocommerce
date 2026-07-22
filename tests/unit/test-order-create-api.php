@@ -64,6 +64,44 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * Test that a printed-book code (SKU + configured suffix) resolves to the
+	 * printed product when Miguel creates an order.
+	 */
+	public function test_prepare_payload_for_wc_order_maps_print_code_to_product_id() {
+		add_filter( 'miguel_print_code_suffix', function () {
+			return ':print';
+		} );
+
+		$print = WC_Helper_Product::create_simple_product();
+		$print->set_downloadable( false );
+		$print->set_virtual( false );
+		$print->set_sku( 'printed-book-42' );
+		$print->save();
+
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$reflection = new ReflectionClass( $api );
+		$method = $reflection->getMethod( 'prepare_payload_for_wc_order' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke(
+			$api,
+			array(
+				'line_items' => array(
+					array(
+						'product_code' => 'printed-book-42:print',
+						'quantity' => 1,
+					),
+				),
+			)
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertEquals( $print->get_id(), $result['line_items'][0]['product_id'] );
+		$this->assertArrayNotHasKey( 'product_code', $result['line_items'][0] );
+	}
+
+	/**
 	 * Test that helper email flags are not forwarded to WooCommerce.
 	 */
 	public function test_prepare_payload_for_wc_order_strips_send_email_flags() {
