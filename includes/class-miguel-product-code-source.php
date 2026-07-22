@@ -36,7 +36,7 @@ class Miguel_Product_Code_Source {
 
 		$filtered = apply_filters( 'miguel_print_code_suffix', $suffix );
 
-		return is_string( $filtered ) ? $filtered : '';
+		return is_string( $filtered ) ? trim( $filtered ) : '';
 	}
 
 	/**

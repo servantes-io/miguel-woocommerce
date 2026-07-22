@@ -189,7 +189,9 @@ class Miguel_Orders_Api {
 
 	/**
 	 * Extract Miguel product codes and prices from an order.
-	 * Only downloadable line items with a Miguel shortcode are included; other items are omitted.
+	 * Line items whose product exposes a Miguel code via the shared product code
+	 * source are included (digital shortcode codes and printed-book codes); items
+	 * with no Miguel code are omitted.
 	 *
 	 * @param WC_Order $order WooCommerce order.
 	 * @return array

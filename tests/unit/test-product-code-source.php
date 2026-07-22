@@ -74,6 +74,7 @@ class Test_Miguel_Product_Code_Source extends Miguel_Test_Case {
 		$this->assertCount( 1, $items );
 		$this->assertSame( 'custom-code-123', $items[0]['code'] ); // no suffix appended
 		$this->assertSame( 'custom-code-123', $items[0]['book_id'] );
+		$this->assertSame( 'print', $items[0]['type'] ); // non-downloadable override => print
 	}
 
 	public function test_digital_sku_fallback_only_when_enabled() {
@@ -87,6 +88,23 @@ class Test_Miguel_Product_Code_Source extends Miguel_Test_Case {
 
 		$this->assertSame( array(), $source->get_codes( $product ) );                   // default: no fallback
 		$this->assertSame( array( 'ebook-by-sku' ), $source->get_codes( $product, true ) ); // resolver mode
+	}
+
+	public function test_print_suffix_is_trimmed() {
+		add_filter( 'miguel_print_code_suffix', function () {
+			return '  :print  ';
+		} );
+
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_downloadable( false );
+		$product->set_virtual( false );
+		$product->set_sku( 'trim-me' );
+		$product->save();
+
+		$items = ( new Miguel_Product_Code_Source() )->get_items( $product );
+
+		$this->assertCount( 1, $items );
+		$this->assertSame( 'trim-me:print', $items[0]['code'] );
 	}
 
 	public function test_non_downloadable_without_sku_exposes_nothing() {

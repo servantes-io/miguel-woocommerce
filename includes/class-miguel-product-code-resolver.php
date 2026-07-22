@@ -202,7 +202,12 @@ class Miguel_Product_Code_Resolver {
 	}
 
 	/**
-	 * Extract Miguel product codes from downloadable files, falling back to SKU.
+	 * Extract the Miguel codes a product exposes, via the shared product code source.
+	 *
+	 * The resolver enables the digital-by-SKU fallback (second argument true): a
+	 * downloadable product with no Miguel shortcode falls back to its bare SKU.
+	 * Shortcode codes, printed-book codes (SKU + configured suffix), and the
+	 * `_miguel_code` override are handled uniformly by the source.
 	 *
 	 * @param WC_Product $product WooCommerce product.
 	 * @return array
