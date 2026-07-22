@@ -316,4 +316,31 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 		$this->assertSame( 'Flat Rate', $found['method_title'] );
 		$this->assertSame( wc_format_decimal( '5.00' ), $found['total'] );
 	}
+
+	public function test_get_order_includes_print_code_for_physical_product() {
+		add_filter( 'miguel_print_code_suffix', function () {
+			return ':print';
+		} );
+
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_downloadable( false );
+		$product->set_virtual( false );
+		$product->set_sku( 'printed-book-9' );
+		$product->save();
+
+		$order = Miguel_Helper_Order::create_order();
+		$order->add_product( $product, 1 );
+		$order->save();
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/' . $order->get_id() );
+		$request->set_param( 'id', $order->get_id() );
+
+		$data = $api->get_order( $request )->get_data();
+
+		$this->assertContains( 'printed-book-9:print', array_column( $data['products'], 'code' ) );
+		$this->assertContains( 'printed-book-9:print', array_column( $data['line_items'], 'code' ) );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
 }

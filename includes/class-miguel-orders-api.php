@@ -19,12 +19,20 @@ class Miguel_Orders_Api {
 	private $hook_manager;
 
 	/**
+	 * Product code source.
+	 *
+	 * @var Miguel_Product_Code_Source
+	 */
+	private $code_source;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager.
 	 */
 	public function __construct( Miguel_Hook_Manager_Interface $hook_manager ) {
 		$this->hook_manager = $hook_manager;
+		$this->code_source  = new Miguel_Product_Code_Source();
 	}
 
 	/**
@@ -212,39 +220,22 @@ class Miguel_Orders_Api {
 
 	/**
 	 * Collect Miguel product codes from a single order line item.
-	 * Returns an empty array for non-product, non-downloadable, or non-Miguel items.
+	 * Returns an empty array for non-product or non-Miguel items.
 	 *
 	 * @param WC_Order_Item $item Order line item.
 	 * @return array List of Miguel codes (strings).
 	 */
 	private function get_miguel_codes_for_item( $item ) {
-		$codes = array();
-
 		if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
-			return $codes;
+			return array();
 		}
 
 		$product = $item->get_product();
-		if ( ! $product || ! $product->is_downloadable() ) {
-			return $codes;
+		if ( ! $product ) {
+			return array();
 		}
 
-		foreach ( $product->get_downloads() as $download ) {
-			$file = is_array( $download )
-				? ( isset( $download['file'] ) ? $download['file'] : '' )
-				: ( method_exists( $download, 'get_file' ) ? $download->get_file() : '' );
-
-			if ( empty( $file ) || ! Miguel_Order_Utils::is_miguel_shortcode( $file ) ) {
-				continue;
-			}
-
-			$code = Miguel_Order_Utils::extract_miguel_code( $file );
-			if ( $code && ! in_array( $code, $codes, true ) ) {
-				$codes[] = $code;
-			}
-		}
-
-		return $codes;
+		return $this->code_source->get_codes( $product );
 	}
 
 	/**
