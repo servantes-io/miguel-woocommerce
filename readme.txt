@@ -114,4 +114,10 @@ The interactive wizard allows you to set the screen size for which the resulting
 * Fixed duplicate line items for products offered in multiple formats
 * Now requires WooCommerce 6.0 or newer
 
+= 1.9.0 =
+
+* Added support for selling printed books through Miguel: a non-downloadable product's Miguel product code is derived from its SKU plus a configurable suffix, keeping it distinct from the e-book edition that shares the same slug
+* Added the "Printed-book code suffix" setting (WooCommerce → Settings → Miguel); leave empty to disable printed-book pairing
+* Added optional per-product `_miguel_code` meta to override a product's Miguel code
+
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
