@@ -35,6 +35,9 @@ Authentication uses `Authorization: Bearer <token>` with the token configured in
 - `GET /wp-json/miguel/v1/delivery-methods` returns `{ "count": <n>, "zones": [...] }`, one entry per shipping zone that has methods (including "Rest of World").
 - Each method includes `instance_id`, `method_id`, `title`, `description`, `enabled`, `currency`, and cost-related settings (`cost`, `min_amount`, `free_shipping`, `requires`, `ignore_discounts`).
 - `title` and `description` come from the method's saved settings; when a saved value is empty, its configured field default is used, and shortcodes in the description are expanded.
+- `cost` comes from the method's `cost` setting. Carriers that keep their pricing in their own plugin settings rather than in WooCommerce (e.g. Toret Balíkovna) leave that setting empty; for those the method is asked to calculate its rates and the cost of its first rate is reported instead.
+- Because a REST request has no cart, rates are calculated for an empty package addressed to the zone's first country location (the store base country for zone 0). Carriers that scale their price by weight, dimensions or order value therefore report their baseline tier, and free-shipping thresholds and cash-on-delivery surcharges are not reflected.
+- `cost` is an empty string when the method is disabled, produces no rate, or fails to calculate one. It excludes tax.
 
 ### Order Request Rules
 

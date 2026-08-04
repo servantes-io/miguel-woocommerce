@@ -50,6 +50,108 @@ class Miguel_Test_Balikovna_Shipping_Method extends WC_Shipping_Method {
 	}
 }
 
+/**
+ * Replica of a Toret style method: the price is not stored in the instance settings at all,
+ * it is produced by calculate_shipping() from the plugin's own carrier settings and it
+ * varies with the destination.
+ */
+class Miguel_Test_Calculated_Shipping_Method extends WC_Shipping_Method {
+
+	/**
+	 * @param int $instance_id Instance ID.
+	 */
+	public function __construct( $instance_id = 0 ) {
+		$this->id           = 'miguel_test_calculated';
+		$this->instance_id  = absint( $instance_id );
+		$this->method_title = 'Calculated';
+		$this->supports     = array( 'shipping-zones', 'instance-settings' );
+		$this->init();
+	}
+
+	/**
+	 * Instance settings deliberately declare no cost field.
+	 */
+	public function init() {
+		$this->instance_form_fields = array(
+			'enabled' => array(
+				'title'   => 'Povolit',
+				'type'    => 'checkbox',
+				'default' => 'yes',
+			),
+			'title'   => array(
+				'title'   => 'Titulek',
+				'type'    => 'text',
+				'default' => 'Balíkovna',
+			),
+		);
+		$this->init_instance_settings();
+		$this->enabled = $this->get_option( 'enabled' );
+		$this->title   = $this->get_option( 'title' );
+	}
+
+	/**
+	 * @param array $package Package.
+	 */
+	public function calculate_shipping( $package = array() ) {
+		$cost = 'CZ' === $package['destination']['country'] ? 79 : 199;
+
+		$this->add_rate(
+			array(
+				'id'    => $this->get_rate_id(),
+				'label' => $this->title,
+				'cost'  => $cost,
+			)
+		);
+	}
+}
+
+/**
+ * A third party method that blows up while calculating. The endpoint must survive it,
+ * because WC()->cart and WC()->session are not available during a REST request.
+ */
+class Miguel_Test_Throwing_Shipping_Method extends WC_Shipping_Method {
+
+	/**
+	 * @param int $instance_id Instance ID.
+	 */
+	public function __construct( $instance_id = 0 ) {
+		$this->id           = 'miguel_test_throwing';
+		$this->instance_id  = absint( $instance_id );
+		$this->method_title = 'Throwing';
+		$this->supports     = array( 'shipping-zones', 'instance-settings' );
+		$this->init();
+	}
+
+	/**
+	 * Declare instance settings and hydrate them.
+	 */
+	public function init() {
+		$this->instance_form_fields = array(
+			'enabled' => array(
+				'title'   => 'Povolit',
+				'type'    => 'checkbox',
+				'default' => 'yes',
+			),
+			'title'   => array(
+				'title'   => 'Titulek',
+				'type'    => 'text',
+				'default' => 'Throwing',
+			),
+		);
+		$this->init_instance_settings();
+		$this->enabled = $this->get_option( 'enabled' );
+		$this->title   = $this->get_option( 'title' );
+	}
+
+	/**
+	 * @param array $package Package.
+	 * @throws RuntimeException Always.
+	 */
+	public function calculate_shipping( $package = array() ) {
+		throw new RuntimeException( 'Call to a member function on null' );
+	}
+}
+
 class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 
 	public function test_registers_rest_api_init_hook() {
@@ -404,5 +506,198 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		$this->assertSame( 'miguel_test_balikovna', $method['method_id'] );
 		$this->assertSame( 'Balikovna', $method['title'] );
 		$this->assertSame( '', $method['description'] );
+	}
+
+	/**
+	 * @param array $methods Registered shipping methods.
+	 * @return array
+	 */
+	public function register_calculated_methods( $methods ) {
+		$methods['miguel_test_calculated'] = 'Miguel_Test_Calculated_Shipping_Method';
+		$methods['miguel_test_throwing']   = 'Miguel_Test_Throwing_Shipping_Method';
+		return $methods;
+	}
+
+	/**
+	 * Build a zone holding one instance of $method_id.
+	 *
+	 * @param string      $zone_name Zone name.
+	 * @param string|null $country   Country location to add, or null for none.
+	 * @param string      $method_id Shipping method id.
+	 * @param array       $settings  Instance settings to persist verbatim.
+	 * @return WC_Shipping_Zone
+	 */
+	private function build_zone_with_method( $zone_name, $country, $method_id, $settings ) {
+		add_filter( 'woocommerce_shipping_methods', array( $this, 'register_calculated_methods' ) );
+
+		$zone = new WC_Shipping_Zone();
+		$zone->set_zone_name( $zone_name );
+		$zone->save();
+
+		if ( null !== $country ) {
+			$zone->add_location( $country, 'country' );
+			$zone->save();
+		}
+
+		$instance_id = $zone->add_shipping_method( $method_id );
+		update_option( 'woocommerce_' . $method_id . '_' . $instance_id . '_settings', $settings );
+
+		return $zone;
+	}
+
+	/**
+	 * Fetch the first formatted method of $zone_id from the endpoint response.
+	 *
+	 * @param int $zone_id Zone ID.
+	 * @return array|null
+	 */
+	private function get_method_from_response( $zone_id ) {
+		$api     = new Miguel_Delivery_Methods_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/delivery-methods' );
+		$data    = $api->get_delivery_methods( $request )->get_data();
+
+		foreach ( $data['zones'] as $z ) {
+			if ( $z['id'] === $zone_id ) {
+				return $z['methods'][0];
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * The Balikovna case: the carrier keeps its price in the plugin's own settings, so the
+	 * instance settings hold no cost. The price must come from the calculated rate instead.
+	 */
+	public function test_cost_falls_back_to_calculated_rate_when_setting_is_empty() {
+		$zone = $this->build_zone_with_method(
+			'Calculated Zone',
+			'CZ',
+			'miguel_test_calculated',
+			array(
+				'enabled' => 'yes',
+				'title'   => 'Balíkovna',
+			)
+		);
+
+		$method = $this->get_method_from_response( $zone->get_id() );
+
+		$this->assertNotNull( $method, 'Expected zone not found in response' );
+		$this->assertSame( '79', $method['cost'] );
+	}
+
+	/**
+	 * A configured cost must win; rates must not be calculated over the top of it.
+	 */
+	public function test_configured_cost_setting_is_not_replaced_by_calculated_rate() {
+		$method = $this->get_method_for_settings(
+			'Configured Cost Zone',
+			array(
+				'title' => 'Flat',
+				'cost'  => '42',
+			)
+		);
+
+		$this->assertSame( '42', $method['cost'] );
+	}
+
+	/**
+	 * WC()->cart and WC()->session are null during a REST request, so a third party
+	 * calculate_shipping() can fatal. The endpoint must degrade, not die.
+	 */
+	public function test_cost_stays_empty_when_rate_calculation_throws() {
+		$zone = $this->build_zone_with_method(
+			'Throwing Zone',
+			'CZ',
+			'miguel_test_throwing',
+			array(
+				'enabled' => 'yes',
+				'title'   => 'Throwing',
+			)
+		);
+
+		$method = $this->get_method_from_response( $zone->get_id() );
+
+		$this->assertNotNull( $method, 'Expected zone not found in response' );
+		$this->assertSame( 'miguel_test_throwing', $method['method_id'] );
+		$this->assertSame( '', $method['cost'] );
+	}
+
+	/**
+	 * The package must be addressed to the zone's own country, otherwise carriers that
+	 * price per destination report the wrong tier.
+	 */
+	public function test_calculated_rate_is_priced_for_the_zone_country() {
+		$zone = $this->build_zone_with_method(
+			'DE Zone',
+			'DE',
+			'miguel_test_calculated',
+			array(
+				'enabled' => 'yes',
+				'title'   => 'Balíkovna',
+			)
+		);
+
+		$method = $this->get_method_from_response( $zone->get_id() );
+
+		$this->assertNotNull( $method, 'Expected zone not found in response' );
+		$this->assertSame( '199', $method['cost'] );
+	}
+
+	/**
+	 * Zone 0 has no locations of its own, so the store base country is used.
+	 */
+	public function test_rest_of_world_zone_is_priced_for_the_store_base_country() {
+		update_option( 'woocommerce_default_country', 'CZ' );
+		add_filter( 'woocommerce_shipping_methods', array( $this, 'register_calculated_methods' ) );
+
+		$rest_zone   = new WC_Shipping_Zone( 0 );
+		$instance_id = $rest_zone->add_shipping_method( 'miguel_test_calculated' );
+		update_option(
+			'woocommerce_miguel_test_calculated_' . $instance_id . '_settings',
+			array(
+				'enabled' => 'yes',
+				'title'   => 'Balíkovna',
+			)
+		);
+
+		$method = $this->get_method_from_response( 0 );
+
+		$this->assertNotNull( $method, 'Rest of World zone not found in response' );
+		$this->assertSame( '79', $method['cost'] );
+	}
+
+	/**
+	 * A disabled method produces no rates, so there is nothing to fall back to.
+	 *
+	 * A zone method's enabled flag lives in the woocommerce_shipping_zone_methods table and
+	 * overrides the instance setting, so it is toggled the same way WooCommerce itself does.
+	 */
+	public function test_cost_stays_empty_when_method_is_disabled() {
+		global $wpdb;
+
+		$zone = $this->build_zone_with_method(
+			'Disabled Zone',
+			'CZ',
+			'miguel_test_calculated',
+			array(
+				'enabled' => 'no',
+				'title'   => 'Balíkovna',
+			)
+		);
+
+		$methods     = $zone->get_shipping_methods();
+		$instance_id = reset( $methods )->get_instance_id();
+		$wpdb->update(
+			"{$wpdb->prefix}woocommerce_shipping_zone_methods",
+			array( 'is_enabled' => 0 ),
+			array( 'instance_id' => $instance_id )
+		);
+
+		$method = $this->get_method_from_response( $zone->get_id() );
+
+		$this->assertNotNull( $method, 'Expected zone not found in response' );
+		$this->assertFalse( $method['enabled'] );
+		$this->assertSame( '', $method['cost'] );
 	}
 }

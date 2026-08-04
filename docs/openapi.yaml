@@ -82,33 +82,35 @@ components:
           example: CZK
         cost:
           type: string
-          nullable: true
-          description: Shipping cost (flat_rate). Null when not applicable.
+          description: >
+            Shipping cost. Taken from the method's `cost` setting (flat_rate and methods
+            following the same convention). When that setting is empty, the method is asked
+            to calculate its rates for an empty package addressed to the zone, and the cost
+            of its first rate is reported instead — this is how carriers that keep their
+            pricing outside WooCommerce (e.g. Toret Balíkovna) are priced. Empty string when
+            the method is disabled, produces no rate, or fails to calculate one.
+            Excludes tax. See the endpoint description for the caveats.
           example: "5.00"
         min_amount:
           type: string
-          nullable: true
-          description: Minimum order amount required for free shipping. Null when not applicable.
+          description: Minimum order amount required for free shipping. Empty string when not applicable.
           example: "50.00"
         free_shipping:
           type: string
-          nullable: true
-          description: free_shipping option value on the method. Null when not set.
-          example: null
+          description: free_shipping option value on the method. Empty string when not set.
+          example: ""
         requires:
           type: string
-          nullable: true
           description: >
             Condition required to qualify for free shipping (free_shipping method).
             One of: '' (none), 'coupon', 'min_amount', 'either', 'both'.
-            Null when not applicable.
+            Empty string when not applicable.
           example: min_amount
         ignore_discounts:
           type: string
-          nullable: true
           description: >
             Whether to ignore discounts when checking the min_amount condition
-            (free_shipping method). 'yes' or 'no'. Null when not applicable.
+            (free_shipping method). 'yes' or 'no'. Empty string when not applicable.
           example: "yes"
 
     Zone:
@@ -668,6 +670,16 @@ paths:
         Returns all configured WooCommerce shipping methods grouped by shipping zone.
         Zones with no methods are omitted. Zone 0 (Rest of World) is appended last
         when it has methods.
+
+
+        A method whose `cost` setting is empty is priced by asking it to calculate its
+        rates, which is the only way to read the price of carriers that store their pricing
+        in their own plugin settings rather than in WooCommerce. Because a REST request has
+        no cart, the package used is empty and addressed to the zone's first country
+        location (the store base country for zone 0). Carriers that scale their price by
+        weight, dimensions or order value therefore report their baseline tier, and any
+        free-shipping threshold or cash-on-delivery surcharge is not reflected. Methods
+        returning several rates report the first one.
       responses:
         "200":
           description: OK

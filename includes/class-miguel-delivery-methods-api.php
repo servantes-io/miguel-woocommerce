@@ -137,10 +137,59 @@ class Miguel_Delivery_Methods_Api {
 	 */
 	private function collect_zone_methods( $zone, $currency ) {
 		$methods = array();
+		$package = $this->build_package( $zone );
 		foreach ( $zone->get_shipping_methods() as $method ) {
-			$methods[] = $this->format_method( $method, $currency );
+			$methods[] = $this->format_method( $method, $currency, $package );
 		}
 		return $methods;
+	}
+
+	/**
+	 * Build the package the methods of a zone are priced for.
+	 *
+	 * There is no cart behind a REST request, so this is an empty package addressed to the
+	 * zone itself. Carriers that scale their price by weight or order value therefore report
+	 * their baseline tier.
+	 *
+	 * @param WC_Shipping_Zone $zone Shipping zone.
+	 * @return array
+	 */
+	private function build_package( $zone ) {
+		return array(
+			'contents'        => array(),
+			'contents_cost'   => 0,
+			'applied_coupons' => array(),
+			'user'            => array( 'ID' => get_current_user_id() ),
+			'destination'     => array(
+				'country'   => $this->get_zone_country( $zone ),
+				'state'     => '',
+				'postcode'  => '',
+				'city'      => '',
+				'address'   => '',
+				'address_1' => '',
+				'address_2' => '',
+			),
+			'cart_subtotal'   => 0,
+		);
+	}
+
+	/**
+	 * The country a zone's methods are priced for: the zone's first country location, or the
+	 * store base country when the zone has none (which is always the case for zone 0).
+	 *
+	 * @param WC_Shipping_Zone $zone Shipping zone.
+	 * @return string
+	 */
+	private function get_zone_country( $zone ) {
+		foreach ( $zone->get_zone_locations() as $location ) {
+			if ( 'country' === $location->type ) {
+				return $location->code;
+			}
+		}
+
+		$base = wc_get_base_location();
+
+		return isset( $base['country'] ) ? $base['country'] : '';
 	}
 
 	/**
@@ -148,9 +197,19 @@ class Miguel_Delivery_Methods_Api {
 	 *
 	 * @param WC_Shipping_Method $method   Shipping method instance.
 	 * @param string             $currency ISO 4217 store currency code.
+	 * @param array              $package  Package the method is priced for.
 	 * @return array
 	 */
-	private function format_method( $method, $currency ) {
+	private function format_method( $method, $currency, $package ) {
+		$cost = $method->get_option( 'cost', null );
+
+		// Methods such as Toret's Balikovna keep their price in the plugin's own carrier
+		// settings, so nothing is stored under `cost`. Their price only ever materialises
+		// through calculate_shipping(), which is what pricing the package triggers.
+		if ( '' === $cost ) {
+			$cost = $this->calculate_cost( $method, $package );
+		}
+
 		return array(
 			'instance_id'      => $method->get_instance_id(),
 			'method_id'        => $method->id,
@@ -158,11 +217,37 @@ class Miguel_Delivery_Methods_Api {
 			'description'      => do_shortcode( (string) $method->get_option( 'description' ) ),
 			'enabled'          => $method->is_enabled(),
 			'currency'         => $currency,
-			'cost'             => $method->get_option( 'cost', null ),
+			'cost'             => $cost,
 			'min_amount'       => $method->get_option( 'min_amount', null ),
 			'free_shipping'    => $method->get_option( 'free_shipping', null ),
 			'requires'         => $method->get_option( 'requires', null ),
 			'ignore_discounts' => $method->get_option( 'ignore_discounts', null ),
 		);
+	}
+
+	/**
+	 * Price a method by asking it to calculate its rates, the way the checkout does.
+	 *
+	 * Third party methods may reach for WC()->cart or WC()->session, neither of which exists
+	 * during a REST request, so a failure to price one method must not take the response down.
+	 *
+	 * @param WC_Shipping_Method $method  Shipping method instance.
+	 * @param array              $package Package to price.
+	 * @return string Cost of the first rate, or an empty string when there is none.
+	 */
+	private function calculate_cost( $method, $package ) {
+		try {
+			$rates = $method->get_rates_for_package( $package );
+		} catch ( Throwable $e ) {
+			return '';
+		}
+
+		if ( empty( $rates ) ) {
+			return '';
+		}
+
+		$rate = reset( $rates );
+
+		return $rate->get_cost();
 	}
 }
