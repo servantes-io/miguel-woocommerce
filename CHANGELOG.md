@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.9.1
 
 * Delivery methods endpoint now reports a cost for carriers that keep their pricing in their own plugin settings instead of WooCommerce (e.g. Toret Balíkovna): when the `cost` setting is empty, the method is asked to calculate its rates for an empty package addressed to the zone, and the cost of its first rate is reported
 
