@@ -583,7 +583,11 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		$method = $this->get_method_from_response( $zone->get_id() );
 
 		$this->assertNotNull( $method, 'Expected zone not found in response' );
-		$this->assertSame( '79', $method['cost'] );
+
+		// The number is asserted, not its string form: WooCommerce formats a calculated rate
+		// with wc_get_price_decimals() up to WC 8.x and without decimals from WC 9.x, so the
+		// same price reads '79.00' or '79' depending on the host's WooCommerce version.
+		$this->assertSame( 79.0, (float) $method['cost'] );
 	}
 
 	/**
@@ -641,7 +645,7 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		$method = $this->get_method_from_response( $zone->get_id() );
 
 		$this->assertNotNull( $method, 'Expected zone not found in response' );
-		$this->assertSame( '199', $method['cost'] );
+		$this->assertSame( 199.0, (float) $method['cost'] );
 	}
 
 	/**
@@ -664,7 +668,7 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		$method = $this->get_method_from_response( 0 );
 
 		$this->assertNotNull( $method, 'Rest of World zone not found in response' );
-		$this->assertSame( '79', $method['cost'] );
+		$this->assertSame( 79.0, (float) $method['cost'] );
 	}
 
 	/**
