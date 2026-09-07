@@ -38,14 +38,23 @@ class Miguel_Order_Finished_Api {
 	private $writer;
 
 	/**
+	 * Order mapper, used only for its "does this line item export a Miguel code" rule.
+	 *
+	 * @var Miguel_Order_Mapper
+	 */
+	private $mapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Miguel_Hook_Manager_Interface   $hook_manager Hook manager.
 	 * @param Miguel_Order_Status_Writer|null $writer       Status writer.
+	 * @param Miguel_Order_Mapper|null        $mapper       Order mapper.
 	 */
-	public function __construct( Miguel_Hook_Manager_Interface $hook_manager, Miguel_Order_Status_Writer $writer = null ) {
+	public function __construct( Miguel_Hook_Manager_Interface $hook_manager, Miguel_Order_Status_Writer $writer = null, Miguel_Order_Mapper $mapper = null ) {
 		$this->hook_manager = $hook_manager;
 		$this->writer = $writer ? $writer : new Miguel_Order_Status_Writer();
+		$this->mapper = $mapper ? $mapper : new Miguel_Order_Mapper();
 	}
 
 	/**
@@ -129,7 +138,7 @@ class Miguel_Order_Finished_Api {
 			return $this->unchanged( $order, 'no products' );
 		}
 
-		$target_status = self::get_target_status( self::is_miguel_only( $products ) );
+		$target_status = self::get_target_status( $this->is_miguel_only( $order ) );
 		if ( '' === $target_status ) {
 			return $this->unchanged( $order, 'auto change not set' );
 		}
@@ -176,21 +185,52 @@ class Miguel_Order_Finished_Api {
 	/**
 	 * Whether the order holds Miguel products only.
 	 *
-	 * Evaluated per product, not per order: a single line item without formats flips the
-	 * whole order to the mixed target. Same rule as the PrestaShop module.
+	 * Decided from the WooCommerce order's own line items, not from the callback payload:
+	 * an order is Miguel-only when it has at least one product line item and *every* product
+	 * line item exports at least one Miguel code (Miguel_Order_Mapper::has_miguel_codes(),
+	 * the same rule that decides what is sent to Miguel in the first place). Evaluated per
+	 * line item — one ordinary product flips the whole order to the mixed target.
 	 *
-	 * @param array $products Products from the callback payload.
+	 * **Why this differs from PrestaShop.** The PrestaShop module reads the same decision out
+	 * of the payload: it pushes *every* order line to Miguel (createArrayFromSimpleProduct
+	 * skips only an empty product_reference), so a non-Miguel line reaches Miguel, matches no
+	 * Product, and comes back with `formats: []` — that absence is its "mixed" signal. This
+	 * plugin does not do that: Miguel_Order_Mapper drops line items that resolve to no Miguel
+	 * code, so they are never sent and the callback's `products[]` is all-Miguel by
+	 * construction. Reading it here would report every mixed cart as Miguel-only, and would
+	 * fire backwards on an all-Miguel cart holding one code that does not resolve in the
+	 * Miguel workspace. The shop's own line items are the ground truth, and we have them.
+	 *
+	 * Line items that are not WC_Order_Item_Product (shipping, fees, taxes) are ignored — they
+	 * are not products the customer bought, and the mapper ignores them too. A line item whose
+	 * product was deleted (get_product() returns null) counts as non-Miguel: nothing proves it
+	 * was a book, and the mixed target is the conservative answer for an order that may still
+	 * need manual handling.
+	 *
+	 * An order with no product line items at all is *not* Miguel-only, for the same reason.
+	 * That case is practically unreachable: the handler has already required a non-empty
+	 * `products[]` in the payload, which only an order with Miguel line items produces.
+	 *
+	 * @param WC_Order $order Order.
 	 * @return bool
 	 */
-	private static function is_miguel_only( $products ) {
-		foreach ( $products as $product ) {
-			$formats = isset( $product['formats'] ) && is_array( $product['formats'] ) ? $product['formats'] : array();
-			if ( count( $formats ) < 1 ) {
+	private function is_miguel_only( $order ) {
+		$has_product_item = false;
+
+		foreach ( $order->get_items() as $item ) {
+			if ( ! ( $item instanceof WC_Order_Item_Product ) ) {
+				continue;
+			}
+
+			$has_product_item = true;
+
+			$product = $item->get_product();
+			if ( ! $product || ! $this->mapper->has_miguel_codes( $product ) ) {
 				return false;
 			}
 		}
 
-		return true;
+		return $has_product_item;
 	}
 
 	/**

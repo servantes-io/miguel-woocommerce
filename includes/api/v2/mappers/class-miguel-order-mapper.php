@@ -144,6 +144,24 @@ class Miguel_Order_Mapper {
 	}
 
 	/**
+	 * Whether a line item's product contributes at least one Miguel code.
+	 *
+	 * This is the same decision `map()` makes when it builds the items it sends to Miguel —
+	 * it delegates to the very method `map()` uses — so "contributes a code" and "is exported
+	 * to Miguel" can never drift apart. Bundles follow the mapper's rule: a bundle counts only
+	 * when at least one bundled product carries a Miguel code.
+	 *
+	 * Used by the order-finished callback to classify cart composition; see
+	 * Miguel_Order_Finished_Api::is_miguel_only().
+	 *
+	 * @param WC_Product $product Product object.
+	 * @return bool
+	 */
+	public function has_miguel_codes( $product ) {
+		return ! empty( $this->get_miguel_products_from_item( $product, 0.0 ) );
+	}
+
+	/**
 	 * Get Miguel products (code + per-unit price) from an order item's product.
 	 *
 	 * @param WC_Product $product    Product object.

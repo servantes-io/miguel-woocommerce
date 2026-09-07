@@ -54,7 +54,10 @@ class Test_Miguel_Order_Finished_Api extends Miguel_Test_Case {
 	}
 
 	/**
-	 * One product carrying at least one format — a Miguel product.
+	 * One payload product carrying at least one format.
+	 *
+	 * The payload only has to get past the "no products" gate — cart composition is read
+	 * from the WooCommerce order's own line items, never from here.
 	 *
 	 * @return array
 	 */
@@ -66,12 +69,54 @@ class Test_Miguel_Order_Finished_Api extends Miguel_Test_Case {
 	}
 
 	/**
-	 * One product with no formats — not a Miguel product.
+	 * A processing order holding the given products, one of each.
 	 *
-	 * @return array
+	 * @param WC_Product[] $products Products to add as line items.
+	 * @return WC_Order
 	 */
-	private function other_product() {
-		return array( 'code' => 'mug', 'formats' => array() );
+	private function create_order_with( $products ) {
+		$order = wc_create_order( array( 'status' => 'processing', 'customer_id' => 0 ) );
+		foreach ( $products as $product ) {
+			$order->add_product( $product, 1 );
+		}
+		$order->set_billing_email( 'test@melvil.cz' );
+		$order->save();
+		$order->update_status( 'processing' );
+
+		return $order;
+	}
+
+	/**
+	 * An order whose every line item is a Miguel book (downloadable + Miguel shortcode).
+	 *
+	 * @param int $count How many books.
+	 * @return WC_Order
+	 */
+	private function create_miguel_only_order( $count = 1 ) {
+		$products = array();
+		for ( $i = 0; $i < $count; $i++ ) {
+			$products[] = Miguel_Helper_Product::create_downloadable_product();
+		}
+
+		return $this->create_order_with( $products );
+	}
+
+	/**
+	 * An order holding one Miguel book and one ordinary product.
+	 *
+	 * The ordinary product is a plain virtual product: not downloadable and carrying no
+	 * Miguel shortcode, so Miguel_Order_Mapper exports no code for it — which is exactly
+	 * why it never appears in the callback's products[].
+	 *
+	 * @return WC_Order
+	 */
+	private function create_mixed_order() {
+		return $this->create_order_with(
+			array(
+				Miguel_Helper_Product::create_downloadable_product(),
+				Miguel_Helper_Product::create_virtual_product(),
+			)
+		);
 	}
 
 	public function test_registers_rest_api_init_hook() {
@@ -96,8 +141,7 @@ class Test_Miguel_Order_Finished_Api extends Miguel_Test_Case {
 
 	public function test_does_not_change_status_when_state_is_not_finished() {
 		update_option( Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION, 'completed' );
-		$order = Miguel_Helper_Order::create_order();
-		$order->update_status( 'processing' );
+		$order = $this->create_miguel_only_order();
 		$api = new Miguel_Order_Finished_Api( new Miguel_Hook_Manager() );
 
 		$response = $api->handle_order_finished(
@@ -113,8 +157,7 @@ class Test_Miguel_Order_Finished_Api extends Miguel_Test_Case {
 
 	public function test_does_not_change_status_when_products_are_empty() {
 		update_option( Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION, 'completed' );
-		$order = Miguel_Helper_Order::create_order();
-		$order->update_status( 'processing' );
+		$order = $this->create_miguel_only_order();
 		$api = new Miguel_Order_Finished_Api( new Miguel_Hook_Manager() );
 
 		$response = $api->handle_order_finished(
@@ -125,11 +168,10 @@ class Test_Miguel_Order_Finished_Api extends Miguel_Test_Case {
 		$this->assertSame( 'processing', wc_get_order( $order->get_id() )->get_status() );
 	}
 
-	public function test_applies_miguel_only_target_when_every_product_has_formats() {
+	public function test_applies_miguel_only_target_when_every_line_item_is_a_miguel_product() {
 		update_option( Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION, 'completed' );
 		update_option( Miguel_Order_Finished_Api::STATUS_MIXED_OPTION, 'on-hold' );
-		$order = Miguel_Helper_Order::create_order();
-		$order->update_status( 'processing' );
+		$order = $this->create_miguel_only_order( 2 );
 		$api = new Miguel_Order_Finished_Api( new Miguel_Hook_Manager() );
 
 		$response = $api->handle_order_finished(
@@ -145,27 +187,87 @@ class Test_Miguel_Order_Finished_Api extends Miguel_Test_Case {
 		$this->assertSame( 'completed', wc_get_order( $order->get_id() )->get_status() );
 	}
 
-	public function test_one_product_without_formats_selects_the_mixed_target() {
+	public function test_a_non_miguel_line_item_selects_the_mixed_target() {
 		update_option( Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION, 'completed' );
 		update_option( Miguel_Order_Finished_Api::STATUS_MIXED_OPTION, 'on-hold' );
-		$order = Miguel_Helper_Order::create_order();
-		$order->update_status( 'processing' );
+		$order = $this->create_mixed_order();
 		$api = new Miguel_Order_Finished_Api( new Miguel_Hook_Manager() );
 
+		// The non-Miguel line item is absent from products[] — the mapper never sent it.
 		$response = $api->handle_order_finished(
-			$this->make_request(
-				$order->get_id(),
-				$this->payload( array( $this->miguel_product(), $this->other_product() ) )
-			)
+			$this->make_request( $order->get_id(), $this->payload( array( $this->miguel_product() ) ) )
 		);
 
 		$this->assertTrue( $response->get_data()['changed'] );
 		$this->assertSame( 'on-hold', wc_get_order( $order->get_id() )->get_status() );
 	}
 
+	public function test_a_line_item_whose_product_was_deleted_selects_the_mixed_target() {
+		update_option( Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION, 'completed' );
+		update_option( Miguel_Order_Finished_Api::STATUS_MIXED_OPTION, 'on-hold' );
+		$book = Miguel_Helper_Product::create_downloadable_product();
+		$gone = Miguel_Helper_Product::create_virtual_product();
+		$gone->save();
+		$order = $this->create_order_with( array( $book, $gone ) );
+		Miguel_Helper_Product::delete_product( $gone->get_id() );
+
+		$api = new Miguel_Order_Finished_Api( new Miguel_Hook_Manager() );
+		$response = $api->handle_order_finished(
+			$this->make_request( $order->get_id(), $this->payload( array( $this->miguel_product() ) ) )
+		);
+
+		$this->assertTrue( $response->get_data()['changed'] );
+		$this->assertSame( 'on-hold', wc_get_order( $order->get_id() )->get_status() );
+	}
+
+	public function test_a_shipping_line_does_not_flip_an_all_book_order_to_mixed() {
+		update_option( Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION, 'completed' );
+		update_option( Miguel_Order_Finished_Api::STATUS_MIXED_OPTION, 'on-hold' );
+		$order = $this->create_miguel_only_order();
+		$shipping = new WC_Order_Item_Shipping();
+		$shipping->set_method_title( 'Flat rate' );
+		$shipping->set_total( 5 );
+		$order->add_item( $shipping );
+		$order->save();
+
+		$api = new Miguel_Order_Finished_Api( new Miguel_Hook_Manager() );
+		$response = $api->handle_order_finished(
+			$this->make_request( $order->get_id(), $this->payload( array( $this->miguel_product() ) ) )
+		);
+
+		$this->assertTrue( $response->get_data()['changed'] );
+		$this->assertSame( 'completed', wc_get_order( $order->get_id() )->get_status() );
+	}
+
+	/**
+	 * The payload no longer decides composition: a Miguel book whose code did not resolve
+	 * in the workspace comes back without formats, and that must not be read as "the
+	 * customer also bought something else".
+	 */
+	public function test_a_formats_less_payload_product_does_not_flip_an_all_book_order_to_mixed() {
+		update_option( Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION, 'completed' );
+		update_option( Miguel_Order_Finished_Api::STATUS_MIXED_OPTION, 'on-hold' );
+		$order = $this->create_miguel_only_order( 2 );
+		$api = new Miguel_Order_Finished_Api( new Miguel_Hook_Manager() );
+
+		$response = $api->handle_order_finished(
+			$this->make_request(
+				$order->get_id(),
+				$this->payload(
+					array(
+						$this->miguel_product(),
+						array( 'code' => 'unresolved-book', 'formats' => array() ),
+					)
+				)
+			)
+		);
+
+		$this->assertTrue( $response->get_data()['changed'] );
+		$this->assertSame( 'completed', wc_get_order( $order->get_id() )->get_status() );
+	}
+
 	public function test_does_not_change_status_when_target_is_unset() {
-		$order = Miguel_Helper_Order::create_order();
-		$order->update_status( 'processing' );
+		$order = $this->create_miguel_only_order();
 		$api = new Miguel_Order_Finished_Api( new Miguel_Hook_Manager() );
 
 		$response = $api->handle_order_finished(
@@ -178,8 +280,7 @@ class Test_Miguel_Order_Finished_Api extends Miguel_Test_Case {
 
 	public function test_does_not_change_status_when_configured_target_no_longer_exists() {
 		update_option( Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION, 'deleted-custom-status' );
-		$order = Miguel_Helper_Order::create_order();
-		$order->update_status( 'processing' );
+		$order = $this->create_miguel_only_order();
 		$api = new Miguel_Order_Finished_Api( new Miguel_Hook_Manager() );
 
 		$response = $api->handle_order_finished(
@@ -207,7 +308,7 @@ class Test_Miguel_Order_Finished_Api extends Miguel_Test_Case {
 
 	public function test_returns_400_when_idempotency_key_missing() {
 		update_option( Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION, 'completed' );
-		$order = Miguel_Helper_Order::create_order();
+		$order = $this->create_miguel_only_order();
 		$api = new Miguel_Order_Finished_Api( new Miguel_Hook_Manager() );
 
 		$response = $api->handle_order_finished(
@@ -220,8 +321,7 @@ class Test_Miguel_Order_Finished_Api extends Miguel_Test_Case {
 
 	public function test_replays_the_stored_result_for_a_repeated_key() {
 		update_option( Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION, 'completed' );
-		$order = Miguel_Helper_Order::create_order();
-		$order->update_status( 'processing' );
+		$order = $this->create_miguel_only_order();
 		$api = new Miguel_Order_Finished_Api( new Miguel_Hook_Manager() );
 		$payload = $this->payload( array( $this->miguel_product() ) );
 
