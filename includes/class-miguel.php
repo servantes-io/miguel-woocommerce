@@ -160,6 +160,12 @@ class Miguel {
 			);
 		} );
 
+		$this->container->register( 'order_finished_api', function ( $container ) {
+			return new Miguel_Order_Finished_Api(
+				$container->get( 'hook_manager' )
+			);
+		} );
+
 		$this->container->register( 'delivery_methods_api', function ( $container ) {
 			return new Miguel_Delivery_Methods_Api(
 				$container->get( 'hook_manager' )
@@ -210,6 +216,7 @@ class Miguel {
 			$this->container->get( 'product_code_map_api' )->register_hooks();
 			$this->container->get( 'order_create_api' )->register_hooks();
 			$this->container->get( 'order_status_update_api' )->register_hooks();
+			$this->container->get( 'order_finished_api' )->register_hooks();
 			$this->container->get( 'delivery_methods_api' )->register_hooks();
 			$this->container->get( 'orders_api' )->register_hooks();
 

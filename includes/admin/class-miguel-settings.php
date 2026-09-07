@@ -88,6 +88,22 @@ class Miguel_Settings extends WC_Settings_Page {
 					'default' => 'no',
 				),
 				array(
+					'id'      => Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION,
+					'type'    => 'select',
+					'title'   => __( 'Automatic order status change — only Miguel books', 'miguel' ),
+					'desc'    => __( 'Status to set once Miguel finishes an order whose cart holds only Miguel books. Leave on "Do not change status" to disable.', 'miguel' ),
+					'options' => Miguel_Order_Finished_Api::get_status_choices(),
+					'default' => '',
+				),
+				array(
+					'id'      => Miguel_Order_Finished_Api::STATUS_MIXED_OPTION,
+					'type'    => 'select',
+					'title'   => __( 'Automatic order status change — Miguel books and other products', 'miguel' ),
+					'desc'    => __( 'Status to set once Miguel finishes an order whose cart holds Miguel books alongside other products. Leave on "Do not change status" to disable.', 'miguel' ),
+					'options' => Miguel_Order_Finished_Api::get_status_choices(),
+					'default' => '',
+				),
+				array(
 					'id'      => Miguel_Product_Code_Source::SUFFIX_OPTION,
 					'css'     => 'min-width: 350px;',
 					'type'    => 'text',
