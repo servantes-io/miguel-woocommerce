@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.0
+
+* Added automatic order status change when Miguel finishes an order: choose a target status for carts holding only Miguel books and another for mixed carts, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
+* Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
+
 ## 1.9.1
 
 * Delivery methods endpoint now reports a cost for carriers that keep their pricing in their own plugin settings instead of WooCommerce (e.g. Toret Balíkovna): when the `cost` setting is empty, the method is asked to calculate its rates for an empty package addressed to the zone, and the cost of its first rate is reported
