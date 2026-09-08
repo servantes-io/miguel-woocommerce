@@ -81,6 +81,16 @@ class Miguel_Settings extends WC_Settings_Page {
 					'default' => Miguel_API::ENV_PROD,
 				),
 				array(
+					'id' => 'miguel_api_options',
+					'type' => 'sectionend',
+				),
+
+				array(
+					'id'    => 'miguel_order_options',
+					'type'  => 'title',
+					'title' => __( 'Orders', 'miguel' ),
+				),
+				array(
 					'id'      => Miguel_Orders::SEND_EMAIL_OPTION,
 					'type'    => 'checkbox',
 					'title'   => __( 'Send order emails from Miguel', 'miguel' ),
@@ -88,20 +98,41 @@ class Miguel_Settings extends WC_Settings_Page {
 					'default' => 'no',
 				),
 				array(
+					'id'   => 'miguel_order_options',
+					'type' => 'sectionend',
+				),
+
+				// The two targets share one explanation rather than repeating it per field —
+				// the section heading is what gives each label its context.
+				array(
+					'id'    => 'miguel_order_status_options',
+					'type'  => 'title',
+					'title' => __( 'Automatic order status change', 'miguel' ),
+					'desc'  => __( 'When Miguel finishes processing an order, move it to the status chosen here. Leave both on "Do not change status" to disable.', 'miguel' ),
+				),
+				array(
 					'id'      => Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION,
 					'type'    => 'select',
-					'title'   => __( 'Automatic order status change — only Miguel books', 'miguel' ),
-					'desc'    => __( 'Status to set once Miguel finishes an order whose cart holds only Miguel books. Leave on "Do not change status" to disable.', 'miguel' ),
+					'title'   => __( 'Cart with only Miguel books', 'miguel' ),
 					'options' => Miguel_Order_Finished_Api::get_status_choices(),
 					'default' => '',
 				),
 				array(
 					'id'      => Miguel_Order_Finished_Api::STATUS_MIXED_OPTION,
 					'type'    => 'select',
-					'title'   => __( 'Automatic order status change — Miguel books and other products', 'miguel' ),
-					'desc'    => __( 'Status to set once Miguel finishes an order whose cart holds Miguel books alongside other products. Leave on "Do not change status" to disable.', 'miguel' ),
+					'title'   => __( 'Cart with Miguel books and other products', 'miguel' ),
 					'options' => Miguel_Order_Finished_Api::get_status_choices(),
 					'default' => '',
+				),
+				array(
+					'id'   => 'miguel_order_status_options',
+					'type' => 'sectionend',
+				),
+
+				array(
+					'id'    => 'miguel_product_options',
+					'type'  => 'title',
+					'title' => __( 'Products', 'miguel' ),
 				),
 				array(
 					'id'      => Miguel_Product_Code_Source::SUFFIX_OPTION,
@@ -112,7 +143,7 @@ class Miguel_Settings extends WC_Settings_Page {
 					'default' => '',
 				),
 				array(
-					'id' => 'miguel_api_options',
+					'id'   => 'miguel_product_options',
 					'type' => 'sectionend',
 				),
 			)
