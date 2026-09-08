@@ -267,3 +267,31 @@ msgstr "Přípona kódu tištěné knihy"
 #: includes/admin/class-miguel-settings.php:95
 msgid "Appended to a printed book's SKU to form its Miguel product code — e.g. \":print\" makes SKU \"harry-potter\" resolve as \"harry-potter:print\". Leave empty to disable printed-book pairing. Must match the suffix configured on the Miguel platform."
 msgstr "Přidá se za SKU tištěné knihy a vytvoří tak její kód produktu v Miguelovi — např. \":print\" změní SKU \"harry-potter\" na \"harry-potter:print\". Ponechte prázdné pro vypnutí párování tištěných knih. Musí odpovídat příponě nastavené na platformě Miguel."
+
+#: includes/admin/class-miguel-settings.php
+msgid "Orders"
+msgstr "Objednávky"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Automatic order status change"
+msgstr "Automatická změna stavu objednávky"
+
+#: includes/admin/class-miguel-settings.php
+msgid "When Miguel finishes processing an order, move it to the status chosen here. Leave both on \"Do not change status\" to disable."
+msgstr "Jakmile Miguel dokončí zpracování objednávky, přepne ji do stavu zvoleného zde. Ponechte obě volby na „Neměnit stav“, pokud změnu nechcete."
+
+#: includes/admin/class-miguel-settings.php
+msgid "Cart with only Miguel books"
+msgstr "Košík pouze s knihami z Miguelu"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Cart with Miguel books and other products"
+msgstr "Košík s knihami z Miguelu a dalšími produkty"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Products"
+msgstr "Produkty"
+
+#: includes/class-miguel-order-finished-api.php
+msgid "Do not change status"
+msgstr "Neměnit stav"
