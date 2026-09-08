@@ -197,8 +197,8 @@ class Miguel_Order_Finished_Api {
 	 * Product, and comes back with `formats: []` — that absence is its "mixed" signal. This
 	 * plugin does not do that: Miguel_Order_Mapper drops line items that resolve to no Miguel
 	 * code, so they are never sent and the callback's `products[]` is all-Miguel by
-	 * construction. Reading it here would report every mixed cart as Miguel-only, and would
-	 * fire backwards on an all-Miguel cart holding one code that does not resolve in the
+	 * construction. Reading it here would report every mixed order as Miguel-only, and would
+	 * fire backwards on an all-Miguel order holding one code that does not resolve in the
 	 * Miguel workspace. The shop's own line items are the ground truth, and we have them.
 	 *
 	 * Line items that are not WC_Order_Item_Product (shipping, fees, taxes) are ignored — they
@@ -234,9 +234,9 @@ class Miguel_Order_Finished_Api {
 	}
 
 	/**
-	 * The configured target status for this cart composition.
+	 * The configured target status for this order composition.
 	 *
-	 * @param bool $miguel_only Whether the cart holds Miguel products only.
+	 * @param bool $miguel_only Whether the order holds Miguel products only.
 	 * @return string Normalized status slug, or '' for "do not change".
 	 */
 	private static function get_target_status( $miguel_only ) {

@@ -151,7 +151,7 @@ class Miguel_Order_Mapper {
 	 * to Miguel" can never drift apart. Bundles follow the mapper's rule: a bundle counts only
 	 * when at least one bundled product carries a Miguel code.
 	 *
-	 * Used by the order-finished callback to classify cart composition; see
+	 * Used by the order-finished callback to classify order composition; see
 	 * Miguel_Order_Finished_Api::is_miguel_only().
 	 *
 	 * @param WC_Product $product Product object.

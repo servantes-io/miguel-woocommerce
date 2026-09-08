@@ -56,7 +56,7 @@ class Test_Miguel_Order_Finished_Api extends Miguel_Test_Case {
 	/**
 	 * One payload product carrying at least one format.
 	 *
-	 * The payload only has to get past the "no products" gate — cart composition is read
+	 * The payload only has to get past the "no products" gate — order composition is read
 	 * from the WooCommerce order's own line items, never from here.
 	 *
 	 * @return array
