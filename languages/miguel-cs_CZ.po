@@ -281,12 +281,12 @@ msgid "When Miguel finishes processing an order, move it to the status chosen he
 msgstr "Jakmile Miguel dokončí zpracování objednávky, přepne ji do stavu zvoleného zde. Ponechte obě volby na „Neměnit stav“, pokud změnu nechcete."
 
 #: includes/admin/class-miguel-settings.php
-msgid "Cart with only Miguel books"
-msgstr "Košík pouze s knihami z Miguelu"
+msgid "Order with only Miguel books"
+msgstr "Objednávka pouze s knihami z Miguelu"
 
 #: includes/admin/class-miguel-settings.php
-msgid "Cart with Miguel books and other products"
-msgstr "Košík s knihami z Miguelu a dalšími produkty"
+msgid "Order with Miguel books and other products"
+msgstr "Objednávka s knihami z Miguelu a dalšími produkty"
 
 #: includes/admin/class-miguel-settings.php
 msgid "Products"

@@ -113,14 +113,14 @@ class Miguel_Settings extends WC_Settings_Page {
 				array(
 					'id'      => Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION,
 					'type'    => 'select',
-					'title'   => __( 'Cart with only Miguel books', 'miguel' ),
+					'title'   => __( 'Order with only Miguel books', 'miguel' ),
 					'options' => Miguel_Order_Finished_Api::get_status_choices(),
 					'default' => '',
 				),
 				array(
 					'id'      => Miguel_Order_Finished_Api::STATUS_MIXED_OPTION,
 					'type'    => 'select',
-					'title'   => __( 'Cart with Miguel books and other products', 'miguel' ),
+					'title'   => __( 'Order with Miguel books and other products', 'miguel' ),
 					'options' => Miguel_Order_Finished_Api::get_status_choices(),
 					'default' => '',
 				),
