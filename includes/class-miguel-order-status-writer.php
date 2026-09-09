@@ -97,7 +97,7 @@ class Miguel_Order_Status_Writer {
 
 			try {
 				if ( 'paid' === $target_status ) {
-					$order->payment_complete();
+					$this->complete_payment( $order );
 				} else {
 					$order->update_status( $target_status, '', true );
 				}
@@ -167,6 +167,52 @@ class Miguel_Order_Status_Writer {
 			);
 		} finally {
 			delete_option( $lock_option );
+		}
+	}
+
+	/**
+	 * Run WooCommerce's payment_complete() so it actually completes the payment.
+	 *
+	 * WC_Order::payment_complete() acts only on on-hold, pending, failed and cancelled
+	 * (`woocommerce_valid_order_statuses_for_payment_complete`). From anything else — typically a
+	 * payment gateway's own status, such as "awaiting" — it takes the else branch, changes nothing,
+	 * and still returns true. The order stays unpaid and the caller's verification then fails.
+	 *
+	 * Miguel only asks for this when it knows the payment succeeded, so the order's current status
+	 * is added to that list for this one call. The filter is scoped to this order and removed
+	 * immediately, so no other gateway's payment flow is affected.
+	 *
+	 * Two statuses are deliberately not added: an already-paid order needs no completing, and a
+	 * refunded one must not be quietly resurrected. Cancelled is left to WooCommerce, which allows
+	 * it by default.
+	 *
+	 * @param WC_Order $order Order to complete payment for.
+	 */
+	private function complete_payment( $order ) {
+		$allow_current_status = function ( $statuses, $filtered_order ) use ( $order ) {
+			if ( ! $filtered_order instanceof WC_Order
+				|| $filtered_order->get_id() !== $order->get_id() ) {
+				return $statuses;
+			}
+
+			$current = $filtered_order->get_status();
+			if ( in_array( $current, $statuses, true )
+				|| 'refunded' === $current
+				|| $filtered_order->is_paid() ) {
+				return $statuses;
+			}
+
+			$statuses[] = $current;
+
+			return $statuses;
+		};
+
+		add_filter( 'woocommerce_valid_order_statuses_for_payment_complete', $allow_current_status, 10, 2 );
+
+		try {
+			$order->payment_complete();
+		} finally {
+			remove_filter( 'woocommerce_valid_order_statuses_for_payment_complete', $allow_current_status, 10 );
 		}
 	}
 
