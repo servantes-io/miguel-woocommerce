@@ -9,3 +9,7 @@ temp
 .idea
 tests/.phpunit*
 woocommerce-*
+
+# Claude Code scratch worktrees. Matches the rule in the miguel repo; shared .claude/
+# config stays committable.
+.claude/worktrees/
