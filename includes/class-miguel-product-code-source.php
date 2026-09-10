@@ -184,7 +184,7 @@ class Miguel_Product_Code_Source {
 			}
 
 			$code   = $atts['id'];
-			$format = isset( $atts['format'] ) ? $atts['format'] : '';
+			$format = $atts['format'] ?? '';
 			$key    = $code . '|' . $format;
 			if ( isset( $seen[ $key ] ) ) {
 				continue;

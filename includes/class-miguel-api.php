@@ -48,16 +48,12 @@ class Miguel_API {
 	 * @return string|false
 	 */
 	public static function getServerUrl( $env ) {
-		switch ( $env ) {
-			case self::ENV_PROD:
-				return 'https://miguel.servantes.cz';
-			case self::ENV_STAGING:
-				return 'https://miguel-staging.servantes.cz';
-			case self::ENV_TEST:
-				return 'https://miguel-test.servantes.cz';
-		}
-
-		return false;
+		return match ( $env ) {
+			self::ENV_PROD    => 'https://miguel.servantes.cz',
+			self::ENV_STAGING => 'https://miguel-staging.servantes.cz',
+			self::ENV_TEST    => 'https://miguel-test.servantes.cz',
+			default           => false,
+		};
 	}
 
 	/**

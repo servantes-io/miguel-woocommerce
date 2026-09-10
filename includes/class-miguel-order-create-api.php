@@ -82,11 +82,11 @@ class Miguel_Order_Create_Api {
 		Miguel::debug_log(
 			'Received order create payload',
 			array(
-				'idempotency_key' => isset( $payload['idempotency_key'] ) ? $payload['idempotency_key'] : '',
+				'idempotency_key' => $payload['idempotency_key'] ?? '',
 				'line_items_count' => isset( $payload['line_items'] ) && is_array( $payload['line_items'] ) ? count( $payload['line_items'] ) : 0,
-				'payment_method' => isset( $payload['payment_method'] ) ? (string) $payload['payment_method'] : '',
-				'set_paid' => isset( $payload['set_paid'] ) ? $payload['set_paid'] : null,
-				'send_emails' => isset( $payload['send_emails'] ) ? $payload['send_emails'] : ( isset( $payload['send_email'] ) ? $payload['send_email'] : null ),
+				'payment_method' => (string) ( $payload['payment_method'] ?? '' ),
+				'set_paid' => $payload['set_paid'] ?? null,
+				'send_emails' => $payload['send_emails'] ?? $payload['send_email'] ?? null,
 				'email_template' => isset( $payload['email_template'] ) ? (string) $payload['email_template'] : null,
 			)
 		);
@@ -167,8 +167,8 @@ class Miguel_Order_Create_Api {
 			Miguel::debug_log(
 				'Prepared WooCommerce order payload',
 				array(
-					'payment_method' => isset( $payload['payment_method'] ) ? (string) $payload['payment_method'] : '',
-					'status' => isset( $payload['status'] ) ? (string) $payload['status'] : '',
+					'payment_method' => (string) ( $payload['payment_method'] ?? '' ),
+					'status' => (string) ( $payload['status'] ?? '' ),
 					'line_items_count' => isset( $payload['line_items'] ) && is_array( $payload['line_items'] ) ? count( $payload['line_items'] ) : 0,
 					'shipping_lines_count' => isset( $payload['shipping_lines'] ) && is_array( $payload['shipping_lines'] ) ? count( $payload['shipping_lines'] ) : 0,
 				)
@@ -235,8 +235,8 @@ class Miguel_Order_Create_Api {
 					'emails_dispatched' => false,
 					'emails_queued' => $emails_queued,
 					'email_template' => $email_template,
-					'order_status' => isset( $data['status'] ) ? (string) $data['status'] : '',
-					'order_total' => isset( $data['total'] ) ? (string) $data['total'] : '',
+					'order_status' => (string) ( $data['status'] ?? '' ),
+					'order_total' => (string) ( $data['total'] ?? '' ),
 					'line_items_count' => isset( $data['line_items'] ) && is_array( $data['line_items'] ) ? count( $data['line_items'] ) : 0,
 				)
 			);
@@ -286,7 +286,7 @@ class Miguel_Order_Create_Api {
 			return false;
 		}
 
-		$stored_hash = isset( $stored['payload_hash'] ) ? (string) $stored['payload_hash'] : '';
+		$stored_hash = (string) ( $stored['payload_hash'] ?? '' );
 		if ( '' !== $stored_hash && ! hash_equals( $stored_hash, $payload_hash ) ) {
 			return new WP_Error(
 				'idempotency.payload_mismatch',
@@ -518,7 +518,7 @@ class Miguel_Order_Create_Api {
 
 		$original_line_item = $line_item;
 		$product_code = $this->get_line_item_product_code( $line_item );
-		$product_id = isset( $line_item['product_id'] ) ? absint( $line_item['product_id'] ) : 0;
+		$product_id = absint( $line_item['product_id'] ?? 0 );
 
 		if ( $product_id > 0 ) {
 			if ( '' !== $product_code ) {
@@ -1053,26 +1053,17 @@ class Miguel_Order_Create_Api {
 	private function get_default_email_templates_for_order( $order ) {
 		$templates = array( 'new_order' );
 
-		switch ( $order->get_status() ) {
-			case 'pending':
-				$templates[] = 'customer_invoice';
-				break;
+		$status_template = match ( $order->get_status() ) {
+			'pending'    => 'customer_invoice',
+			'on-hold'    => 'customer_on_hold_order',
+			'processing' => 'customer_processing_order',
+			'completed'  => 'customer_completed_order',
+			'failed'     => 'customer_failed_order',
+			default      => null,
+		};
 
-			case 'on-hold':
-				$templates[] = 'customer_on_hold_order';
-				break;
-
-			case 'processing':
-				$templates[] = 'customer_processing_order';
-				break;
-
-			case 'completed':
-				$templates[] = 'customer_completed_order';
-				break;
-
-			case 'failed':
-				$templates[] = 'customer_failed_order';
-				break;
+		if ( null !== $status_template ) {
+			$templates[] = $status_template;
 		}
 
 		return $templates;

@@ -264,7 +264,7 @@ class Miguel_Order_Status_Writer {
 			return false;
 		}
 
-		$stored_hash = isset( $stored['payload_hash'] ) ? (string) $stored['payload_hash'] : '';
+		$stored_hash = (string) ( $stored['payload_hash'] ?? '' );
 		if ( '' !== $stored_hash && ! hash_equals( $stored_hash, $payload_hash ) ) {
 			return new WP_Error(
 				'idempotency.payload_mismatch',
@@ -347,7 +347,7 @@ class Miguel_Order_Status_Writer {
 	 */
 	public static function normalize_order_status( $status ) {
 		$normalized = sanitize_key( trim( (string) $status ) );
-		if ( 0 === strpos( $normalized, 'wc-' ) ) {
+		if ( str_starts_with( $normalized, 'wc-' ) ) {
 			$normalized = substr( $normalized, 3 );
 		}
 
