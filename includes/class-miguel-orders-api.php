@@ -68,29 +68,6 @@ class Miguel_Orders_Api {
 	}
 
 	/**
-	 * Statuses the pull may return: every registered order status the operator has not marked as
-	 * meaning deleted.
-	 *
-	 * Returns an empty array when every status is excluded, which the caller reads as "do not
-	 * constrain the query" — asking wc_get_orders for no statuses at all matches everything, the
-	 * opposite of what is meant.
-	 *
-	 * @return array Status slugs with the wc- prefix, as wc_get_order_statuses() returns them.
-	 */
-	private function reconcilable_statuses() {
-		$deleted = Miguel_Orders::get_deleted_order_statuses();
-		$allowed = array();
-
-		foreach ( array_keys( wc_get_order_statuses() ) as $status ) {
-			if ( ! in_array( preg_replace( '/^wc-/', '', $status ), $deleted, true ) ) {
-				$allowed[] = $status;
-			}
-		}
-
-		return $allowed;
-	}
-
-	/**
 	 * Return all orders modified on or after updated_since.
 	 *
 	 * @param WP_REST_Request $request REST request.
@@ -117,24 +94,15 @@ class Miguel_Orders_Api {
 			);
 		}
 
-		$query = array(
-			'date_modified' => '>=' . $timestamp,
-			'limit'         => -1,
-			'type'          => 'shop_order',
-			'orderby'       => 'date_modified',
-			'order'         => 'ASC',
+		$wc_orders = wc_get_orders(
+			array(
+				'date_modified' => '>=' . $timestamp,
+				'limit'         => -1,
+				'type'          => 'shop_order',
+				'orderby'       => 'date_modified',
+				'order'         => 'ASC',
+			)
 		);
-
-		// Never hand back an order whose status means it is gone. Miguel deletes such an order when
-		// the shop reaches that status; offering it again here makes Miguel's reconciliation create
-		// it afresh — the deleted row is filtered out of its lookup, and the unique index excludes
-		// soft-deleted rows, so the insert succeeds silently and regenerates the buyer's access.
-		$reconcilable = $this->reconcilable_statuses();
-		if ( array() !== $reconcilable ) {
-			$query['status'] = $reconcilable;
-		}
-
-		$wc_orders = wc_get_orders( $query );
 
 		$orders = array();
 		foreach ( $wc_orders as $order ) {
@@ -183,6 +151,10 @@ class Miguel_Orders_Api {
 		return array(
 			'id'            => strval( $order->get_id() ),
 			'status'        => $order->get_status(),
+			// Whether this status means the customer no longer has the order. Reported rather than
+			// withheld: Miguel needs the pull to repair a delete whose push never arrived, so the
+			// shop states the fact and Miguel acts on it.
+			'deleted'       => Miguel_Orders::is_deleted_order_status( $order->get_status() ),
 			'currency_code' => $order->get_currency(),
 			'paid'          => $order->is_paid(),
 			'purchase_date' => Miguel_Order_Utils::get_purchase_date_for_order( $order ),

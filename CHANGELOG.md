@@ -3,7 +3,7 @@
 ## 1.10.0
 
 * Added the "Statuses that remove the order from Miguel" setting (WooCommerce → Settings → Miguel): the order statuses that mean the customer no longer has the order, and that therefore revoke their access and expire their download links. Defaults to Refunded, Cancelled and Failed, which is what the plugin has always done
-* Fixed orders coming back after being removed: the reconciliation endpoint Miguel polls no longer returns orders in those statuses. It did, so Miguel re-created the order it had just deleted and the customer regained access on the next sync
+* Fixed orders coming back after being removed: the reconciliation endpoint Miguel polls now reports whether an order's status means it is gone, so Miguel removes it instead of re-creating it. It previously re-created the order it had just deleted, and the customer regained access on the next sync. Reporting rather than withholding these orders also lets the sync repair a removal whose original call never reached Miguel
 * Added automatic order status change when Miguel finishes an order: choose a target status for carts holding only Miguel books and another for mixed carts, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
 * Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
 

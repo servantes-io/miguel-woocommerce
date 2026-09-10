@@ -346,14 +346,15 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 
 	/**
 	 * The reconciliation defect: Miguel deletes an order when the shop refunds it, then the
-	 * periodic pull hands the same order straight back. Miguel finds no live row (the deleted one
-	 * is filtered out) and creates a fresh order with CreateTasks — regenerating the books and
-	 * re-granting ownership. The customer's access returns on its own.
+	 * periodic pull hands the same order back. Miguel finds no live row (the deleted one is
+	 * filtered out of its lookup) and creates a fresh order with CreateTasks — regenerating the
+	 * books and re-granting ownership, so the customer's access returns on its own.
 	 *
-	 * The pull must therefore not offer orders whose status the operator has marked as meaning
-	 * deleted.
+	 * The pull therefore reports whether a status means the order is gone. Withholding such orders
+	 * would fix the resurrection but remove the repair path: a delete whose push never arrived
+	 * would leave the order alive in Miguel forever, with nothing to correct it.
 	 */
-	public function test_get_orders_excludes_statuses_that_mean_deleted() {
+	public function test_get_orders_flags_orders_whose_status_means_deleted() {
 		update_option( Miguel_Orders::DELETED_STATUSES_OPTION, array( 'refunded' ) );
 
 		try {
@@ -363,39 +364,45 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 			$refunded = Miguel_Helper_Order::create_order();
 			$refunded->update_status( 'refunded' );
 
-			$codes = $this->fetch_order_codes();
+			$orders = $this->fetch_orders_by_id();
 
-			$this->assertContains( strval( $live->get_id() ), $codes );
-			$this->assertNotContains( strval( $refunded->get_id() ), $codes,
-				'a refunded order handed back by the pull is re-created in Miguel, undoing the delete' );
+			$this->assertArrayHasKey( strval( $refunded->get_id() ), $orders,
+				'a deleted-status order must still be reported, or a lost delete can never be repaired' );
+			$this->assertTrue( $orders[ strval( $refunded->get_id() ) ]['deleted'] );
+
+			$this->assertArrayHasKey( strval( $live->get_id() ), $orders );
+			$this->assertFalse( $orders[ strval( $live->get_id() ) ]['deleted'] );
 		} finally {
 			delete_option( Miguel_Orders::DELETED_STATUSES_OPTION );
 		}
 	}
 
 	/**
-	 * The exclusion follows the setting rather than a hardcoded list, so a status the operator
-	 * unticked keeps being reconciled normally.
+	 * The flag follows the setting rather than a hardcoded list, so a status the operator unticked
+	 * keeps being reconciled as a normal order.
 	 */
-	public function test_get_orders_still_returns_a_status_the_operator_unticked() {
+	public function test_get_orders_does_not_flag_a_status_the_operator_unticked() {
 		update_option( Miguel_Orders::DELETED_STATUSES_OPTION, array( 'refunded' ) );
 
 		try {
 			$cancelled = Miguel_Helper_Order::create_order();
 			$cancelled->update_status( 'cancelled' );
 
-			$this->assertContains( strval( $cancelled->get_id() ), $this->fetch_order_codes() );
+			$orders = $this->fetch_orders_by_id();
+
+			$this->assertArrayHasKey( strval( $cancelled->get_id() ), $orders );
+			$this->assertFalse( $orders[ strval( $cancelled->get_id() ) ]['deleted'] );
 		} finally {
 			delete_option( Miguel_Orders::DELETED_STATUSES_OPTION );
 		}
 	}
 
 	/**
-	 * Order codes returned by the pull for everything modified since the epoch.
+	 * Orders returned by the pull for everything modified since the epoch, keyed by id.
 	 *
 	 * @return array
 	 */
-	private function fetch_order_codes() {
+	private function fetch_orders_by_id() {
 		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
 		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders' );
 		$request->set_param( 'updated_since', '1970-01-01T00:00:00Z' );
@@ -403,6 +410,11 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 		$response = $api->get_orders( $request );
 		$this->assertInstanceOf( WP_REST_Response::class, $response );
 
-		return wp_list_pluck( $response->get_data()['orders'], 'id' );
+		$by_id = array();
+		foreach ( $response->get_data()['orders'] as $order ) {
+			$by_id[ $order['id'] ] = $order;
+		}
+
+		return $by_id;
 	}
 }
