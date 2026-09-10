@@ -206,10 +206,6 @@ class Miguel_Order_Status_Writer {
 	 * the earliest priority records that the branch ran even if a third-party callback on the same
 	 * action then throws — WooCommerce catches that, but the payment is already written.
 	 *
-	 * The priority is -PHP_INT_MAX and not the constant that names it: this plugin is written to
-	 * PHP 5.6, which the WooCommerce sniffer enforces, and that constant arrived in 7.0. The two
-	 * differ by one, which no hook ordering can observe.
-	 *
 	 * date_paid is not a usable signal: WC only sets it when empty, so an order a gateway already
 	 * dated shows no change even when the branch ran.
 	 *
@@ -223,7 +219,7 @@ class Miguel_Order_Status_Writer {
 				$completed = true;
 			}
 		};
-		add_action( 'woocommerce_payment_complete', $observe_completion, -PHP_INT_MAX, 1 );
+		add_action( 'woocommerce_payment_complete', $observe_completion, PHP_INT_MIN, 1 );
 
 		$allow_current_status = function ( $statuses, $filtered_order ) use ( $order ) {
 			if ( ! $filtered_order instanceof WC_Order
@@ -249,7 +245,7 @@ class Miguel_Order_Status_Writer {
 			$order->payment_complete();
 		} finally {
 			remove_filter( 'woocommerce_valid_order_statuses_for_payment_complete', $allow_current_status, 10 );
-			remove_action( 'woocommerce_payment_complete', $observe_completion, -PHP_INT_MAX );
+			remove_action( 'woocommerce_payment_complete', $observe_completion, PHP_INT_MIN );
 		}
 
 		return $completed;
