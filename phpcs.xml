@@ -19,6 +19,15 @@
     <config name="text_domain" value="miguel" />
     <config name="minimum_supported_wp_version" value="4.9"/>
 
+	<!--
+	The PHP floor the plugin actually has: "Requires PHP: 7.2" in miguel.php and readme.txt, which
+	WordPress enforces at activation, and the matrix leg tests.yml labels "Minimum supported
+	version". Without this, the PHPCompatibility rule below has no target and silently checks
+	nothing — a local run then passes code the WooCommerce sniffer rejects.
+	Keep in step with phpcs-woocommerce.xml.
+	-->
+	<config name="testVersion" value="7.2-"/>
+
 	<!-- Rules -->
 	<rule ref="WooCommerce-Core" />
 
