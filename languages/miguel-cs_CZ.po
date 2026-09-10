@@ -295,3 +295,61 @@ msgstr "Produkty"
 #: includes/class-miguel-order-finished-api.php
 msgid "Do not change status"
 msgstr "Neměnit stav"
+
+#: includes/admin/class-miguel-settings.php
+msgid "API server"
+msgstr "API server"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Connection to Miguel API failed. Please verify API key and try again."
+msgstr "Připojení k Miguel API se nezdařilo. Zkontrolujte prosím API klíč a zkuste to znovu."
+
+#: includes/admin/class-miguel-settings.php
+msgid "Statuses that remove the order from Miguel"
+msgstr "Stavy, které odeberou objednávku z Miguelu"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Reaching one of these statuses removes the order from Miguel: the customer loses access to the books and their download links stop working. Trashing an order always removes it, whatever is selected here."
+msgstr "Přechod do některého z těchto stavů odebere objednávku z Miguelu: zákazník ztratí přístup ke knihám a jeho odkazy ke stažení přestanou fungovat. Přesun objednávky do koše ji odebere vždy, bez ohledu na zdejší nastavení."
+
+#: includes/class-miguel-order-finished-api.php
+#: includes/class-miguel-order-status-update-api.php
+#: includes/class-miguel-order-status-writer.php
+msgid "Idempotency-Key header is required."
+msgstr "Hlavička Idempotency-Key je povinná."
+
+#: includes/class-miguel-order-finished-api.php
+#: includes/class-miguel-order-status-update-api.php
+#: includes/class-miguel-order-status-writer.php
+msgid "Order ID must be a positive integer."
+msgstr "ID objednávky musí být kladné celé číslo."
+
+#: includes/class-miguel-order-finished-api.php
+#: includes/class-miguel-order-status-writer.php
+#: includes/class-miguel-orders-api.php
+msgid "Order was not found."
+msgstr "Objednávka nebyla nalezena."
+
+#: includes/class-miguel-order-status-writer.php
+msgid "Order could not be marked as paid."
+msgstr "Objednávku se nepodařilo označit jako zaplacenou."
+
+#: includes/class-miguel-order-status-writer.php
+msgid "Order status could not be updated."
+msgstr "Stav objednávky se nepodařilo změnit."
+
+#: includes/class-miguel-order-status-update-api.php
+msgid "Order status is required."
+msgstr "Stav objednávky je povinný."
+
+#: includes/class-miguel-order-status-update-api.php
+msgid "Order status is not supported by WooCommerce."
+msgstr "Tento stav objednávky WooCommerce nepodporuje."
+
+#: includes/class-miguel-orders-api.php
+msgid "The updated_since parameter is required."
+msgstr "Parametr updated_since je povinný."
+
+#: includes/class-miguel-orders-api.php
+msgid "The updated_since parameter is not a valid date."
+msgstr "Parametr updated_since není platné datum."
