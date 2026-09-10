@@ -15,7 +15,7 @@ class Miguel_Settings extends WC_Settings_Page {
 	 *
 	 * @var Miguel_Hook_Manager_Interface
 	 */
-	private $hook_manager;
+	private Miguel_Hook_Manager_Interface $hook_manager;
 
 	/**
 	 * Init settings page with dependency injection

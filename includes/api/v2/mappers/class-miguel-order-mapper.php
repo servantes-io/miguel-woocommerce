@@ -15,7 +15,7 @@ class Miguel_Order_Mapper {
 	 *
 	 * @var Miguel_Product_Code_Source
 	 */
-	private $code_source;
+	private Miguel_Product_Code_Source $code_source;
 
 	/**
 	 * Constructor.

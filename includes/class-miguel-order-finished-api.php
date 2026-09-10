@@ -28,21 +28,21 @@ class Miguel_Order_Finished_Api {
 	 *
 	 * @var Miguel_Hook_Manager_Interface
 	 */
-	private $hook_manager;
+	private Miguel_Hook_Manager_Interface $hook_manager;
 
 	/**
 	 * Status writer.
 	 *
 	 * @var Miguel_Order_Status_Writer
 	 */
-	private $writer;
+	private Miguel_Order_Status_Writer $writer;
 
 	/**
 	 * Order mapper, used only for its "does this line item export a Miguel code" rule.
 	 *
 	 * @var Miguel_Order_Mapper
 	 */
-	private $mapper;
+	private Miguel_Order_Mapper $mapper;
 
 	/**
 	 * Constructor.

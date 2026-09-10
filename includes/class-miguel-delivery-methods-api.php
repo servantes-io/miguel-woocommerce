@@ -16,7 +16,7 @@ class Miguel_Delivery_Methods_Api {
 	 *
 	 * @var Miguel_Hook_Manager_Interface
 	 */
-	private $hook_manager;
+	private Miguel_Hook_Manager_Interface $hook_manager;
 
 	/**
 	 * Constructor.

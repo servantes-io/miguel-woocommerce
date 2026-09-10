@@ -11,43 +11,43 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Miguel_V2_Order_Create {
 
 	/** @var string */
-	private $code;
+	private string $code;
 
 	/** @var Miguel_V2_Watermark_User */
-	private $user;
+	private Miguel_V2_Watermark_User $user;
 
 	/** @var string|null */
-	private $purchased_at;
+	private ?string $purchased_at;
 
 	/** @var string */
-	private $currency_code;
+	private string $currency_code;
 
 	/** @var Miguel_V2_Order_Create_Item[] */
-	private $items;
+	private array $items;
 
 	/** @var string */
-	private $send_email;
+	private string $send_email;
 
 	/** @var string|null */
-	private $eshop_id;
+	private ?string $eshop_id;
 
 	/** @var string|null */
-	private $eshop_created_at;
+	private ?string $eshop_created_at;
 
 	/** @var string|null */
-	private $eshop_updated_at;
+	private ?string $eshop_updated_at;
 
 	/** @var string|null */
-	private $source;
+	private ?string $source;
 
 	/** @var string|null */
-	private $social_drm_content;
+	private ?string $social_drm_content;
 
 	/** @var Miguel_V2_Order_Address|null */
-	private $billing_address;
+	private ?Miguel_V2_Order_Address $billing_address;
 
 	/** @var Miguel_V2_Order_Address|null */
-	private $shipping_address;
+	private ?Miguel_V2_Order_Address $shipping_address;
 
 	/**
 	 * Constructor.

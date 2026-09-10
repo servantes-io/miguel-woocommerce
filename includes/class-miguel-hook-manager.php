@@ -19,7 +19,7 @@ class Miguel_Hook_Manager implements Miguel_Hook_Manager_Interface {
 	 *
 	 * @var array
 	 */
-	private $registered_hooks = array();
+	private array $registered_hooks = array();
 
 	/**
 	 * Add action hook with tracking for cleanup

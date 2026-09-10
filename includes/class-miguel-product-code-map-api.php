@@ -16,14 +16,14 @@ class Miguel_Product_Code_Map_Api {
 	 *
 	 * @var Miguel_Hook_Manager_Interface
 	 */
-	private $hook_manager;
+	private Miguel_Hook_Manager_Interface $hook_manager;
 
 	/**
 	 * Product code resolver.
 	 *
 	 * @var Miguel_Product_Code_Resolver
 	 */
-	private $resolver;
+	private Miguel_Product_Code_Resolver $resolver;
 
 	/**
 	 * Constructor.

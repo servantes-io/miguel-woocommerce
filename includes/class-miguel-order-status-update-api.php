@@ -16,14 +16,14 @@ class Miguel_Order_Status_Update_Api {
 	 *
 	 * @var Miguel_Hook_Manager_Interface
 	 */
-	private $hook_manager;
+	private Miguel_Hook_Manager_Interface $hook_manager;
 
 	/**
 	 * Status writer.
 	 *
 	 * @var Miguel_Order_Status_Writer
 	 */
-	private $writer;
+	private Miguel_Order_Status_Writer $writer;
 
 	/**
 	 * Constructor.

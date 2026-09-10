@@ -16,10 +16,10 @@ class Miguel_V2_Client {
 	const ALLOWED_FORMATS = array( 'epub', 'mobi', 'pdf', 'audio' );
 
 	/** @var string */
-	private $url;
+	private string $url;
 
 	/** @var string */
-	private $token;
+	private string $token;
 
 	/**
 	 * Constructor.

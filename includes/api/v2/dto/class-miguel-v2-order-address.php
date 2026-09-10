@@ -13,7 +13,7 @@ class Miguel_V2_Order_Address {
 	const KEYS = array( 'fullName', 'company', 'address1', 'address2', 'city', 'state', 'zip', 'country', 'phone' );
 
 	/** @var array */
-	private $fields;
+	private array $fields;
 
 	/**
 	 * Constructor.
