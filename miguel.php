@@ -3,8 +3,8 @@
  * Plugin Name: Miguel for WooCommerce
  * Plugin URI: https://servantes.io/miguel_woocommerce
  * Description: Sell your e-books and audiobooks directly on your e-shop.
- * Requires at least: 5.6
- * Requires PHP: 7.2
+ * Requires at least: 6.5
+ * Requires PHP: 8.1
  * Tested up to: 7.0
  * Text Domain: miguel
  * Author: Servantes, s.r.o.
@@ -12,7 +12,7 @@
  * Version: 1.10.0
  * License: GPLv3
  *
- * WC requires at least: 6.0
+ * WC requires at least: 7.9
  * WC tested up to: 10.0
  *
  * @package Miguel

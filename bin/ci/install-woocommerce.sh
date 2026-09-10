@@ -27,8 +27,9 @@ fi
 
 # yoast/phpunit-polyfills is a dev dependency, so it is absent from the
 # production WordPress.org vendor/ but required by the WC test bootstrap.
-# 2.x needs PHPUnit >= 7.5; the 1.x line is used for the legacy PHPUnit 7.5
-# matrix rows, matching what those WooCommerce versions expect.
+# 2.x needs PHPUnit >= 7.5. The 1.x branch below is for PHPUnit 7.5 rows; no
+# matrix row uses one now that the minimum leg runs PHP 8.1, but it is kept so
+# re-adding such a row does not need this script changed too.
 case "$PHPUNIT_VERSION" in
     7*) POLYFILLS_VERSION="1.1.1" ;;
     *)  POLYFILLS_VERSION="2.0.1" ;;

@@ -46,15 +46,15 @@ jobs:
             wordpress-version: 6.5.8
             php-version: 8.2
             phpunit-version: ^9
+          # Minimum supported version, on the exact floor miguel.php declares.
+          # WooCommerce 7.9 rather than anything older: 6.9.4's test bootstrap
+          # sets PHPUnit\Framework\Error\Deprecated::$enabled, removed in
+          # PHPUnit 9, and PHPUnit 7.5 requires PHP ^7.1 — so no WooCommerce
+          # needing the old PHPUnit can be tested on a PHP we still support.
           - woocommerce-version: 7.9.1
             wordpress-version: 6.5.8
-            php-version: 8.2
+            php-version: 8.1
             phpunit-version: ^9
-          # Minimum supported version (WC 6.0 — first with Action Scheduler 3.3+)
-          - woocommerce-version: 6.9.4
-            wordpress-version: 6.5.8
-            php-version: 7.2
-            phpunit-version: 7.5.20
     steps:
       - name: Checkout
         uses: actions/checkout@v6
