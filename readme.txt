@@ -126,7 +126,9 @@ The interactive wizard allows you to set the screen size for which the resulting
 
 = 1.10.0 =
 
-* Added automatic order status change when Miguel finishes an order: choose a target status for carts holding only Miguel books and another for carts that also hold other products, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
+* Orders are marked paid on shops whose payment gateway keeps orders in its own status. Judging that by status instead made the shop report a failure while the payment had in fact completed, and Miguel then retried it every minute, re-sending the gateway's payment mail each time
+* A shop that declines to complete a payment says so in its reply instead of reporting an error, so Miguel records it and stops retrying
+* Added automatic order status change when Miguel finishes an order: choose a target status for orders holding only Miguel books and another for orders that also hold other products, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
 * Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

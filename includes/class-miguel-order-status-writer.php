@@ -66,7 +66,7 @@ class Miguel_Order_Status_Writer {
 			return $replay;
 		}
 		if ( is_array( $replay ) ) {
-			return $this->build_replay_result( $replay['order_id'] );
+			return $this->build_replay_result( $replay['order_id'], $replay['paid'] );
 		}
 
 		$lock_acquired = add_option( $lock_option, (string) time(), '', 'no' );
@@ -76,7 +76,7 @@ class Miguel_Order_Status_Writer {
 				return $replay_after_lock_fail;
 			}
 			if ( is_array( $replay_after_lock_fail ) ) {
-				return $this->build_replay_result( $replay_after_lock_fail['order_id'] );
+				return $this->build_replay_result( $replay_after_lock_fail['order_id'], $replay_after_lock_fail['paid'] );
 			}
 
 			return new WP_Error(
@@ -92,12 +92,13 @@ class Miguel_Order_Status_Writer {
 				return $replay_after_lock;
 			}
 			if ( is_array( $replay_after_lock ) ) {
-				return $this->build_replay_result( $replay_after_lock['order_id'] );
+				return $this->build_replay_result( $replay_after_lock['order_id'], $replay_after_lock['paid'] );
 			}
 
+			$payment_completed = false;
 			try {
 				if ( 'paid' === $target_status ) {
-					$this->complete_payment( $order );
+					$payment_completed = $this->complete_payment( $order );
 				} else {
 					$order->update_status( $target_status, '', true );
 				}
@@ -123,16 +124,26 @@ class Miguel_Order_Status_Writer {
 				);
 			}
 
-			if ( 'paid' === $target_status && ! $order->is_paid() ) {
-				return new WP_Error(
-					'order.status_update_failed',
-					esc_html__( 'Order could not be marked as paid.', 'miguel' ),
-					array(
-						'status' => 500,
-						'order_id' => $order_id,
-						'order_status' => $target_status,
-						'current_status' => $order->get_status(),
-					)
+			// Judge the paid route on whether payment completion ran, not on the status it left
+			// behind. WC_Order::is_paid() is true only for processing and completed, so a shop
+			// whose gateway parks paid orders in its own status could never satisfy it however
+			// well the payment went. Where the shop parks the order is the shop's business.
+			$paid = 'paid' === $target_status
+				? ( $order->is_paid() || $payment_completed )
+				: $order->is_paid();
+
+			if ( 'paid' === $target_status && ! $paid ) {
+				// The shop declined: payment_complete() took its else branch and completed
+				// nothing. That is a gateway configuration Miguel cannot fix and must not retry,
+				// so it is reported the way the finished route reports changed:false — a 200 with
+				// a reason, not a server fault. Deliberately not stored for replay: once the
+				// operator fixes their gateway, the same key has to be able to succeed.
+				return array(
+					'order_id' => $order_id,
+					'status' => $order->get_status(),
+					'paid' => false,
+					'reason' => 'payment completion did not run',
+					'idempotent_replay' => false,
 				);
 			}
 
@@ -155,6 +166,7 @@ class Miguel_Order_Status_Writer {
 					'order_id' => $order_id,
 					'payload_hash' => $payload_hash,
 					'status' => $order->get_status(),
+					'paid' => $paid,
 					'updated_at' => gmdate( 'c' ),
 				),
 				'no'
@@ -163,6 +175,8 @@ class Miguel_Order_Status_Writer {
 			return array(
 				'order_id' => $order_id,
 				'status' => $order->get_status(),
+				'paid' => $paid,
+				'reason' => null,
 				'idempotent_replay' => false,
 			);
 		} finally {
@@ -186,9 +200,31 @@ class Miguel_Order_Status_Writer {
 	 * refunded one must not be quietly resurrected. Cancelled is left to WooCommerce, which allows
 	 * it by default.
 	 *
+	 * The return value answers the only question the caller can act on: did WooCommerce reach the
+	 * point of announcing the payment? woocommerce_payment_complete fires as the last statement of
+	 * that branch, after the status is set, the date recorded and the order saved. Observing it at
+	 * the earliest priority records that the branch ran even if a third-party callback on the same
+	 * action then throws — WooCommerce catches that, but the payment is already written.
+	 *
+	 * The priority is -PHP_INT_MAX and not the constant that names it: this plugin is written to
+	 * PHP 5.6, which the WooCommerce sniffer enforces, and that constant arrived in 7.0. The two
+	 * differ by one, which no hook ordering can observe.
+	 *
+	 * date_paid is not a usable signal: WC only sets it when empty, so an order a gateway already
+	 * dated shows no change even when the branch ran.
+	 *
 	 * @param WC_Order $order Order to complete payment for.
+	 * @return bool Whether payment completion actually ran for this order.
 	 */
 	private function complete_payment( $order ) {
+		$completed = false;
+		$observe_completion = function ( $completed_order_id ) use ( &$completed, $order ) {
+			if ( (int) $completed_order_id === $order->get_id() ) {
+				$completed = true;
+			}
+		};
+		add_action( 'woocommerce_payment_complete', $observe_completion, -PHP_INT_MAX, 1 );
+
 		$allow_current_status = function ( $statuses, $filtered_order ) use ( $order ) {
 			if ( ! $filtered_order instanceof WC_Order
 				|| $filtered_order->get_id() !== $order->get_id() ) {
@@ -213,7 +249,10 @@ class Miguel_Order_Status_Writer {
 			$order->payment_complete();
 		} finally {
 			remove_filter( 'woocommerce_valid_order_statuses_for_payment_complete', $allow_current_status, 10 );
+			remove_action( 'woocommerce_payment_complete', $observe_completion, -PHP_INT_MAX );
 		}
+
+		return $completed;
 	}
 
 	/**
@@ -247,21 +286,25 @@ class Miguel_Order_Status_Writer {
 
 		return array(
 			'order_id' => $order_id,
+			'paid' => ! empty( $stored['paid'] ),
 		);
 	}
 
 	/**
 	 * Build the replay result for an already-updated order.
 	 *
-	 * @param int $order_id Order ID.
+	 * @param int  $order_id Order ID.
+	 * @param bool $paid     The stored outcome this replay reports.
 	 * @return array
 	 */
-	private function build_replay_result( $order_id ) {
+	private function build_replay_result( $order_id, $paid = false ) {
 		$order = wc_get_order( $order_id );
 
 		return array(
 			'order_id' => $order_id,
 			'status' => $order ? $order->get_status() : 'unknown',
+			'paid' => (bool) $paid,
+			'reason' => null,
 			'idempotent_replay' => true,
 		);
 	}

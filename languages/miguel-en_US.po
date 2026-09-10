@@ -97,9 +97,6 @@ msgstr "Order ID must be a positive integer."
 msgid "Order was not found."
 msgstr "Order was not found."
 
-#: includes/class-miguel-order-status-writer.php
-msgid "Order could not be marked as paid."
-msgstr "Order could not be marked as paid."
 
 #: includes/class-miguel-order-status-writer.php
 msgid "Order status could not be updated."

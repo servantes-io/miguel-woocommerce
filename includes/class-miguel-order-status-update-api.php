@@ -114,13 +114,21 @@ class Miguel_Order_Status_Update_Api {
 			return $result;
 		}
 
-		return new WP_REST_Response(
-			array(
-				'id' => $result['order_id'],
-				'status' => $result['status'],
-				'idempotent_replay' => $result['idempotent_replay'],
-			),
-			200
+		$body = array(
+			'id' => $result['order_id'],
+			'status' => $result['status'],
+			'idempotent_replay' => $result['idempotent_replay'],
 		);
+
+		// The paid route reports its own outcome: a shop that declines to complete the payment
+		// answers 200 with paid:false and a reason, the same shape the finished route uses for
+		// changed:false. An operator's gateway configuration is not a server fault, and a 500
+		// here is what made Miguel retry the same order once a minute indefinitely.
+		if ( 'paid' === $target_status ) {
+			$body['paid'] = ! empty( $result['paid'] );
+			$body['reason'] = isset( $result['reason'] ) ? $result['reason'] : null;
+		}
+
+		return new WP_REST_Response( $body, 200 );
 	}
 }

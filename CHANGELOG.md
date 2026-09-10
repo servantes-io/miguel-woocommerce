@@ -2,9 +2,11 @@
 
 ## 1.10.0
 
+* `PATCH /orders/{id}/status` marks an order paid on shops whose payment gateway keeps orders in its own status. Success is judged by whether payment completion actually ran, not by whether the order reached WooCommerce's built-in "processing" or "completed" — statuses such a shop never reaches. Judging by status made the route report HTTP 500 even though the payment had completed, and Miguel then retried the same order every minute indefinitely, re-running payment completion in the shop each time and re-sending whatever mail the gateway sends with it
+* A shop that genuinely declines to complete the payment answers 200 with `paid: false` and a reason rather than an error, so Miguel records it and stops instead of retrying a configuration it cannot change. The refusal is deliberately not remembered: once the gateway is fixed, the same request can succeed
 * Added the "Statuses that remove the order from Miguel" setting (WooCommerce → Settings → Miguel): the order statuses that mean the customer no longer has the order, and that therefore revoke their access and expire their download links. Defaults to Refunded, Cancelled and Failed, which is what the plugin has always done
 * Fixed orders coming back after being removed: the reconciliation endpoint Miguel polls now reports whether an order's status means it is gone, so Miguel removes it instead of re-creating it. It previously re-created the order it had just deleted, and the customer regained access on the next sync. Reporting rather than withholding these orders also lets the sync repair a removal whose original call never reached Miguel
-* Added automatic order status change when Miguel finishes an order: choose a target status for carts holding only Miguel books and another for mixed carts, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
+* Added automatic order status change when Miguel finishes an order: choose a target status for orders holding only Miguel books and another for mixed orders, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
 * Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
 
 ## 1.9.1
