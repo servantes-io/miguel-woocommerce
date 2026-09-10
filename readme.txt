@@ -3,7 +3,7 @@ Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 4.9
 Tested up to: 6.8
-Stable tag: 1.10.1
+Stable tag: 1.10.0
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -124,13 +124,10 @@ The interactive wizard allows you to set the screen size for which the resulting
 
 * Delivery methods endpoint now reports a cost for carriers that keep their pricing in their own plugin settings instead of WooCommerce (e.g. Toret Balíkovna)
 
-= 1.10.1 =
-
-* Fixed orders never being marked paid on shops whose payment gateway keeps orders in its own status: the payment had completed, but the route reported a failure and Miguel retried it every minute, re-sending the gateway's payment mail each time
-* A shop that declines to complete a payment now says so in its reply instead of reporting an error, so Miguel records it and stops retrying
-
 = 1.10.0 =
 
+* Orders are marked paid on shops whose payment gateway keeps orders in its own status. Judging that by status instead made the shop report a failure while the payment had in fact completed, and Miguel then retried it every minute, re-sending the gateway's payment mail each time
+* A shop that declines to complete a payment says so in its reply instead of reporting an error, so Miguel records it and stops retrying
 * Added automatic order status change when Miguel finishes an order: choose a target status for orders holding only Miguel books and another for orders that also hold other products, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
 * Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
 
