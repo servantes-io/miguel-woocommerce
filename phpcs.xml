@@ -18,22 +18,26 @@
 
     <config name="text_domain" value="miguel" />
 	<!--
-	The WordPress floor. 5.6 is what "WC requires at least: 6.0" in miguel.php implies: WooCommerce
-	6.0 itself requires WP 5.6, so no older site can run this plugin whatever its own header claims.
+	The WordPress floor: 6.5, the oldest WordPress any CI leg exercises. It cannot go lower now
+	that PHP 8.1 is required — WP 5.8 is the first release with PHP 8.1 support at all.
 	The key is minimum_wp_version, not minimum_supported_wp_version — WPCS 3.0 renamed the option and
 	3.0.1 is what is installed, so the old name is read by nothing.
 	Keep in step with phpcs-woocommerce.xml.
 	-->
-	<config name="minimum_wp_version" value="5.6"/>
+	<config name="minimum_wp_version" value="6.5"/>
 
 	<!--
-	The PHP floor the plugin actually has: "Requires PHP: 7.2" in miguel.php and readme.txt, which
+	The PHP floor the plugin actually has: "Requires PHP: 8.1" in miguel.php and readme.txt, which
 	WordPress enforces at activation, and the matrix leg tests.yml labels "Minimum supported
 	version". Without this, the PHPCompatibility rule below has no target and silently checks
 	nothing — a local run then passes code the WooCommerce sniffer rejects.
+
+	Caveat worth knowing: the installed PHPCompatibility is 9.3.5, which predates PHP 8 and has no
+	data for it. At 8.1- this rule no longer flags 7.3/7.4 features as too new and knows nothing
+	about 8.x to flag instead, so it is close to decorative until a PHPCompatibility 10 ships.
 	Keep in step with phpcs-woocommerce.xml.
 	-->
-	<config name="testVersion" value="7.2-"/>
+	<config name="testVersion" value="8.1-"/>
 
 	<!-- Rules -->
 	<rule ref="WooCommerce-Core" />
