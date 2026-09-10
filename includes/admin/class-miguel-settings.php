@@ -98,6 +98,17 @@ class Miguel_Settings extends WC_Settings_Page {
 					'default' => 'no',
 				),
 				array(
+					'id'       => Miguel_Orders::DELETED_STATUSES_OPTION,
+					'type'     => 'multiselect',
+					'class'    => 'wc-enhanced-select',
+					'css'      => 'min-width: 350px;',
+					'title'    => __( 'Statuses that remove the order from Miguel', 'miguel' ),
+					'desc'     => __( 'Reaching one of these statuses removes the order from Miguel: the customer loses access to the books and their download links stop working. Trashing an order always removes it, whatever is selected here.', 'miguel' ),
+					'options'  => Miguel_Order_Status_Writer::get_order_statuses(),
+					'default'  => Miguel_Orders::DEFAULT_DELETED_STATUSES,
+					'desc_tip' => false,
+				),
+				array(
 					'id'   => 'miguel_order_options',
 					'type' => 'sectionend',
 				),

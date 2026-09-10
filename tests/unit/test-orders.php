@@ -397,4 +397,65 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 	}
+
+	/**
+	 * The statuses that mean "the customer no longer has this order" are operator-configurable.
+	 * Default keeps the behaviour the plugin has always had.
+	 */
+	public function test_deleted_statuses_default_to_refunded_cancelled_failed() {
+		delete_option( Miguel_Orders::DELETED_STATUSES_OPTION );
+
+		$this->assertSame(
+			array( 'refunded', 'cancelled', 'failed' ),
+			Miguel_Orders::get_deleted_order_statuses() );
+	}
+
+	public function test_deleted_statuses_follow_the_setting() {
+		update_option( Miguel_Orders::DELETED_STATUSES_OPTION, array( 'refunded' ) );
+
+		try {
+			$this->assertSame( array( 'refunded' ), Miguel_Orders::get_deleted_order_statuses() );
+		} finally {
+			delete_option( Miguel_Orders::DELETED_STATUSES_OPTION );
+		}
+	}
+
+	/**
+	 * An empty setting means "never delete", not "fall back to the default" — an operator who
+	 * unticks everything is asking for orders never to be removed from Miguel.
+	 */
+	public function test_deleted_statuses_can_be_emptied() {
+		update_option( Miguel_Orders::DELETED_STATUSES_OPTION, array() );
+
+		try {
+			$this->assertSame( array(), Miguel_Orders::get_deleted_order_statuses() );
+		} finally {
+			delete_option( Miguel_Orders::DELETED_STATUSES_OPTION );
+		}
+	}
+
+	public function test_trash_deletes_even_when_it_is_not_configured() {
+		// trash is a WordPress post status, not an order status, so it cannot appear in the
+		// setting's choices — a trashed order is gone from the shop either way.
+		update_option( Miguel_Orders::DELETED_STATUSES_OPTION, array() );
+
+		try {
+			$this->assertTrue( Miguel_Orders::is_deleted_order_status( 'trash' ) );
+		} finally {
+			delete_option( Miguel_Orders::DELETED_STATUSES_OPTION );
+		}
+	}
+
+	public function test_a_status_outside_the_setting_is_not_a_deletion() {
+		update_option( Miguel_Orders::DELETED_STATUSES_OPTION, array( 'refunded' ) );
+
+		try {
+			$this->assertTrue( Miguel_Orders::is_deleted_order_status( 'refunded' ) );
+			$this->assertFalse( Miguel_Orders::is_deleted_order_status( 'cancelled' ),
+				'cancelled was unticked, so it must no longer destroy the customer\'s access' );
+			$this->assertFalse( Miguel_Orders::is_deleted_order_status( 'processing' ) );
+		} finally {
+			delete_option( Miguel_Orders::DELETED_STATUSES_OPTION );
+		}
+	}
 }

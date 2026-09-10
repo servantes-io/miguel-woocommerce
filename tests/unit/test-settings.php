@@ -102,4 +102,23 @@ class Test_Miguel_Settings extends Miguel_Test_Case {
 
 		return null;
 	}
+
+	public function test_settings_expose_the_deleted_order_statuses_picker() {
+		$settings = ( new Miguel_Settings( new Miguel_Hook_Manager() ) )->get_settings();
+
+		$field = null;
+		foreach ( $settings as $candidate ) {
+			if ( isset( $candidate['id'] ) && Miguel_Orders::DELETED_STATUSES_OPTION === $candidate['id'] ) {
+				$field = $candidate;
+			}
+		}
+
+		$this->assertNotNull( $field );
+		$this->assertSame( 'multiselect', $field['type'] );
+		$this->assertSame( Miguel_Orders::DEFAULT_DELETED_STATUSES, $field['default'] );
+		$this->assertArrayHasKey( 'refunded', $field['options'] );
+		$this->assertArrayNotHasKey( 'trash', $field['options'],
+			'trash is a post status, not an order status, and is always treated as a deletion' );
+		$this->assertSame( 'miguel_order_options', $this->section_of( $settings, Miguel_Orders::DELETED_STATUSES_OPTION ) );
+	}
 }
