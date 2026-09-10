@@ -1,7 +1,7 @@
 === Miguel for WooCommerce ===
 Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
-Requires at least: 4.9
+Requires at least: 5.6
 Tested up to: 6.8
 Stable tag: 1.10.0
 Requires PHP: 7.2

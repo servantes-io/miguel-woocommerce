@@ -17,7 +17,14 @@
 	<ini name="error_reporting" value="E_ALL &#38; ~E_DEPRECATED" />
 
     <config name="text_domain" value="miguel" />
-    <config name="minimum_supported_wp_version" value="4.9"/>
+	<!--
+	The WordPress floor. 5.6 is what "WC requires at least: 6.0" in miguel.php implies: WooCommerce
+	6.0 itself requires WP 5.6, so no older site can run this plugin whatever its own header claims.
+	The key is minimum_wp_version, not minimum_supported_wp_version — WPCS 3.0 renamed the option and
+	3.0.1 is what is installed, so the old name is read by nothing.
+	Keep in step with phpcs-woocommerce.xml.
+	-->
+	<config name="minimum_wp_version" value="5.6"/>
 
 	<!--
 	The PHP floor the plugin actually has: "Requires PHP: 7.2" in miguel.php and readme.txt, which
@@ -30,6 +37,10 @@
 
 	<!-- Rules -->
 	<rule ref="WooCommerce-Core" />
+
+	<!-- WooCommerce-Core does not pull these in, so the WP floor above had nothing reading it. -->
+	<rule ref="WordPress.WP.DeprecatedFunctions" />
+	<rule ref="WordPress.WP.DeprecatedParameters" />
 
     <rule ref="WordPress.WP.I18n">
 		<properties>
