@@ -330,9 +330,6 @@ msgstr "ID objednávky musí být kladné celé číslo."
 msgid "Order was not found."
 msgstr "Objednávka nebyla nalezena."
 
-#: includes/class-miguel-order-status-writer.php
-msgid "Order could not be marked as paid."
-msgstr "Objednávku se nepodařilo označit jako zaplacenou."
 
 #: includes/class-miguel-order-status-writer.php
 msgid "Order status could not be updated."

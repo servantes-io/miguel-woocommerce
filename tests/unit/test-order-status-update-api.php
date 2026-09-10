@@ -304,4 +304,155 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 			remove_filter( 'wc_order_statuses', $add_status );
 		}
 	}
+
+	/**
+	 * Register a gateway-style custom order status for the duration of a test.
+	 *
+	 * @return callable The wc_order_statuses filter, for the caller to remove.
+	 */
+	private function register_gateway_status( $slug = 'awaiting', $label = 'Awaiting' ) {
+		register_post_status( 'wc-' . $slug, array( 'public' => true ) );
+		$add = function ( $statuses ) use ( $slug, $label ) {
+			return array_merge( $statuses, array( 'wc-' . $slug => $label ) );
+		};
+		add_filter( 'wc_order_statuses', $add );
+
+		return $add;
+	}
+
+	/**
+	 * A shop whose gateway sends payment_complete() straight back to its own status.
+	 *
+	 * Payment completion really runs — woocommerce_payment_complete fires, date_paid is set, the
+	 * gateway is notified — but the order never reaches processing/completed, so is_paid() stays
+	 * false. The route used to call that a 500, which is a server fault the shop cannot fix and
+	 * Miguel retried once a minute forever, re-firing woocommerce_payment_complete every time.
+	 * Payment ran, so this is success.
+	 */
+	public function test_paid_succeeds_when_the_shop_keeps_its_own_status() {
+		$add = $this->register_gateway_status();
+		$redirect = function () { return 'awaiting'; };
+		add_filter( 'woocommerce_payment_complete_order_status', $redirect );
+
+		try {
+			$order = Miguel_Helper_Order::create_order();
+			$order->update_status( 'awaiting' );
+
+			$result = ( new Miguel_Order_Status_Writer() )->apply(
+				$order->get_id(), 'paid', 'kept-' . wp_generate_uuid4() );
+
+			$this->assertIsArray( $result,
+				is_wp_error( $result ) ? 'writer failed: ' . $result->get_error_code() : '' );
+			$this->assertTrue( $result['paid'], 'payment completion ran, so the order counts as paid' );
+			$this->assertSame( 'awaiting', $result['status'],
+				'where the shop parks the order is the shop\'s business, and is reported as-is' );
+		} finally {
+			remove_filter( 'woocommerce_payment_complete_order_status', $redirect );
+			remove_filter( 'wc_order_statuses', $add );
+		}
+	}
+
+	/**
+	 * The same shop, on Miguel's next sweep: the stored idempotency result replays and the order
+	 * is never touched again. This is what stops woocommerce_payment_complete re-firing per retry.
+	 */
+	public function test_paid_replays_instead_of_completing_payment_twice() {
+		$add = $this->register_gateway_status();
+		$redirect = function () { return 'awaiting'; };
+		add_filter( 'woocommerce_payment_complete_order_status', $redirect );
+
+		$fired = 0;
+		$count = function () use ( &$fired ) { $fired++; };
+		add_action( 'woocommerce_payment_complete', $count );
+
+		try {
+			$order = Miguel_Helper_Order::create_order();
+			$order->update_status( 'awaiting' );
+			$key = 'miguel-order-status-paid-' . $order->get_id();
+			$writer = new Miguel_Order_Status_Writer();
+
+			$first = $writer->apply( $order->get_id(), 'paid', $key );
+			$second = $writer->apply( $order->get_id(), 'paid', $key );
+			$third = $writer->apply( $order->get_id(), 'paid', $key );
+
+			$this->assertIsArray( $first );
+			$this->assertIsArray( $second );
+			$this->assertIsArray( $third );
+			$this->assertFalse( $first['idempotent_replay'] );
+			$this->assertTrue( $second['idempotent_replay'] );
+			$this->assertTrue( $third['idempotent_replay'] );
+			$this->assertTrue( $second['paid'], 'a replay reports the outcome it replays' );
+			$this->assertSame( 1, $fired,
+				'payment completion must run once, however many times Miguel sweeps' );
+		} finally {
+			remove_action( 'woocommerce_payment_complete', $count );
+			remove_filter( 'woocommerce_payment_complete_order_status', $redirect );
+			remove_filter( 'wc_order_statuses', $add );
+		}
+	}
+
+	/**
+	 * A shop that refuses outright: something resets the valid-status list at a later priority, so
+	 * payment_complete() takes its else branch and completes nothing. The order genuinely is not
+	 * paid — but an operator's gateway configuration is not a server fault, so this is 200 with
+	 * paid:false and a reason, the same shape the finished route uses for changed:false. Miguel
+	 * records it and stops instead of retrying a shop that will keep saying no.
+	 */
+	public function test_paid_reports_a_refusal_without_failing() {
+		$add = $this->register_gateway_status();
+		$clobber = function () {
+			return array( 'on-hold', 'pending', 'failed', 'cancelled' );
+		};
+		add_filter( 'woocommerce_valid_order_statuses_for_payment_complete', $clobber, 99 );
+
+		try {
+			$order = Miguel_Helper_Order::create_order();
+			$order->update_status( 'awaiting' );
+
+			$result = ( new Miguel_Order_Status_Writer() )->apply(
+				$order->get_id(), 'paid', 'refused-' . wp_generate_uuid4() );
+
+			$this->assertIsArray( $result, 'a refusal is not an error' );
+			$this->assertFalse( $result['paid'] );
+			$this->assertNotEmpty( $result['reason'] );
+			$this->assertSame( 'awaiting', $result['status'] );
+		} finally {
+			remove_filter( 'woocommerce_valid_order_statuses_for_payment_complete', $clobber, 99 );
+			remove_filter( 'wc_order_statuses', $add );
+		}
+	}
+
+	/**
+	 * A refusal must not be remembered. The operator fixes their gateway, Miguel or an admin calls
+	 * again with the same key, and it has to be able to succeed — a stored refusal would replay
+	 * "no" forever.
+	 */
+	public function test_a_refusal_is_not_stored_for_replay() {
+		$add = $this->register_gateway_status();
+		$clobber = function () {
+			return array( 'on-hold', 'pending', 'failed', 'cancelled' );
+		};
+		add_filter( 'woocommerce_valid_order_statuses_for_payment_complete', $clobber, 99 );
+
+		$order = Miguel_Helper_Order::create_order();
+		$order->update_status( 'awaiting' );
+		$key = 'miguel-order-status-paid-' . $order->get_id();
+		$writer = new Miguel_Order_Status_Writer();
+
+		try {
+			$refused = $writer->apply( $order->get_id(), 'paid', $key );
+			$this->assertFalse( $refused['paid'] );
+		} finally {
+			remove_filter( 'woocommerce_valid_order_statuses_for_payment_complete', $clobber, 99 );
+		}
+
+		try {
+			$retried = $writer->apply( $order->get_id(), 'paid', $key );
+
+			$this->assertTrue( $retried['paid'], 'the same key must still be able to succeed later' );
+			$this->assertFalse( $retried['idempotent_replay'] );
+		} finally {
+			remove_filter( 'wc_order_statuses', $add );
+		}
+	}
 }
