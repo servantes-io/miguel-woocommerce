@@ -241,4 +241,67 @@ class Test_Miguel_Order_Status_Update_Api extends Miguel_Test_Case {
 		$this->assertTrue( $updated_order->is_paid() );
 		$this->assertContains( $response->get_data()['status'], array( 'processing', 'completed' ) );
 	}
+
+	/**
+	 * How many callbacks are attached to the payment-complete status filter.
+	 *
+	 * @return int
+	 */
+	private function count_payment_complete_filters() {
+		$hook = 'woocommerce_valid_order_statuses_for_payment_complete';
+		if ( ! isset( $GLOBALS['wp_filter'][ $hook ] ) ) {
+			return 0;
+		}
+
+		return count( $GLOBALS['wp_filter'][ $hook ]->callbacks, COUNT_RECURSIVE );
+	}
+
+	/**
+	 * Reproduces a Test-environment failure: a shop whose payment gateway parks orders in its own
+	 * custom status. WooCommerce's payment_complete() only acts on on-hold/pending/failed/cancelled,
+	 * so from any other status it silently does nothing — and still returns true. The order stayed
+	 * "awaiting", is_paid() was false, and the route reported
+	 * order.status_update_failed / 500.
+	 */
+	public function test_marks_paid_from_a_gateway_custom_status() {
+		$add_status = function ( $statuses ) {
+			return array_merge( $statuses, array( 'wc-awaiting' => 'Awaiting' ) );
+		};
+		register_post_status( 'wc-awaiting', array(
+			'public'                    => true,
+			'exclude_from_search'       => false,
+			'show_in_admin_all_list'    => true,
+			'show_in_admin_status_list' => true,
+		) );
+		add_filter( 'wc_order_statuses', $add_status );
+
+		try {
+			$order = Miguel_Helper_Order::create_order();
+			$order->update_status( 'awaiting' );
+			$this->assertSame( 'awaiting', wc_get_order( $order->get_id() )->get_status(),
+				'precondition: the order sits in the gateway custom status' );
+
+			$hooks_before = $this->count_payment_complete_filters();
+
+			$result = ( new Miguel_Order_Status_Writer() )->apply(
+				$order->get_id(), 'paid', 'idem-custom-' . wp_generate_uuid4() );
+
+			$this->assertIsArray( $result,
+				is_wp_error( $result ) ? 'writer failed: ' . $result->get_error_message() : '' );
+
+			$reloaded = wc_get_order( $order->get_id() );
+			$this->assertTrue( $reloaded->is_paid(),
+				'the order must end up paid, not stranded in the custom status' );
+			$this->assertNotEmpty( $reloaded->get_date_paid(),
+				'payment_complete() must have run, so date_paid is set' );
+
+			// Not has_filter(): WooCommerce core keeps its own DraftOrders callback on this hook,
+			// so the hook is never empty. Count the callbacks instead.
+			$this->assertSame( $hooks_before, $this->count_payment_complete_filters(),
+				'the widening filter must not outlive the call — it would change payment completion '
+				. 'for every other gateway in the shop' );
+		} finally {
+			remove_filter( 'wc_order_statuses', $add_status );
+		}
+	}
 }

@@ -81,11 +81,69 @@ class Miguel_Settings extends WC_Settings_Page {
 					'default' => Miguel_API::ENV_PROD,
 				),
 				array(
+					'id' => 'miguel_api_options',
+					'type' => 'sectionend',
+				),
+
+				array(
+					'id'    => 'miguel_order_options',
+					'type'  => 'title',
+					'title' => __( 'Orders', 'miguel' ),
+				),
+				array(
 					'id'      => Miguel_Orders::SEND_EMAIL_OPTION,
 					'type'    => 'checkbox',
 					'title'   => __( 'Send order emails from Miguel', 'miguel' ),
 					'desc'    => __( 'When enabled, Miguel sends an email to the customer with links to download the books. When disabled, Miguel does not send any email.', 'miguel' ),
 					'default' => 'no',
+				),
+				array(
+					'id'       => Miguel_Orders::DELETED_STATUSES_OPTION,
+					'type'     => 'multiselect',
+					'class'    => 'wc-enhanced-select',
+					'css'      => 'min-width: 350px;',
+					'title'    => __( 'Statuses that remove the order from Miguel', 'miguel' ),
+					'desc'     => __( 'Reaching one of these statuses removes the order from Miguel: the customer loses access to the books and their download links stop working. Trashing an order always removes it, whatever is selected here.', 'miguel' ),
+					'options'  => Miguel_Order_Status_Writer::get_order_statuses(),
+					'default'  => Miguel_Orders::DEFAULT_DELETED_STATUSES,
+					'desc_tip' => false,
+				),
+				array(
+					'id'   => 'miguel_order_options',
+					'type' => 'sectionend',
+				),
+
+				// The two targets share one explanation rather than repeating it per field —
+				// the section heading is what gives each label its context.
+				array(
+					'id'    => 'miguel_order_status_options',
+					'type'  => 'title',
+					'title' => __( 'Automatic order status change', 'miguel' ),
+					'desc'  => __( 'When Miguel finishes processing an order, move it to the status chosen here. Leave both on "Do not change status" to disable.', 'miguel' ),
+				),
+				array(
+					'id'      => Miguel_Order_Finished_Api::STATUS_MIGUEL_ONLY_OPTION,
+					'type'    => 'select',
+					'title'   => __( 'Order with only Miguel books', 'miguel' ),
+					'options' => Miguel_Order_Finished_Api::get_status_choices(),
+					'default' => '',
+				),
+				array(
+					'id'      => Miguel_Order_Finished_Api::STATUS_MIXED_OPTION,
+					'type'    => 'select',
+					'title'   => __( 'Order with Miguel books and other products', 'miguel' ),
+					'options' => Miguel_Order_Finished_Api::get_status_choices(),
+					'default' => '',
+				),
+				array(
+					'id'   => 'miguel_order_status_options',
+					'type' => 'sectionend',
+				),
+
+				array(
+					'id'    => 'miguel_product_options',
+					'type'  => 'title',
+					'title' => __( 'Products', 'miguel' ),
 				),
 				array(
 					'id'      => Miguel_Product_Code_Source::SUFFIX_OPTION,
@@ -96,7 +154,7 @@ class Miguel_Settings extends WC_Settings_Page {
 					'default' => '',
 				),
 				array(
-					'id' => 'miguel_api_options',
+					'id'   => 'miguel_product_options',
 					'type' => 'sectionend',
 				),
 			)

@@ -343,4 +343,78 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 	}
+
+	/**
+	 * The reconciliation defect: Miguel deletes an order when the shop refunds it, then the
+	 * periodic pull hands the same order back. Miguel finds no live row (the deleted one is
+	 * filtered out of its lookup) and creates a fresh order with CreateTasks — regenerating the
+	 * books and re-granting ownership, so the customer's access returns on its own.
+	 *
+	 * The pull therefore reports whether a status means the order is gone. Withholding such orders
+	 * would fix the resurrection but remove the repair path: a delete whose push never arrived
+	 * would leave the order alive in Miguel forever, with nothing to correct it.
+	 */
+	public function test_get_orders_flags_orders_whose_status_means_deleted() {
+		update_option( Miguel_Orders::DELETED_STATUSES_OPTION, array( 'refunded' ) );
+
+		try {
+			$live = Miguel_Helper_Order::create_order();
+			$live->update_status( 'processing' );
+
+			$refunded = Miguel_Helper_Order::create_order();
+			$refunded->update_status( 'refunded' );
+
+			$orders = $this->fetch_orders_by_id();
+
+			$this->assertArrayHasKey( strval( $refunded->get_id() ), $orders,
+				'a deleted-status order must still be reported, or a lost delete can never be repaired' );
+			$this->assertTrue( $orders[ strval( $refunded->get_id() ) ]['deleted'] );
+
+			$this->assertArrayHasKey( strval( $live->get_id() ), $orders );
+			$this->assertFalse( $orders[ strval( $live->get_id() ) ]['deleted'] );
+		} finally {
+			delete_option( Miguel_Orders::DELETED_STATUSES_OPTION );
+		}
+	}
+
+	/**
+	 * The flag follows the setting rather than a hardcoded list, so a status the operator unticked
+	 * keeps being reconciled as a normal order.
+	 */
+	public function test_get_orders_does_not_flag_a_status_the_operator_unticked() {
+		update_option( Miguel_Orders::DELETED_STATUSES_OPTION, array( 'refunded' ) );
+
+		try {
+			$cancelled = Miguel_Helper_Order::create_order();
+			$cancelled->update_status( 'cancelled' );
+
+			$orders = $this->fetch_orders_by_id();
+
+			$this->assertArrayHasKey( strval( $cancelled->get_id() ), $orders );
+			$this->assertFalse( $orders[ strval( $cancelled->get_id() ) ]['deleted'] );
+		} finally {
+			delete_option( Miguel_Orders::DELETED_STATUSES_OPTION );
+		}
+	}
+
+	/**
+	 * Orders returned by the pull for everything modified since the epoch, keyed by id.
+	 *
+	 * @return array
+	 */
+	private function fetch_orders_by_id() {
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders' );
+		$request->set_param( 'updated_since', '1970-01-01T00:00:00Z' );
+
+		$response = $api->get_orders( $request );
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+
+		$by_id = array();
+		foreach ( $response->get_data()['orders'] as $order ) {
+			$by_id[ $order['id'] ] = $order;
+		}
+
+		return $by_id;
+	}
 }

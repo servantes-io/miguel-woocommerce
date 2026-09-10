@@ -15,7 +15,7 @@ class Miguel {
 	 *
 	 * @var string
 	 */
-	public $version = '1.9.1';
+	public $version = '1.10.0';
 
 	/**
 	 * Instance
@@ -90,7 +90,9 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-products-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-product-code-map-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-create-api.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-status-writer.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-status-update-api.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-finished-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-delivery-methods-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-orders-api.php';
 
@@ -158,6 +160,12 @@ class Miguel {
 			);
 		} );
 
+		$this->container->register( 'order_finished_api', function ( $container ) {
+			return new Miguel_Order_Finished_Api(
+				$container->get( 'hook_manager' )
+			);
+		} );
+
 		$this->container->register( 'delivery_methods_api', function ( $container ) {
 			return new Miguel_Delivery_Methods_Api(
 				$container->get( 'hook_manager' )
@@ -208,6 +216,7 @@ class Miguel {
 			$this->container->get( 'product_code_map_api' )->register_hooks();
 			$this->container->get( 'order_create_api' )->register_hooks();
 			$this->container->get( 'order_status_update_api' )->register_hooks();
+			$this->container->get( 'order_finished_api' )->register_hooks();
 			$this->container->get( 'delivery_methods_api' )->register_hooks();
 			$this->container->get( 'orders_api' )->register_hooks();
 

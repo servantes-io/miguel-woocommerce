@@ -26,6 +26,19 @@ class Miguel_Orders {
 	const SEND_EMAIL_OPTION = 'miguel_send_order_email';
 
 	/**
+	 * Option name listing the order statuses that mean the customer no longer has this order.
+	 * Reaching one removes the order from Miguel, which revokes the buyer's access and expires
+	 * their files.
+	 */
+	const DELETED_STATUSES_OPTION = 'miguel_deleted_order_statuses';
+
+	/**
+	 * Statuses treated as a deletion when the setting has never been saved. Preserves the
+	 * behaviour the plugin had before the setting existed.
+	 */
+	const DEFAULT_DELETED_STATUSES = array( 'refunded', 'cancelled', 'failed' );
+
+	/**
 	 * Hook manager instance
 	 *
 	 * @var Miguel_Hook_Manager_Interface
@@ -231,6 +244,41 @@ class Miguel_Orders {
 	}
 
 	/**
+	 * Order statuses the operator has marked as meaning the order is gone.
+	 *
+	 * An empty array is a real answer — an operator who unticks everything is asking for orders
+	 * never to be removed from Miguel — so it is not treated as "unset" and does not fall back to
+	 * the default.
+	 *
+	 * @return array Status slugs without the wc- prefix.
+	 */
+	public static function get_deleted_order_statuses() {
+		$configured = get_option( self::DELETED_STATUSES_OPTION, null );
+		if ( ! is_array( $configured ) ) {
+			return self::DEFAULT_DELETED_STATUSES;
+		}
+
+		return array_values( array_map( 'strval', $configured ) );
+	}
+
+	/**
+	 * Whether reaching this status means the order should be removed from Miguel.
+	 *
+	 * `trash` always counts and is deliberately not configurable: it is a WordPress post status
+	 * rather than an order status, so it cannot appear among the setting's choices, and a trashed
+	 * order is gone from the shop regardless.
+	 *
+	 * @param string $status Order status, with or without the wc- prefix.
+	 * @return bool
+	 */
+	public static function is_deleted_order_status( $status ) {
+		$status = preg_replace( '/^wc-/', '', (string) $status );
+
+		return 'trash' === $status
+			|| in_array( $status, self::get_deleted_order_statuses(), true );
+	}
+
+	/**
 	 * Sync order with Miguel API
 	 *
 	 * @param int $order_id Order ID.
@@ -239,7 +287,7 @@ class Miguel_Orders {
 	 * @param WC_Order $order Order object.
 	 */
 	public function sync_order( $order_id, $from_state, $to_state, $order ) {
-		if ( 0 == $order->get_id() || in_array( $to_state, array( 'trash', 'refunded', 'cancelled', 'failed' ), true ) ) {
+		if ( 0 == $order->get_id() || self::is_deleted_order_status( $to_state ) ) {
 			if ( ! $this->has_order_data_changed( $order, 'delete' ) ) {
 				return;
 			}

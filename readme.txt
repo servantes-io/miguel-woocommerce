@@ -3,7 +3,7 @@ Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 4.9
 Tested up to: 6.8
-Stable tag: 1.9.1
+Stable tag: 1.10.0
 Requires PHP: 7.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -119,5 +119,14 @@ The interactive wizard allows you to set the screen size for which the resulting
 * Added support for selling printed books through Miguel: a non-downloadable product's Miguel product code is derived from its SKU plus a configurable suffix, keeping it distinct from the e-book edition that shares the same slug
 * Added the "Printed-book code suffix" setting (WooCommerce → Settings → Miguel); leave empty to disable printed-book pairing
 * Added optional per-product `_miguel_code` meta to override a product's Miguel code
+
+= 1.9.1 =
+
+* Delivery methods endpoint now reports a cost for carriers that keep their pricing in their own plugin settings instead of WooCommerce (e.g. Toret Balíkovna)
+
+= 1.10.0 =
+
+* Added automatic order status change when Miguel finishes an order: choose a target status for carts holding only Miguel books and another for carts that also hold other products, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
+* Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
