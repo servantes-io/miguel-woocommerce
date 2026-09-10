@@ -2,7 +2,7 @@
 
 ## 1.10.0
 
-* Raised the minimum supported versions to WooCommerce 6.9, WordPress 6.5 and PHP 8.1. WordPress blocks activation below the PHP and WordPress floors, so a site under them keeps whatever version it has rather than updating into a broken state
+* Raised the minimum supported versions to WooCommerce 7.9, WordPress 6.5 and PHP 8.1. WordPress blocks activation below the PHP and WordPress floors, so a site under them keeps whatever version it has rather than updating into a broken state
 * `PATCH /orders/{id}/status` marks an order paid on shops whose payment gateway keeps orders in its own status. Success is judged by whether payment completion actually ran, not by whether the order reached WooCommerce's built-in "processing" or "completed" — statuses such a shop never reaches. Judging by status made the route report HTTP 500 even though the payment had completed, and Miguel then retried the same order every minute indefinitely, re-running payment completion in the shop each time and re-sending whatever mail the gateway sends with it
 * A shop that genuinely declines to complete the payment answers 200 with `paid: false` and a reason rather than an error, so Miguel records it and stops instead of retrying a configuration it cannot change. The refusal is deliberately not remembered: once the gateway is fixed, the same request can succeed
 * Added the "Statuses that remove the order from Miguel" setting (WooCommerce → Settings → Miguel): the order statuses that mean the customer no longer has the order, and that therefore revoke their access and expire their download links. Defaults to Refunded, Cancelled and Failed, which is what the plugin has always done

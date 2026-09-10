@@ -12,7 +12,7 @@
  * Version: 1.10.0
  * License: GPLv3
  *
- * WC requires at least: 6.9
+ * WC requires at least: 7.9
  * WC tested up to: 10.0
  *
  * @package Miguel
