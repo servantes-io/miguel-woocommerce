@@ -72,7 +72,7 @@ No new files, no new classes, no new translatable strings.
 - Consumes: nothing from other tasks.
 - Produces: `private function order_needs_delivery( $line_items )`, returning `bool` (no declared types, like the rest of the file) — `$line_items` is the prepared `line_items` array (each item has `product_id`, optionally `variation_id`). Test helpers on the test class, reused by Tasks 2 and 3: `private function invoke_private( $object, $method_name, array $args = array() )`, `private function line_item( $product_id )` (returns `array( 'product_id' => $product_id, 'quantity' => 1 )`), `private function create_printed_product( $sku )`, `private function create_virtual_product_without_download( $sku )`.
 
-- [ ] **Step 1: Add the test helpers**
+- [x] **Step 1: Add the test helpers**
 
 Add these private helpers to `Test_Miguel_Order_Create_Api`, directly below `get_minimal_valid_payload()`:
 
@@ -139,7 +139,7 @@ Add these private helpers to `Test_Miguel_Order_Create_Api`, directly below `get
 	}
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Append to `Test_Miguel_Order_Create_Api`:
 
@@ -261,12 +261,12 @@ Append to `Test_Miguel_Order_Create_Api`:
 	}
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter='Test_Miguel_Order_Create_Api::test_order_needs_delivery'`
 Expected: 7 errors, `ReflectionException: Method Miguel_Order_Create_Api::order_needs_delivery() does not exist`.
 
-- [ ] **Step 4: Implement `order_needs_delivery()`**
+- [x] **Step 4: Implement `order_needs_delivery()`**
 
 In `includes/class-miguel-order-create-api.php`, add directly after `prepare_line_item_for_wc_order()`:
 
@@ -296,12 +296,12 @@ In `includes/class-miguel-order-create-api.php`, add directly after `prepare_lin
 	}
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter='Test_Miguel_Order_Create_Api::test_order_needs_delivery'`
 Expected: `OK (7 tests, 8 assertions)`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add includes/class-miguel-order-create-api.php tests/unit/test-order-create-api.php

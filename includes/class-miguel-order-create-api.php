@@ -693,6 +693,30 @@ class Miguel_Order_Create_Api {
 	}
 
 	/**
+	 * Determine whether at least one line item of the order has to be delivered.
+	 *
+	 * An item needs delivery when its product needs shipping and is not downloadable. The
+	 * downloadable test catches an e-book whose "virtual" box nobody ticked: it has nothing to
+	 * deliver either. A product that cannot be loaded counts as needing delivery, which keeps
+	 * the stricter validation and leaves WooCommerce to reject the unknown product itself.
+	 *
+	 * @param array $line_items Prepared line items, each carrying a product_id.
+	 * @return bool
+	 */
+	private function order_needs_delivery( $line_items ) {
+		foreach ( $line_items as $line_item ) {
+			$variation_id = absint( $line_item['variation_id'] ?? 0 );
+			$product = wc_get_product( $variation_id > 0 ? $variation_id : absint( $line_item['product_id'] ?? 0 ) );
+
+			if ( ! $product || ( $product->needs_shipping() && ! $product->is_downloadable() ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Build a normalized line item validation error and log it.
 	 *
 	 * @param string $code Error code.

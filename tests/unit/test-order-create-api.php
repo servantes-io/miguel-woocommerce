@@ -36,6 +36,67 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * Invoke a private method of the API.
+	 *
+	 * @param object $object      Object under test.
+	 * @param string $method_name Method name.
+	 * @param array  $args        Arguments.
+	 * @return mixed
+	 */
+	private function invoke_private( $object, $method_name, array $args = array() ) {
+		$method = ( new ReflectionClass( $object ) )->getMethod( $method_name );
+		$method->setAccessible( true );
+
+		return $method->invokeArgs( $object, $args );
+	}
+
+	/**
+	 * A one-piece line item for a product. One key per line: WPCS rejects single-line
+	 * associative arrays with more than one key.
+	 *
+	 * @param int $product_id Product ID.
+	 * @return array
+	 */
+	private function line_item( $product_id ) {
+		return array(
+			'product_id' => $product_id,
+			'quantity'   => 1,
+		);
+	}
+
+	/**
+	 * Create a printed book: neither virtual nor downloadable, with an explicit SKU.
+	 *
+	 * @param string $sku Unique SKU.
+	 * @return WC_Product
+	 */
+	private function create_printed_product( $sku ) {
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_downloadable( false );
+		$product->set_virtual( false );
+		$product->set_sku( $sku );
+		$product->save();
+
+		return $product;
+	}
+
+	/**
+	 * Create a virtual product that is not downloadable (e.g. a voucher), with an explicit SKU.
+	 *
+	 * @param string $sku Unique SKU.
+	 * @return WC_Product
+	 */
+	private function create_virtual_product_without_download( $sku ) {
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_downloadable( false );
+		$product->set_virtual( true );
+		$product->set_sku( $sku );
+		$product->save();
+
+		return $product;
+	}
+
+	/**
 	 * Test that productCode is translated to product_id in line items.
 	 */
 	public function test_prepare_payload_for_wc_order_maps_product_code_to_product_id() {
@@ -1323,5 +1384,121 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 		}
 
 		return $notes;
+	}
+
+	/**
+	 * An e-book (virtual + downloadable) needs no delivery.
+	 */
+	public function test_order_needs_delivery_is_false_for_downloadable_product() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+		$api   = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertFalse(
+			$this->invoke_private( $api, 'order_needs_delivery', array( array( $this->line_item( $ebook->get_id() ) ) ) )
+		);
+	}
+
+	/**
+	 * A downloadable product whose "virtual" box nobody ticked still needs no delivery.
+	 */
+	public function test_order_needs_delivery_is_false_for_downloadable_product_that_is_not_virtual() {
+		$ebook = WC_Helper_Product::create_simple_product();
+		$ebook->set_downloadable( true );
+		$ebook->set_virtual( false );
+		$ebook->set_sku( 'smp14-downloadable-not-virtual' );
+		$ebook->save();
+
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertFalse(
+			$this->invoke_private( $api, 'order_needs_delivery', array( array( $this->line_item( $ebook->get_id() ) ) ) )
+		);
+	}
+
+	/**
+	 * A virtual product that is not downloadable (e.g. a voucher) needs no delivery.
+	 */
+	public function test_order_needs_delivery_is_false_for_virtual_product() {
+		$voucher = $this->create_virtual_product_without_download( 'smp14-voucher' );
+		$api     = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertFalse(
+			$this->invoke_private( $api, 'order_needs_delivery', array( array( $this->line_item( $voucher->get_id() ) ) ) )
+		);
+	}
+
+	/**
+	 * A printed book needs delivery.
+	 */
+	public function test_order_needs_delivery_is_true_for_printed_product() {
+		$printed = $this->create_printed_product( 'smp14-printed' );
+		$api     = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertTrue(
+			$this->invoke_private( $api, 'order_needs_delivery', array( array( $this->line_item( $printed->get_id() ) ) ) )
+		);
+	}
+
+	/**
+	 * One printed book among e-books makes the whole order need delivery.
+	 */
+	public function test_order_needs_delivery_is_true_for_mixed_order() {
+		$printed = $this->create_printed_product( 'smp14-printed-mixed' );
+		$ebook   = Miguel_Helper_Product::create_downloadable_product();
+		$api     = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertTrue(
+			$this->invoke_private(
+				$api,
+				'order_needs_delivery',
+				array(
+					array(
+						$this->line_item( $ebook->get_id() ),
+						$this->line_item( $printed->get_id() ),
+					),
+				)
+			)
+		);
+	}
+
+	/**
+	 * A product that cannot be loaded counts as needing delivery.
+	 */
+	public function test_order_needs_delivery_is_true_for_unknown_product() {
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertTrue(
+			$this->invoke_private( $api, 'order_needs_delivery', array( array( $this->line_item( 999999 ) ) ) )
+		);
+	}
+
+	/**
+	 * With a variation_id the variation decides, not its parent.
+	 */
+	public function test_order_needs_delivery_uses_the_variation_when_given() {
+		$variable     = WC_Helper_Product::create_variation_product();
+		$variation_id = $variable->get_children()[0];
+		$variation    = wc_get_product( $variation_id );
+		$variation->set_virtual( true );
+		$variation->save();
+
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertFalse(
+			$this->invoke_private(
+				$api,
+				'order_needs_delivery',
+				array( array( array_merge( $this->line_item( $variable->get_id() ), array( 'variation_id' => $variation_id ) ) ) )
+			),
+			'A virtual variation needs no delivery.'
+		);
+		$this->assertTrue(
+			$this->invoke_private(
+				$api,
+				'order_needs_delivery',
+				array( array( $this->line_item( $variable->get_id() ) ) )
+			),
+			'Without variation_id the non-virtual parent decides.'
+		);
 	}
 }
