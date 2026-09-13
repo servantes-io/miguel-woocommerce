@@ -208,6 +208,12 @@ class Miguel {
 			}
 		} );
 
+		// The payment method of the orders Miguel creates. Outside the MIGUEL_TESTS block below:
+		// unlike those services, the gateway talks to nothing outside the shop, so the tests see it
+		// exactly as a shop does.
+		$this->hook_manager->add_action( 'plugins_loaded', array( $this, 'include_payment_gateway' ) );
+		$this->hook_manager->add_filter( 'woocommerce_payment_gateways', array( $this, 'register_payment_gateway' ) );
+
 		if ( ! defined( 'MIGUEL_TESTS' ) ) {
 			// Initialize services and register their hooks
 			$this->container->get( 'download' )->register_hooks();
@@ -232,6 +238,31 @@ class Miguel {
 	 */
 	public function init() {
 		load_plugin_textdomain( 'miguel', false, plugin_basename( dirname( MIGUEL_PLUGIN_FILE ) ) . '/languages/' );
+	}
+
+	/**
+	 * Load the Miguel payment gateway class.
+	 *
+	 * The class extends WC_Payment_Gateway, which does not exist yet while this plugin's files are
+	 * included (this plugin loads before WooCommerce). WooCommerce defines it while it loads, so it
+	 * exists by plugins_loaded. Loaded here rather than inside the gateways filter because the
+	 * order API reads Miguel_Payment_Gateway::ID on requests that never initialise the gateways.
+	 */
+	public function include_payment_gateway() {
+		if ( class_exists( 'WC_Payment_Gateway' ) ) {
+			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-payment-gateway.php';
+		}
+	}
+
+	/**
+	 * Add the Miguel payment gateway to WooCommerce's gateways.
+	 *
+	 * @param array $gateways Gateway class names or instances.
+	 * @return array
+	 */
+	public function register_payment_gateway( $gateways ) {
+		$gateways[] = 'Miguel_Payment_Gateway';
+		return $gateways;
 	}
 
 	/**

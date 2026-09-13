@@ -57,12 +57,12 @@
   - `class Miguel_Payment_Gateway extends WC_Payment_Gateway` with `const ID = 'miguel';`, `public function is_available()` → `false`, `public function process_payment( $order_id )` → `array( 'result' => 'failure' )`. Settings option `woocommerce_miguel_settings` with keys `enabled` (default `'yes'`), `title` (default `'Miguel'`), `description` (default `''`).
   - `Miguel::include_payment_gateway(): void` (on `plugins_loaded`) and `Miguel::register_payment_gateway( array $gateways ): array` (on `woocommerce_payment_gateways`).
 
-- [ ] **Step 0: Worktree setup (skip if `vendor/` exists)**
+- [x] **Step 0: Worktree setup (skip if `vendor/` exists)**
 
 Run: `docker compose -f docker-compose.test.yml run --rm --entrypoint composer phpunit install --no-interaction --prefer-dist`
 Expected: `vendor/bin/phpunit` exists afterwards.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/test-payment-gateway.php`:
 
@@ -211,12 +211,12 @@ class Test_Miguel_Payment_Gateway extends Miguel_Test_Case {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `docker compose -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Payment_Gateway`
 Expected: FAIL — `Error: Class "Miguel_Payment_Gateway" not found`.
 
-- [ ] **Step 3: Create the gateway**
+- [x] **Step 3: Create the gateway**
 
 Create `includes/class-miguel-payment-gateway.php`:
 
@@ -313,7 +313,7 @@ class Miguel_Payment_Gateway extends WC_Payment_Gateway {
 }
 ```
 
-- [ ] **Step 4: Register it from the plugin**
+- [x] **Step 4: Register it from the plugin**
 
 In `includes/class-miguel.php`, method `init_hooks()`: directly after the `before_woocommerce_init` block (the closure that declares `custom_order_tables` compatibility) and **before** `if ( ! defined( 'MIGUEL_TESTS' ) ) {`, add:
 
@@ -354,12 +354,12 @@ Then add these two public methods directly after `init()` (the "Localize." metho
 	}
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `docker compose -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Payment_Gateway`
 Expected: PASS (10 tests).
 
-- [ ] **Step 6: Add the strings to both catalogues**
+- [x] **Step 6: Add the strings to both catalogues**
 
 Append to `languages/miguel-cs_CZ.po`:
 
@@ -429,7 +429,7 @@ Check both catalogues compile (the host and the test image have no gettext; this
 Run: `docker run --rm -v "$PWD":/w -w /w debian:stable-slim sh -c 'apt-get update -qq >/dev/null && apt-get install -y -qq gettext >/dev/null && msgfmt --check -o /dev/null languages/miguel-cs_CZ.po && msgfmt --check -o /dev/null languages/miguel-en_US.po && echo OK'`
 Expected: `OK`
 
-- [ ] **Step 7: Lint and commit**
+- [x] **Step 7: Lint and commit**
 
 Run: `docker compose -f docker-compose.test.yml run --rm --entrypoint vendor/bin/phpcs phpunit includes/class-miguel-payment-gateway.php includes/class-miguel.php tests/unit/test-payment-gateway.php`
 Expected: no errors.
