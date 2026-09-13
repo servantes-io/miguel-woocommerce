@@ -1016,7 +1016,7 @@ git commit -m "feat(payment): register the Miguel method with the block checkout
 - Consumes: everything above.
 - Produces: nothing for other tasks.
 
-- [ ] **Step 1: Add the release notes**
+- [x] **Step 1: Add the release notes**
 
 In `CHANGELOG.md`, append to the end of the `## 1.10.0` list (after its last `*` line, before `## 1.9.1`):
 
@@ -1030,17 +1030,17 @@ In `readme.txt`, append to the end of the `= 1.10.0 =` list (before the `[Full c
 * Orders created by Miguel show "Miguel" as their payment method instead of "Other". The new Miguel payment gateway is never offered at checkout
 ```
 
-- [ ] **Step 2: Run the full suite**
+- [x] **Step 2: Run the full suite**
 
 Run: `make test-docker`
 Expected: all tests pass, no new warnings or deprecations in the output.
 
-- [ ] **Step 3: Lint everything the branch touched**
+- [x] **Step 3: Lint everything the branch touched**
 
 Run: `docker compose -f docker-compose.test.yml run --rm --entrypoint vendor/bin/phpcs phpunit includes tests/unit/test-payment-gateway.php tests/unit/test-order-create-api.php`
 Expected: no errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add CHANGELOG.md readme.txt
