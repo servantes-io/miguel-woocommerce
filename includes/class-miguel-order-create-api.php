@@ -410,7 +410,7 @@ class Miguel_Order_Create_Api {
 			$payload['line_items'][ $index ] = $prepared_line_item;
 		}
 
-		return $payload;
+		return $this->prepare_shipping_for_wc_order( $payload );
 	}
 
 	/**
@@ -717,6 +717,86 @@ class Miguel_Order_Create_Api {
 	}
 
 	/**
+	 * Whether every shipping line is free: no total, an empty total, or a total of zero.
+	 *
+	 * A total that is not a number counts as a cost, so a malformed line is kept for
+	 * WooCommerce to judge rather than silently dropped.
+	 *
+	 * @param array $shipping_lines Shipping lines from the payload.
+	 * @return bool
+	 */
+	private function shipping_lines_are_free( $shipping_lines ) {
+		foreach ( $shipping_lines as $shipping_line ) {
+			$total = is_array( $shipping_line ) ? ( $shipping_line['total'] ?? '' ) : '';
+			if ( '' === $total ) {
+				continue;
+			}
+
+			if ( ! is_numeric( $total ) || 0.0 !== (float) $total ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Require shipping on an order that has something to deliver, and drop it from one that does not.
+	 *
+	 * A digital-only order loses its shipping address and shipping lines when every line is free,
+	 * so WooCommerce stores no shipping and shows no address. A line with a cost is kept, address
+	 * and all: dropping it would take the order total away from what the customer paid.
+	 *
+	 * @param array $payload Request payload with prepared line items.
+	 * @return array|WP_Error
+	 */
+	private function prepare_shipping_for_wc_order( $payload ) {
+		if ( $this->order_needs_delivery( $payload['line_items'] ) ) {
+			if ( ! array_key_exists( 'shipping', $payload ) || ! is_array( $payload['shipping'] ) || empty( $payload['shipping'] ) ) {
+				return $this->build_order_payload_error(
+					'order.shipping_required',
+					esc_html__( 'Order shipping object is required.', 'miguel' ),
+					array( 'field' => 'shipping' )
+				);
+			}
+
+			if ( ! array_key_exists( 'shipping_lines', $payload ) || ! is_array( $payload['shipping_lines'] ) || empty( $payload['shipping_lines'] ) ) {
+				return $this->build_order_payload_error(
+					'order.shipping_lines_required',
+					esc_html__( 'Order shipping_lines array is required.', 'miguel' ),
+					array( 'field' => 'shipping_lines' )
+				);
+			}
+
+			return $payload;
+		}
+
+		$shipping_lines = isset( $payload['shipping_lines'] ) && is_array( $payload['shipping_lines'] ) ? $payload['shipping_lines'] : array();
+
+		if ( ! $this->shipping_lines_are_free( $shipping_lines ) ) {
+			Miguel::debug_log(
+				'Kept shipping on a digital-only order because a shipping line has a cost',
+				array(
+					'shipping_line_totals' => array_column( $shipping_lines, 'total' ),
+				)
+			);
+
+			return $payload;
+		}
+
+		unset( $payload['shipping'], $payload['shipping_lines'] );
+
+		Miguel::debug_log(
+			'Dropped shipping from a digital-only order',
+			array(
+				'shipping_lines_dropped' => count( $shipping_lines ),
+			)
+		);
+
+		return $payload;
+	}
+
+	/**
 	 * Build a normalized line item validation error and log it.
 	 *
 	 * @param string $code Error code.
@@ -749,7 +829,10 @@ class Miguel_Order_Create_Api {
 	}
 
 	/**
-	 * Validate required top-level fields for order creation payload.
+	 * Validate the top-level fields that do not depend on the line items.
+	 *
+	 * Shipping is validated later, in prepare_shipping_for_wc_order(), once the line items are
+	 * resolved and it is known whether the order has anything to deliver.
 	 *
 	 * @param array $payload Request payload.
 	 * @return true|WP_Error
@@ -789,22 +872,6 @@ class Miguel_Order_Create_Api {
 				'order.billing_required',
 				esc_html__( 'Order billing object is required.', 'miguel' ),
 				array( 'field' => 'billing' )
-			);
-		}
-
-		if ( ! array_key_exists( 'shipping', $payload ) || ! is_array( $payload['shipping'] ) || empty( $payload['shipping'] ) ) {
-			return $this->build_order_payload_error(
-				'order.shipping_required',
-				esc_html__( 'Order shipping object is required.', 'miguel' ),
-				array( 'field' => 'shipping' )
-			);
-		}
-
-		if ( ! array_key_exists( 'shipping_lines', $payload ) || ! is_array( $payload['shipping_lines'] ) || empty( $payload['shipping_lines'] ) ) {
-			return $this->build_order_payload_error(
-				'order.shipping_lines_required',
-				esc_html__( 'Order shipping_lines array is required.', 'miguel' ),
-				array( 'field' => 'shipping_lines' )
 			);
 		}
 

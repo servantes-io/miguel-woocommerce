@@ -320,7 +320,7 @@ git commit -m "feat(orders): tell whether a Miguel order has anything to deliver
 - Consumes: `order_needs_delivery( $line_items )` (returns `bool`) and the test helpers `invoke_private()`, `line_item()`, `create_printed_product()` from Task 1; the existing `build_order_payload_error( $code, $message, $data )` (returns `WP_Error`).
 - Produces: `private function prepare_shipping_for_wc_order( $payload )` returning `array|WP_Error`; `private function shipping_lines_are_free( $shipping_lines )` returning `bool`; `prepare_payload_for_wc_order()` now returns the payload **without** `shipping` / `shipping_lines` for a digital-only order with free lines. Test helper `private function get_placeholder_shipping(): array` (today's backend shape), reused by Task 3.
 
-- [ ] **Step 1: Add the placeholder-shipping helper**
+- [x] **Step 1: Add the placeholder-shipping helper**
 
 Add below `create_virtual_product_without_download()` in the test class:
 
@@ -351,7 +351,7 @@ Add below `create_virtual_product_without_download()` in the test class:
 	}
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Append to the test class:
 
@@ -555,7 +555,7 @@ Append to the test class:
 	}
 ```
 
-- [ ] **Step 3: Adjust the existing tests that assumed the old placement**
+- [x] **Step 3: Adjust the existing tests that assumed the old placement**
 
 1. **Delete** `test_validate_required_order_fields_rejects_missing_shipping` and `test_validate_required_order_fields_rejects_missing_shipping_lines` — `test_prepare_payload_rejects_printed_order_without_shipping` / `…_without_shipping_lines` above replace them.
 2. In `test_prepare_payload_for_wc_order_maps_print_code_to_product_id`, the printed product now needs delivery, so give its payload shipping. Replace the invoke call's payload array:
@@ -577,7 +577,7 @@ Append to the test class:
 		);
 ```
 
-- [ ] **Step 4: Run the tests to verify the new ones fail**
+- [x] **Step 4: Run the tests to verify the new ones fail**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Order_Create_Api`
 Expected failures (the rest pass):
@@ -587,7 +587,7 @@ Expected failures (the rest pass):
 
 (`…_accepts_digital_only_order_without_shipping`, `…_keeps_paid_shipping_…`, `…_keeps_shipping_line_with_non_numeric_total_…`, `…_keeps_shipping_on_mixed_order` already pass on the old code — they pin behaviour the change must not break.)
 
-- [ ] **Step 5: Move the shipping checks**
+- [x] **Step 5: Move the shipping checks**
 
 In `validate_required_order_fields()`, delete the two blocks that return `order.shipping_required` and `order.shipping_lines_required` — the `email_template`, `payment_method` and `billing` checks (and SMP-12's `order_note` check) stay. Update its docblock summary to:
 
@@ -690,12 +690,12 @@ In `prepare_payload_for_wc_order()`, replace the final `return $payload;` (after
 		return $this->prepare_shipping_for_wc_order( $payload );
 ```
 
-- [ ] **Step 6: Run the class to verify everything passes**
+- [x] **Step 6: Run the class to verify everything passes**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Order_Create_Api`
 Expected: `OK` — every test in the class, including the two musk tests and `test_create_order_does_not_queue_sync_back_to_miguel`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add includes/class-miguel-order-create-api.php tests/unit/test-order-create-api.php
