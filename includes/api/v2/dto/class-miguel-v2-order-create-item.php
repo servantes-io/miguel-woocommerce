@@ -11,16 +11,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Miguel_V2_Order_Create_Item {
 
 	/** @var string */
-	private $code;
+	private string $code;
 
 	/** @var float */
-	private $sold_price;
+	private float $sold_price;
 
 	/** @var int */
-	private $quantity;
+	private int $quantity;
 
 	/** @var int|null */
-	private $delivery_method_id;
+	private ?int $delivery_method_id;
 
 	/**
 	 * Constructor.

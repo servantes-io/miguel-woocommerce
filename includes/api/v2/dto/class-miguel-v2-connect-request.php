@@ -11,16 +11,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Miguel_V2_Connect_Request {
 
 	/** @var string */
-	private $wc_version;
+	private string $wc_version;
 
 	/** @var string */
-	private $module_version;
+	private string $module_version;
 
 	/** @var string */
-	private $base_url;
+	private string $base_url;
 
 	/** @var string */
-	private $base_uri;
+	private string $base_uri;
 
 	/**
 	 * Constructor.

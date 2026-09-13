@@ -15,7 +15,7 @@ class Miguel {
 	 *
 	 * @var string
 	 */
-	public $version = '1.10.0';
+	public string $version = '1.10.0';
 
 	/**
 	 * Instance
@@ -29,14 +29,14 @@ class Miguel {
 	 *
 	 * @var Miguel_Container
 	 */
-	private $container;
+	private Miguel_Container $container;
 
 	/**
 	 * Hook manager for centralized hook registration
 	 *
 	 * @var Miguel_Hook_Manager_Interface
 	 */
-	private $hook_manager;
+	private Miguel_Hook_Manager_Interface $hook_manager;
 
 	/**
 	 * Get instance

@@ -43,21 +43,21 @@ class Miguel_Orders {
 	 *
 	 * @var Miguel_Hook_Manager_Interface
 	 */
-	private $hook_manager;
+	private Miguel_Hook_Manager_Interface $hook_manager;
 
 	/**
 	 * v2 client instance
 	 *
 	 * @var Miguel_V2_Client
 	 */
-	private $client;
+	private Miguel_V2_Client $client;
 
 	/**
 	 * Order mapper
 	 *
 	 * @var Miguel_Order_Mapper
 	 */
-	private $mapper;
+	private Miguel_Order_Mapper $mapper;
 
 	/**
 	 * Constructor with dependency injection

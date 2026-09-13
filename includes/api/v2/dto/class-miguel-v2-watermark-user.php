@@ -11,19 +11,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Miguel_V2_Watermark_User {
 
 	/** @var string|null */
-	private $id;
+	private ?string $id;
 
 	/** @var string|null */
-	private $name;
+	private ?string $name;
 
 	/** @var string|null */
-	private $address;
+	private ?string $address;
 
 	/** @var string */
-	private $email;
+	private string $email;
 
 	/** @var string */
-	private $language;
+	private string $language;
 
 	/**
 	 * Constructor.

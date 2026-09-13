@@ -16,14 +16,14 @@ class Miguel_Orders_Api {
 	 *
 	 * @var Miguel_Hook_Manager_Interface
 	 */
-	private $hook_manager;
+	private Miguel_Hook_Manager_Interface $hook_manager;
 
 	/**
 	 * Product code source.
 	 *
 	 * @var Miguel_Product_Code_Source
 	 */
-	private $code_source;
+	private Miguel_Product_Code_Source $code_source;
 
 	/**
 	 * Constructor.

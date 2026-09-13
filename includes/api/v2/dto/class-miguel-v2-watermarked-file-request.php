@@ -11,22 +11,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Miguel_V2_Watermarked_File_Request {
 
 	/** @var string */
-	private $target;
+	private string $target;
 
 	/** @var Miguel_V2_Watermark_User */
-	private $user_info;
+	private Miguel_V2_Watermark_User $user_info;
 
 	/** @var string */
-	private $purchase_date;
+	private string $purchase_date;
 
 	/** @var string */
-	private $order_code;
+	private string $order_code;
 
 	/** @var string */
-	private $currency_code;
+	private string $currency_code;
 
 	/** @var float */
-	private $sold_price;
+	private float $sold_price;
 
 	/**
 	 * Constructor.

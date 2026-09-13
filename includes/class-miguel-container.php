@@ -19,14 +19,14 @@ class Miguel_Container {
 	 *
 	 * @var array
 	 */
-	private $services = array();
+	private array $services = array();
 
 	/**
 	 * Service instances cache
 	 *
 	 * @var array
 	 */
-	private $instances = array();
+	private array $instances = array();
 
 	/**
 	 * Register a service factory

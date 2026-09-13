@@ -15,14 +15,14 @@ class Miguel_Product_Code_Resolver {
 	 *
 	 * @var array|null
 	 */
-	private $product_code_details_map = null;
+	private ?array $product_code_details_map = null;
 
 	/**
 	 * Product code source.
 	 *
 	 * @var Miguel_Product_Code_Source
 	 */
-	private $code_source;
+	private Miguel_Product_Code_Source $code_source;
 
 	/**
 	 * Constructor.

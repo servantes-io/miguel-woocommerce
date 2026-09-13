@@ -15,14 +15,14 @@ class Miguel_Admin {
 	 *
 	 * @var Miguel_Hook_Manager_Interface
 	 */
-	private $hook_manager;
+	private Miguel_Hook_Manager_Interface $hook_manager;
 
 	/**
 	 * Container instance
 	 *
 	 * @var Miguel_Container
 	 */
-	private $container;
+	private Miguel_Container $container;
 
 	/**
 	 * Initialize with dependency injection

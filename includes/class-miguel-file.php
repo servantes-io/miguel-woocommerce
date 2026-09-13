@@ -21,21 +21,21 @@ class Miguel_File {
 	 *
 	 * @var WC_Product
 	 */
-	protected $product;
+	protected WC_Product $product;
 
 	/**
 	 * Attributes
 	 *
 	 * @var array
 	 */
-	protected $atts;
+	protected array $atts;
 
 	/**
 	 * Download id
 	 *
 	 * @var int
 	 */
-	protected $download_id;
+	protected int $download_id;
 
 	/**
 	 * Constructor
