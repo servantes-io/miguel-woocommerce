@@ -63,6 +63,7 @@ Authentication uses `Authorization: Bearer <token>` with the token configured in
 - If `status` is provided, use WooCommerce order statuses (without `wc-` prefix): `pending`, `on-hold`, `processing`, `completed`, `cancelled`, `refunded`, `failed`.
 - `send_emails` accepts boolean-like values such as `true`, `false`, `1`, `0`, `"true"`, `"false"`.
 - `email_template` accepts one of: `new_order`, `customer_invoice`, `customer_on_hold_order`, `customer_processing_order`, `customer_completed_order`, `customer_failed_order`.
+- `order_note` is an optional string recorded on the order as a private note, visible to the shop only. Basic inline HTML is kept; anything `wp_kses_post` strips is removed. Empty or `null` adds no note.
 
 ### Email Dispatch Note
 
@@ -103,6 +104,7 @@ Error messages are returned in English and use stable dot-separated codes.
 - `line_item.product_reference_required` - line item is missing both `product_id` and `product_code`, HTTP `409`
 - `line_item.product_reference_conflict` - `product_id` and `product_code` resolve to different products, HTTP `409`
 - `order.email_template_invalid` - request contains unsupported `email_template`, HTTP `409`
+- `order.order_note_invalid` - `order_note` is present but not a string, HTTP `409`
 - `order.payment_method_required` - request is missing `payment_method`, HTTP `409`
 - `order.billing_required` - request is missing valid `billing`, HTTP `409`
 - `order.shipping_required` - request is missing valid `shipping`, HTTP `409`
