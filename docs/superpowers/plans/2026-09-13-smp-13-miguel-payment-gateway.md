@@ -452,7 +452,7 @@ git commit -m "feat(payment): a Miguel gateway, so orders from the app stop sayi
 - Consumes: `Miguel_Payment_Gateway::ID` and the gateway registration from Task 1.
 - Produces: `private function prepare_payment_method_title_for_wc_order( $payload )` — array in, array out. Called by `prepare_payload_for_wc_order()` right after `prepare_customer_id_for_wc_order()`. SMP-14 later adds shipping preparation to the same method after the line-item loop; the two do not touch.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `tests/unit/test-order-create-api.php`, inside `class Test_Miguel_Order_Create_Api`, after the last test method (before the private `build_musk_order_request()` helper):
 
@@ -643,12 +643,12 @@ Add to `tests/unit/test-order-create-api.php`, inside `class Test_Miguel_Order_C
 	}
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `docker compose -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Order_Create_Api`
 Expected: FAIL — the fill-in tests fail with `Undefined array key "payment_method_title"` / `Failed asserting that '' is identical to 'Miguel'`; `keeps_title_sent` and `leaves_other_payment_methods_alone` already pass.
 
-- [ ] **Step 3: Implement the fill-in**
+- [x] **Step 3: Implement the fill-in**
 
 In `includes/class-miguel-order-create-api.php`, method `prepare_payload_for_wc_order()`: after the line
 
@@ -697,12 +697,12 @@ Then add this method directly after `prepare_customer_id_for_wc_order()`:
 
 (`__( 'Miguel', 'miguel' )` reuses the existing catalogue entry; nothing to add to the `.po` files.)
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `docker compose -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Order_Create_Api`
 Expected: PASS (all tests in the class, old and new).
 
-- [ ] **Step 5: Document it in the OpenAPI spec**
+- [x] **Step 5: Document it in the OpenAPI spec**
 
 In `docs/openapi.yaml`, under `components.schemas.CreateOrderRequest.properties`, replace
 
@@ -737,7 +737,7 @@ with
 
 (Only the `CreateOrderRequest` block. The `Order` response schema has its own `payment_method_title` and stays as it is.)
 
-- [ ] **Step 6: Lint and commit**
+- [x] **Step 6: Lint and commit**
 
 Run: `docker compose -f docker-compose.test.yml run --rm --entrypoint vendor/bin/phpcs phpunit includes/class-miguel-order-create-api.php`
 Expected: no errors.

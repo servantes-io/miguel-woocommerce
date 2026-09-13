@@ -373,6 +373,7 @@ class Miguel_Order_Create_Api {
 	private function prepare_payload_for_wc_order( $payload ) {
 		unset( $payload['send_emails'], $payload['send_email'], $payload['email_template'], $payload['order_note'] );
 		$payload = $this->prepare_customer_id_for_wc_order( $payload );
+		$payload = $this->prepare_payment_method_title_for_wc_order( $payload );
 
 		if ( ! array_key_exists( 'line_items', $payload ) ) {
 			return $this->build_line_item_error(
@@ -459,6 +460,35 @@ class Miguel_Order_Create_Api {
 		} else {
 			unset( $payload['customer_id'] );
 		}
+
+		return $payload;
+	}
+
+	/**
+	 * Name the Miguel payment method on an order that does not name it itself.
+	 *
+	 * WooCommerce stores payment_method_title as sent, and emails, the order list and exports
+	 * print the stored value, so an order Miguel creates without a title would show none. A
+	 * title in the payload is kept, so Miguel can still word it per app.
+	 *
+	 * @param array $payload Request payload.
+	 * @return array
+	 */
+	private function prepare_payment_method_title_for_wc_order( $payload ) {
+		if ( Miguel_Payment_Gateway::ID !== (string) ( $payload['payment_method'] ?? '' ) ) {
+			return $payload;
+		}
+
+		$title = $payload['payment_method_title'] ?? '';
+		if ( is_string( $title ) && '' !== trim( $title ) ) {
+			return $payload;
+		}
+
+		$gateways = WC()->payment_gateways()->payment_gateways();
+
+		$payload['payment_method_title'] = isset( $gateways[ Miguel_Payment_Gateway::ID ] )
+			? $gateways[ Miguel_Payment_Gateway::ID ]->get_title()
+			: __( 'Miguel', 'miguel' );
 
 		return $payload;
 	}

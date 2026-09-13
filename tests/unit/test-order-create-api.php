@@ -1024,6 +1024,191 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * Put the Miguel gateway in WooCommerce's list the way a shop has it.
+	 *
+	 * Miguel_Test_Case::setUp() resets the plugin instance, which removes its hooks, the
+	 * woocommerce_payment_gateways filter included. Re-creating the instance re-adds it, and
+	 * re-initialising the gateways re-reads woocommerce_miguel_settings.
+	 */
+	private function load_payment_gateways() {
+		Miguel::instance();
+		WC()->payment_gateways()->init();
+	}
+
+	/**
+	 * Run prepare_payload_for_wc_order() on a payload.
+	 *
+	 * @param array $payload Request payload.
+	 * @return array|WP_Error
+	 */
+	private function prepare_payload( $payload ) {
+		$api    = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$method = ( new ReflectionClass( $api ) )->getMethod( 'prepare_payload_for_wc_order' );
+		$method->setAccessible( true );
+
+		return $method->invoke( $api, $payload );
+	}
+
+	/**
+	 * A payload for one downloadable product, paid with the given method.
+	 *
+	 * @param string $payment_method Payment method id.
+	 * @return array
+	 */
+	private function get_payload_paid_with( $payment_method ) {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+
+		return array(
+			'payment_method' => $payment_method,
+			'line_items'     => array(
+				array(
+					'product_id' => $product->get_id(),
+					'quantity'   => 1,
+				),
+			),
+		);
+	}
+
+	/**
+	 * Miguel sends payment_method "miguel" with no title; the gateway's title fills it in.
+	 */
+	public function test_prepare_payload_for_wc_order_fills_title_of_miguel_payment_method() {
+		$this->load_payment_gateways();
+
+		$result = $this->prepare_payload( $this->get_payload_paid_with( 'miguel' ) );
+
+		$this->assertIsArray( $result );
+		$this->assertSame( 'Miguel', $result['payment_method_title'] );
+	}
+
+	/**
+	 * A blank title counts as none.
+	 */
+	public function test_prepare_payload_for_wc_order_fills_blank_title_of_miguel_payment_method() {
+		$this->load_payment_gateways();
+
+		$payload                         = $this->get_payload_paid_with( 'miguel' );
+		$payload['payment_method_title'] = '   ';
+
+		$result = $this->prepare_payload( $payload );
+
+		$this->assertSame( 'Miguel', $result['payment_method_title'] );
+	}
+
+	/**
+	 * A title Miguel sends is kept, so it can word it per app.
+	 */
+	public function test_prepare_payload_for_wc_order_keeps_title_sent_with_miguel_payment_method() {
+		$this->load_payment_gateways();
+
+		$payload                         = $this->get_payload_paid_with( 'miguel' );
+		$payload['payment_method_title'] = 'Melvil app';
+
+		$result = $this->prepare_payload( $payload );
+
+		$this->assertSame( 'Melvil app', $result['payment_method_title'] );
+	}
+
+	/**
+	 * Other payment methods are left exactly as sent.
+	 */
+	public function test_prepare_payload_for_wc_order_leaves_other_payment_methods_alone() {
+		$this->load_payment_gateways();
+
+		$result = $this->prepare_payload( $this->get_payload_paid_with( 'bacs' ) );
+
+		$this->assertArrayNotHasKey( 'payment_method_title', $result );
+	}
+
+	/**
+	 * A merchant who renamed the gateway gets that name on new orders.
+	 */
+	public function test_prepare_payload_for_wc_order_uses_renamed_gateway_title() {
+		update_option(
+			'woocommerce_miguel_settings',
+			array(
+				'enabled'     => 'yes',
+				'title'       => 'Zaplaceno v aplikaci',
+				'description' => '',
+			)
+		);
+		$this->load_payment_gateways();
+
+		try {
+			$result = $this->prepare_payload( $this->get_payload_paid_with( 'miguel' ) );
+
+			$this->assertSame( 'Zaplaceno v aplikaci', $result['payment_method_title'] );
+		} finally {
+			delete_option( 'woocommerce_miguel_settings' );
+			WC()->payment_gateways()->init();
+		}
+	}
+
+	/**
+	 * With the gateway gone from WooCommerce's list (e.g. filtered out), the title is still "Miguel".
+	 */
+	public function test_prepare_payload_for_wc_order_falls_back_when_gateway_is_not_registered() {
+		$this->load_payment_gateways();
+		WC()->payment_gateways()->payment_gateways = array();
+
+		try {
+			$result = $this->prepare_payload( $this->get_payload_paid_with( 'miguel' ) );
+
+			$this->assertSame( 'Miguel', $result['payment_method_title'] );
+		} finally {
+			WC()->payment_gateways()->init();
+		}
+	}
+
+	/**
+	 * End to end: the created order stores the title, so emails and the order list show it.
+	 */
+	public function test_create_order_with_miguel_payment_method_stores_the_gateway_title() {
+		$this->load_payment_gateways();
+		$product = Miguel_Helper_Product::create_downloadable_product();
+
+		$payload = array(
+			'idempotency_key' => 'miguel-title-' . $product->get_id(),
+			'payment_method'  => 'miguel',
+			'billing'         => array(
+				'first_name' => 'Test',
+				'email'      => 'buyer@example.com',
+			),
+			'shipping'        => array(
+				'first_name' => 'Test',
+			),
+			'shipping_lines'  => array(
+				array(
+					'method_id' => 'free_shipping',
+					'total'     => '0.00',
+				),
+			),
+			'line_items'      => array(
+				array(
+					'product_id' => $product->get_id(),
+					'quantity'   => 1,
+				),
+			),
+		);
+
+		$request = new WP_REST_Request( 'POST', '/miguel/v1/orders' );
+		$request->add_header( 'content-type', 'application/json' );
+		$request->set_body( wp_json_encode( $payload ) );
+
+		$api      = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$response = $api->create_order( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 201, $response->get_status() );
+
+		$order = wc_get_order( $response->get_data()['id'] );
+		$this->assertSame( 'miguel', $order->get_payment_method() );
+		$this->assertSame( 'Miguel', $order->get_payment_method_title() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
 	 * Build the real-eshop order request for the "musk" printed book, varying
 	 * only the line-item product_code.
 	 *
