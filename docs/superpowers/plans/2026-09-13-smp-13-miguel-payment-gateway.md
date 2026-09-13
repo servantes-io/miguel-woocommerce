@@ -763,7 +763,7 @@ git commit -m "feat(orders): name the Miguel payment method on orders Miguel cre
 
 Why this is needed (from the spec, checked against WooCommerce 9.9.5): the Checkout block editor flags every **enabled** gateway that has no payment method registered in **JavaScript** as "incompatible with block-based checkout". The Miguel gateway is enabled on purpose, so it registers a JS payment method whose `canMakePayment` is always false. In the editor any registered method counts as compatible; on the real checkout `canMakePayment` keeps it out, and the Store API still refuses it because `is_available()` is false.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `tests/unit/test-payment-gateway.php` (inside the class, after the last test):
 
@@ -841,12 +841,12 @@ Add to `tests/unit/test-payment-gateway.php` (inside the class, after the last t
 	}
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `docker compose -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Payment_Gateway`
 Expected: FAIL — `Error: Call to undefined method Miguel::register_payment_gateway_blocks()`.
 
-- [ ] **Step 3: Create the integration class**
+- [x] **Step 3: Create the integration class**
 
 Create `includes/class-miguel-payment-gateway-blocks.php`:
 
@@ -923,7 +923,7 @@ final class Miguel_Payment_Gateway_Blocks extends \Automattic\WooCommerce\Blocks
 }
 ```
 
-- [ ] **Step 4: Create the script**
+- [x] **Step 4: Create the script**
 
 Create `assets/js/payment-method-blocks.js`:
 
@@ -958,7 +958,7 @@ Create `assets/js/payment-method-blocks.js`:
 } )();
 ```
 
-- [ ] **Step 5: Register it, and declare block-checkout compatibility**
+- [x] **Step 5: Register it, and declare block-checkout compatibility**
 
 In `includes/class-miguel.php`, method `init_hooks()`, directly after the two lines added in Task 1 (`plugins_loaded` / `woocommerce_payment_gateways`), add:
 
@@ -990,12 +990,12 @@ Then add this public method directly after `register_payment_gateway()`:
 	}
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `docker compose -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Payment_Gateway`
 Expected: PASS (15 tests).
 
-- [ ] **Step 7: Lint and commit**
+- [x] **Step 7: Lint and commit**
 
 Run: `docker compose -f docker-compose.test.yml run --rm --entrypoint vendor/bin/phpcs phpunit includes/class-miguel-payment-gateway-blocks.php includes/class-miguel.php tests/unit/test-payment-gateway.php`
 Expected: no errors.

@@ -205,6 +205,8 @@ class Miguel {
 		$this->hook_manager->add_action( 'before_woocommerce_init', function () {
 			if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
 				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', MIGUEL_PLUGIN_FILE, true );
+				// The only thing this plugin adds to the checkout is a payment method that is never offered there.
+				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', MIGUEL_PLUGIN_FILE, true );
 			}
 		} );
 
@@ -213,6 +215,7 @@ class Miguel {
 		// exactly as a shop does.
 		$this->hook_manager->add_action( 'plugins_loaded', array( $this, 'include_payment_gateway' ) );
 		$this->hook_manager->add_filter( 'woocommerce_payment_gateways', array( $this, 'register_payment_gateway' ) );
+		$this->hook_manager->add_action( 'woocommerce_blocks_payment_method_type_registration', array( $this, 'register_payment_gateway_blocks' ) );
 
 		if ( ! defined( 'MIGUEL_TESTS' ) ) {
 			// Initialize services and register their hooks
@@ -263,6 +266,19 @@ class Miguel {
 	public function register_payment_gateway( $gateways ) {
 		$gateways[] = 'Miguel_Payment_Gateway';
 		return $gateways;
+	}
+
+	/**
+	 * Register the Miguel payment method with the block checkout.
+	 *
+	 * Included here rather than with the other files: its parent class belongs to WooCommerce,
+	 * which is loaded by the time this hook fires.
+	 *
+	 * @param \Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry $registry Payment method registry.
+	 */
+	public function register_payment_gateway_blocks( $registry ) {
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-payment-gateway-blocks.php';
+		$registry->register( new Miguel_Payment_Gateway_Blocks() );
 	}
 
 	/**

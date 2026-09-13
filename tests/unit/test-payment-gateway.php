@@ -139,4 +139,76 @@ class Test_Miguel_Payment_Gateway extends Miguel_Test_Case {
 			Miguel::instance()->register_payment_gateway( array( 'WC_Gateway_BACS' ) )
 		);
 	}
+
+	/**
+	 * The block integration, registered through the plugin's hook callback.
+	 *
+	 * @return Miguel_Payment_Gateway_Blocks
+	 */
+	private function get_blocks_integration() {
+		$registry = new \Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry();
+		Miguel::instance()->register_payment_gateway_blocks( $registry );
+
+		$this->assertTrue( $registry->is_registered( Miguel_Payment_Gateway::ID ) );
+
+		$integration = $registry->get_registered( Miguel_Payment_Gateway::ID );
+		$integration->initialize();
+
+		return $integration;
+	}
+
+	/**
+	 * Registered with the block checkout under the gateway id.
+	 */
+	public function test_blocks_integration_registers_under_the_gateway_id() {
+		$integration = $this->get_blocks_integration();
+
+		$this->assertInstanceOf( Miguel_Payment_Gateway_Blocks::class, $integration );
+		$this->assertSame( 'miguel', $integration->get_name() );
+	}
+
+	/**
+	 * Active while the gateway is enabled, which is the default.
+	 */
+	public function test_blocks_integration_is_active_by_default() {
+		$this->assertTrue( $this->get_blocks_integration()->is_active() );
+	}
+
+	/**
+	 * Inactive when the merchant disables the gateway: nothing is flagged then either.
+	 */
+	public function test_blocks_integration_is_inactive_when_gateway_is_disabled() {
+		update_option( 'woocommerce_miguel_settings', array( 'enabled' => 'no' ) );
+
+		$this->assertFalse( $this->get_blocks_integration()->is_active() );
+	}
+
+	/**
+	 * Its script is what registers the method in JavaScript.
+	 */
+	public function test_blocks_integration_provides_its_script() {
+		$this->assertSame(
+			array( 'miguel-payment-method-blocks' ),
+			$this->get_blocks_integration()->get_payment_method_script_handles()
+		);
+		$this->assertTrue( wp_script_is( 'miguel-payment-method-blocks', 'registered' ) );
+	}
+
+	/**
+	 * The script gets the gateway's title.
+	 */
+	public function test_blocks_integration_passes_the_title_to_its_script() {
+		update_option(
+			'woocommerce_miguel_settings',
+			array(
+				'enabled' => 'yes',
+				'title'   => 'Zaplaceno v aplikaci',
+			)
+		);
+
+		$data = $this->get_blocks_integration()->get_payment_method_data();
+
+		$this->assertSame( 'Zaplaceno v aplikaci', $data['title'] );
+		$this->assertSame( array( 'products' ), $data['supports'] );
+	}
 }
