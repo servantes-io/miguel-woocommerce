@@ -12,7 +12,7 @@ When Miguel creates an order in a WooCommerce shop (a purchase made in a Miguel 
 ## Background
 
 - The backend creates the shop order through the plugin's `POST /miguel/v1/orders` (`WoocommerceManager._CreateOrderOnWoocommerceInternal` → `WoocommerceClient.CreateOrderAsync`). The plugin forwards the payload to WooCommerce's own `WC_REST_Orders_Controller::create_item()`.
-- Only mobile-app purchases take this path. The same MobileApi serves both the **Miguel** and **Melvil** apps (`Core.Mobile.Common.Constants`). The web storefront (`src/Frontend`) calls the same MobileApi.
+- Only CFA purchases take this path: the **Miguel** and **Melvil** apps (`Core.Cfa.Common.Constants`) and the web storefront (`src/Frontend`) all place orders through the same CFA API, `POST /v2/cfa/orders` in `src/API`, served by `Core.Cfa.Features.Orders.MobileOrderService`. Since #239 that service creates the order in process (`CfaOrderParams.Build` → `IOrderManager.CreateOrUpdateOrderAsync`); the old `POST v2/internal/mobile/orders` endpoint and its `MobileOrderCreate` model are gone.
 - Today nothing tells the merchant where such an order came from. The payload sends no note (`customer_note` exists on the backend model but is never assigned), and the backend does not record which app placed the order — `Order` has only `Source = "mobile"`.
 - **Precedent:** Shoptet gets a localized remark after the order finishes (`ShoptetManager._CreateRemarkOnShoptetForOrder`, string `shoptet.orderFinishedNote`, localized in `order.Workspace.DefaultLanguage`). This design follows that pattern for the wording.
 - WooCommerce's order controller maps only its own schema keys onto the order (`WC_REST_Orders_V2_Controller::prepare_object_for_database()` iterates `get_item_schema()['properties']`). **A plugin version that does not know `order_note` silently ignores it.** The backend therefore needs no plugin-version gate.
@@ -24,7 +24,7 @@ When Miguel creates an order in a WooCommerce shop (a purchase made in a Miguel 
 | Who sees the note | **Merchant only** — a private order note in the admin order timeline. Never a customer note, never emailed. |
 | Who writes the text | The backend. The plugin stores what it receives, sanitized. |
 | Scope | Plugin and backend. |
-| App attribution | The backend snapshots the app's display name (`Application.Name`) on the order when the MobileApi creates it. |
+| App attribution | The backend snapshots the app's display name (`Application.Name`) on the order when the CFA API creates it. |
 
 ## Contract
 
@@ -70,8 +70,8 @@ Existing behaviour for payloads without `order_note` is unchanged; the full suit
 ### Recording the app on the order
 
 1. **`Order.SourceApplicationName`** (`src/Core/Db/Tables/Order.cs`) — new nullable `string`, max length 200. A snapshot of the app's display name at purchase time: renaming an app later must not rewrite history, and the API process that pushes the order to WooCommerce does not need the mobile database to read it. EF migration generated with `./bin/ef.sh migrations add Order_AddSourceApplicationName` (Core context).
-2. **`MobileOrderCreate.SourceApplicationName`** (`src/API/Features/Internal/Models/MobileOrderCreate.cs`) — new optional `string?`, copied through `IOrderManager.CreateOrUpdateOrderParams.SourceApplicationName` onto the new column by the order manager. Only set on creation; an update never overwrites it. `OrderCreate` (the e-shop plugins' inbound model) does **not** get the field — those orders are the shop's own.
-3. **MobileApi** (`src/MobileApi/Code/MobileOrderService.CreateOrderAsync`) — resolves `applicationApiFactory.Get(userInfo.ApplicationId).GetApplicationAsync()` and sends its `Name` as `SourceApplicationName`. The service already resolves the application for the Apple-token check, but only when a token is present; the lookup moves up so it runs once per order and both uses share it. The NSwag client (`src/Core/Mobile/Miguel/V2/ApiClient.cs`) is regenerated with `./src/Core/Mobile/Miguel/V2/update.sh --local`.
+2. **`IOrderManager.CreateOrUpdateOrderParams.SourceApplicationName`** — new optional `string?`, written onto the new column by `OrderManager` when it **creates** an order. The update path never touches it, so the mark-paid flow (which re-sends an order through `CreateOrUpdateOrderAsync` without it) keeps the recorded name. `CfaOrderParams.Build` (`src/Core/Cfa/Features/Orders/CfaOrderParams.cs`) gains a matching `string? sourceApplicationName` parameter. The e-shop plugins' inbound paths never set it — those orders are the shop's own.
+3. **CFA order service** (`src/Core/Cfa/Features/Orders/MobileOrderService.CreateOrderAsync`) — reads the app's name straight from the mobile database, `CfaDbContext.Applications.Where(a => a.ApplicationId == userInfo.ApplicationId).Select(a => a.Name).FirstOrDefaultAsync()`, and passes it to `CfaOrderParams.Build`. Not through `ApplicationApiFactory.Get(...)`: that throws `NotSupportedException` for any registered app it has no publisher API for, while `KnownApplications` treats adding an app as a data-only change, so a new app (or the storefront, if it is registered as its own app) must not start failing checkout. An unknown id yields `null`, which falls to the unknown-app wording. The Apple-token check keeps its own lookup, unchanged.
 
 ### Sending the note
 
@@ -83,7 +83,7 @@ Existing behaviour for payloads without `order_note` is unchanged; the full suit
    | `woocommerce.orderCreatedNote` | `Objednávka vytvořena v aplikaci {{ appName }}.` | `Order placed in the {{ appName }} app.` |
    | `woocommerce.orderCreatedNoteUnknownApp` | `Objednávka vytvořena v mobilní aplikaci.` | `Order placed in a mobile app.` |
 
-   `_CreateOrderOnWoocommerceInternal` picks the first when `order.SourceApplicationName` is non-blank and the second otherwise (orders created before this change, and the Hangfire safety-net path for them), and localizes it with `order.Workspace.DefaultLanguage` exactly as Shoptet does. The workspace is loaded if the caller did not include it.
+   `_CreateOrderOnWoocommerceInternal` picks the first when `order.SourceApplicationName` is non-blank and the second otherwise (orders created before this change, and the Hangfire safety-net path for them), and localizes it in the order's workspace `DefaultLanguage`, as Shoptet does. Neither caller includes the workspace, so the language is read with a one-column query on `Workspaces`. `WoocommerceManager` takes `I18N.Resources.Strings` as a new constructor dependency (registered by `AddI18N()` in every host that already resolves `ShoptetManager`, which depends on it too).
 6. **Idempotency** — the text is a pure function of the order and its workspace language, so retries of the same order send the same `order_note` and keep matching the plugin's stored payload hash.
 7. **No capability gate** — older plugins ignore the field (see Background); `WoocommercePluginCapabilities` is unchanged.
 
@@ -91,7 +91,8 @@ Existing behaviour for payloads without `order_note` is unchanged; the full suit
 
 - `WoocommerceManagerTests` (captured request): an order with `SourceApplicationName = "Melvil"` sends `order_note = "Objednávka vytvořena v aplikaci Melvil."` for a Czech workspace and the English text for an English one; an order without it sends the unknown-app text.
 - `WoocommerceClientTests`: `OrderNote` serializes as `order_note`.
-- Order creation through `POST v2/internal/mobile/orders` persists `SourceApplicationName`; the MobileApi test for `CreateOrderAsync` asserts the app name reaches the client request.
+- `OrderManagerTests`: creating an order stores `SourceApplicationName`; a later update without it keeps the stored value.
+- `API.IntegrationTests` `Cfa/Orders/OrderControllerTests`: `POST /v2/cfa/orders` from the Miguel app stores that app's `Application.Name` on the order.
 - I18N: the build regenerates the factory (`Strings.Woocommerce.OrderCreatedNote(appName)`) and both keys render in both languages.
 
 ## Rollout
@@ -100,7 +101,7 @@ Independent in either order. Plugin first: nothing changes until the backend sen
 
 ## Out of scope
 
-- Telling the web storefront apart from the app. Nothing in a MobileApi request says which client sent it (`ICurrentUser.UserInfo` has `ApplicationId`, `DeviceId`, `DeviceName` only), so the note names the app. A client-type signal is a separate change.
+- Telling the web storefront apart from the app. Nothing in a CFA request says which client sent it (`ICurrentUser.UserInfo` has `ApplicationId`, `DeviceId`, `DeviceName` only), so the note names the app. A client-type signal is a separate change.
 - Notes for other platforms (Shoptet already has its own; PrestaShop and Shopify do not create orders).
 - Customer-visible notes, or several notes per order.
 - Back-filling `SourceApplicationName` on existing orders.
