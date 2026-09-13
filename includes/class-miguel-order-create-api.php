@@ -667,6 +667,14 @@ class Miguel_Order_Create_Api {
 			);
 		}
 
+		if ( array_key_exists( 'order_note', $payload ) && null !== $payload['order_note'] && ! is_string( $payload['order_note'] ) ) {
+			return $this->build_order_payload_error(
+				'order.order_note_invalid',
+				esc_html__( 'Order order_note must be a string.', 'miguel' ),
+				array( 'field' => 'order_note' )
+			);
+		}
+
 		if ( ! array_key_exists( 'payment_method', $payload ) || '' === trim( (string) $payload['payment_method'] ) ) {
 			return $this->build_order_payload_error(
 				'order.payment_method_required',

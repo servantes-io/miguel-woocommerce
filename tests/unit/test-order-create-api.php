@@ -505,6 +505,63 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * Test that a non-string order_note is rejected.
+	 */
+	public function test_validate_required_order_fields_rejects_non_string_order_note() {
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$reflection = new ReflectionClass( $api );
+		$method = $reflection->getMethod( 'validate_required_order_fields' );
+		$method->setAccessible( true );
+
+		foreach ( array( 42, true, array( 'note' ), array( 'text' => 'note' ) ) as $invalid_note ) {
+			$payload = $this->get_minimal_valid_payload();
+			$payload['order_note'] = $invalid_note;
+
+			$result = $method->invoke( $api, $payload );
+
+			$this->assertTrue( is_wp_error( $result ), 'A ' . gettype( $invalid_note ) . ' order_note must be rejected.' );
+			$this->assertEquals( 'order.order_note_invalid', $result->get_error_code() );
+			$this->assertEquals( 409, $result->get_error_data()['status'] );
+			$this->assertEquals( 'order_note', $result->get_error_data()['field'] );
+		}
+	}
+
+	/**
+	 * Test that a string or null order_note passes validation.
+	 */
+	public function test_validate_required_order_fields_accepts_string_or_null_order_note() {
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$reflection = new ReflectionClass( $api );
+		$method = $reflection->getMethod( 'validate_required_order_fields' );
+		$method->setAccessible( true );
+
+		foreach ( array( 'Objednávka vytvořena v aplikaci Melvil.', '', null ) as $valid_note ) {
+			$payload = $this->get_minimal_valid_payload();
+			$payload['order_note'] = $valid_note;
+
+			$this->assertTrue( true === $method->invoke( $api, $payload ) );
+		}
+	}
+
+	/**
+	 * A request with an invalid order_note must not create an order.
+	 */
+	public function test_create_order_with_non_string_order_note_creates_no_order() {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$orders_before = wc_get_orders( array( 'limit' => -1, 'return' => 'ids' ) );
+
+		$api      = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$response = $api->create_order( $this->build_order_request( $product->get_id(), array( 'order_note' => array( 'not', 'a', 'string' ) ) ) );
+
+		$this->assertTrue( is_wp_error( $response ) );
+		$this->assertEquals( 'order.order_note_invalid', $response->get_error_code() );
+		$this->assertEquals( 409, $response->get_error_data()['status'] );
+		$this->assertCount( count( $orders_before ), wc_get_orders( array( 'limit' => -1, 'return' => 'ids' ) ) );
+	}
+
+	/**
 	 * Test that invalid customer_id falls back to user_email when it matches an existing user.
 	 */
 	public function test_prepare_payload_for_wc_order_falls_back_from_invalid_customer_id_to_user_email() {
@@ -867,6 +924,55 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 					'total'        => '373.00',
 				),
 			),
+		);
+
+		$request = new WP_REST_Request( 'POST', '/miguel/v1/orders' );
+		$request->add_header( 'content-type', 'application/json' );
+		$request->set_body( wp_json_encode( $payload ) );
+
+		return $request;
+	}
+
+	/**
+	 * Build an order-create request for one unit of the given product.
+	 *
+	 * The shipping block is always present so the request stays valid whatever the
+	 * plugin requires of shipping; each call gets its own idempotency key unless the
+	 * overrides set one.
+	 *
+	 * @param int   $product_id WooCommerce product ID.
+	 * @param array $overrides  Top-level payload fields to add or replace.
+	 * @return WP_REST_Request
+	 */
+	private function build_order_request( $product_id, $overrides = array() ) {
+		$payload = array_merge(
+			array(
+				'idempotency_key' => 'order-note-' . wp_generate_uuid4(),
+				'payment_method'  => 'cod',
+				'billing'         => array(
+					'first_name' => 'Test',
+					'last_name'  => 'User',
+					'email'      => 'buyer@example.com',
+				),
+				'shipping'        => array(
+					'first_name' => 'Test',
+					'last_name'  => 'User',
+				),
+				'shipping_lines'  => array(
+					array(
+						'method_id'    => 'flat_rate',
+						'method_title' => 'Flat rate',
+						'total'        => '0.00',
+					),
+				),
+				'line_items'      => array(
+					array(
+						'product_id' => $product_id,
+						'quantity'   => 1,
+					),
+				),
+			),
+			$overrides
 		);
 
 		$request = new WP_REST_Request( 'POST', '/miguel/v1/orders' );

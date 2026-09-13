@@ -109,3 +109,7 @@ msgstr "Request with this idempotency key is currently being processed."
 #: includes/class-miguel-order-status-update-api.php
 msgid "Idempotency key was already used with different payload."
 msgstr "Idempotency key was already used with different payload."
+
+#: includes/class-miguel-order-create-api.php
+msgid "Order order_note must be a string."
+msgstr "Order order_note must be a string."

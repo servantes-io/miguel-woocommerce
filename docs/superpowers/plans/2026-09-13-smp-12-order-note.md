@@ -48,7 +48,7 @@
 - Consumes: existing `build_order_payload_error( $code, $message, $data )` (private, returns `WP_Error` with status 409 merged into `$data`).
 - Produces: `validate_required_order_fields( $payload )` returns `WP_Error` `order.order_note_invalid` (status 409, `field` = `order_note`) for a present, non-null, non-string `order_note`; returns `true` for a string or `null` note on an otherwise valid payload. Task 2 relies on a request with an invalid note never reaching order creation.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `Test_Miguel_Order_Create_Api`, next to `test_validate_required_order_fields_rejects_invalid_email_template()`:
 
@@ -164,12 +164,12 @@ Add this private helper at the bottom of the class, after `build_musk_order_requ
 	}
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `docker compose -f docker-compose.test.yml run --rm phpunit --filter='order_note'`
 Expected: `test_validate_required_order_fields_rejects_non_string_order_note` FAILS with "A integer order_note must be rejected." and `test_create_order_with_non_string_order_note_creates_no_order` FAILS (an order is created, so `is_wp_error()` is false). `test_validate_required_order_fields_accepts_string_or_null_order_note` passes already — it guards Step 3 against rejecting `null` or `''`.
 
-- [ ] **Step 3: Implement the check**
+- [x] **Step 3: Implement the check**
 
 In `validate_required_order_fields()`, directly after the `email_template` block (before the `payment_method` check), add:
 
@@ -183,7 +183,7 @@ In `validate_required_order_fields()`, directly after the `email_template` block
 		}
 ```
 
-- [ ] **Step 4: Add the message to both catalogues**
+- [x] **Step 4: Add the message to both catalogues**
 
 Append to the end of `languages/miguel-cs_CZ.po`:
 
@@ -212,12 +212,12 @@ docker run --rm -v "$PWD":/w -w /w debian:stable-slim sh -c \
 
 Expected: `OK`. The `.mo` files are built by `make build` at release time; do not commit them.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `docker compose -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Order_Create_Api`
 Expected: PASS, including every pre-existing test in the class.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add includes/class-miguel-order-create-api.php tests/unit/test-order-create-api.php languages/miguel-cs_CZ.po languages/miguel-en_US.po
