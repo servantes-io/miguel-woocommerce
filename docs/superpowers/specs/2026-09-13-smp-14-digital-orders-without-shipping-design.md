@@ -51,7 +51,7 @@ All changes live in `includes/class-miguel-order-create-api.php`.
    - **Digital-only, but a shipping line has a non-zero total** → payload returned unchanged (address and lines kept), debug log "Kept shipping on a digital-only order because a shipping line has a cost" with the totals.
 4. **Order of errors** — because shipping is now validated after line items, a payload that is wrong in both ways reports the line-item error (`line_items.*`, `line_item.*`, `product_code.*`) instead of the shipping one. Both are 409.
 5. **Idempotency** — unchanged: the hash is computed from the payload as sent, before any of this runs, so a retry of the same request still replays.
-6. **Logging** — the existing "Prepared WooCommerce order payload" entry already logs `shipping_lines_count`; it gains `needs_delivery`.
+6. **Logging** — the two digital-only outcomes each write their own debug entry (step 3). The existing "Prepared WooCommerce order payload" entry is unchanged; its `shipping_lines_count` reads 0 after a drop.
 
 WooCommerce then stores no shipping address and no shipping item, so `needs_shipping_address()` is `false` and the address disappears from the admin screen, the emails and My Account without further code.
 
@@ -67,7 +67,7 @@ WooCommerce then stores no shipping address and no shipping item, so `needs_ship
 | Printed book only | missing `shipping` | 409 `order.shipping_required`, as today. |
 | Downloadable but not virtual product | 0.00 line | Treated as digital: dropped. |
 | Virtual, not downloadable product (e.g. a voucher) | 0.00 line | Treated as digital: dropped. |
-| Line item with unknown `product_id` | none | Needs delivery → 409 `order.shipping_lines_required` (unchanged behaviour). |
+| Line item with unknown `product_id` | none | Needs delivery → 409 `order.shipping_required` (the `shipping` check runs before the `shipping_lines` one; unchanged behaviour). |
 
 ## Error handling
 
