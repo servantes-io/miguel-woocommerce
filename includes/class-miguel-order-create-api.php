@@ -88,6 +88,7 @@ class Miguel_Order_Create_Api {
 				'set_paid' => $payload['set_paid'] ?? null,
 				'send_emails' => $payload['send_emails'] ?? $payload['send_email'] ?? null,
 				'email_template' => isset( $payload['email_template'] ) ? (string) $payload['email_template'] : null,
+				'order_note_length' => isset( $payload['order_note'] ) && is_string( $payload['order_note'] ) ? strlen( $payload['order_note'] ) : 0,
 			)
 		);
 
@@ -95,6 +96,8 @@ class Miguel_Order_Create_Api {
 		if ( is_wp_error( $top_level_validation ) ) {
 			return $top_level_validation;
 		}
+
+		$order_note = $this->get_order_note_from_payload( $payload );
 
 		$idempotency_key = $this->get_idempotency_key( $request, $payload );
 		if ( '' === $idempotency_key ) {
@@ -211,6 +214,7 @@ class Miguel_Order_Create_Api {
 			if ( $order ) {
 				$order->update_meta_data( '_miguel_idempotency_key', $idempotency_key );
 				$order->save_meta_data();
+				$this->add_miguel_order_note( $order, $order_note );
 			}
 
 			$emails_queued = false;
@@ -367,7 +371,7 @@ class Miguel_Order_Create_Api {
 	 * @return array|WP_Error
 	 */
 	private function prepare_payload_for_wc_order( $payload ) {
-		unset( $payload['send_emails'], $payload['send_email'], $payload['email_template'] );
+		unset( $payload['send_emails'], $payload['send_email'], $payload['email_template'], $payload['order_note'] );
 		$payload = $this->prepare_customer_id_for_wc_order( $payload );
 
 		if ( ! array_key_exists( 'line_items', $payload ) ) {
@@ -472,6 +476,49 @@ class Miguel_Order_Create_Api {
 
 		$email = sanitize_email( trim( (string) $payload['user_email'] ) );
 		return is_email( $email ) ? $email : '';
+	}
+
+	/**
+	 * Extract the order note Miguel sent, sanitized like post content.
+	 *
+	 * Read from the payload as sent, before prepare_payload_for_wc_order() strips it.
+	 *
+	 * @param array $payload Request payload.
+	 * @return string Sanitized note, or '' when there is none.
+	 */
+	private function get_order_note_from_payload( $payload ) {
+		if ( ! isset( $payload['order_note'] ) || ! is_string( $payload['order_note'] ) ) {
+			return '';
+		}
+
+		return trim( wp_kses_post( $payload['order_note'] ) );
+	}
+
+	/**
+	 * Record Miguel's note on the order as a private note.
+	 *
+	 * The order already exists at this point, so a note WooCommerce refuses is logged
+	 * rather than reported: failing the request would make Miguel retry an order that
+	 * was created.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @param string   $note Sanitized note text.
+	 * @return void
+	 */
+	private function add_miguel_order_note( $order, $note ) {
+		if ( '' === $note ) {
+			return;
+		}
+
+		if ( ! $order->add_order_note( $note ) ) {
+			Miguel::debug_log(
+				'Failed to add Miguel order note',
+				array(
+					'order_id' => $order->get_id(),
+					'order_note_length' => strlen( $note ),
+				)
+			);
+		}
 	}
 
 	/**

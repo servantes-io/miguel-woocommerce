@@ -9,6 +9,7 @@
 * Fixed orders coming back after being removed: the reconciliation endpoint Miguel polls now reports whether an order's status means it is gone, so Miguel removes it instead of re-creating it. It previously re-created the order it had just deleted, and the customer regained access on the next sync. Reporting rather than withholding these orders also lets the sync repair a removal whose original call never reached Miguel
 * Added automatic order status change when Miguel finishes an order: choose a target status for orders holding only Miguel books and another for mixed orders, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
 * Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
+* `POST /orders` accepts an optional `order_note` and records it on the created order as a private note, visible to the shop only. Miguel uses it to say which app an order was placed in; the text comes from Miguel, so its wording can change without a plugin release
 
 ## 1.9.1
 

@@ -131,5 +131,6 @@ The interactive wizard allows you to set the screen size for which the resulting
 * A shop that declines to complete a payment says so in its reply instead of reporting an error, so Miguel records it and stops retrying
 * Added automatic order status change when Miguel finishes an order: choose a target status for orders holding only Miguel books and another for orders that also hold other products, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
 * Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
+* Orders created from the Miguel app can carry a private note, visible to the shop only, saying which app they were placed in
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

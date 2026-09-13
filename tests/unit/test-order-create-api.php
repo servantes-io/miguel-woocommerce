@@ -160,6 +160,34 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * Test that order_note is not forwarded to WooCommerce.
+	 */
+	public function test_prepare_payload_for_wc_order_strips_order_note() {
+		Miguel_Helper_Product::create_downloadable_product();
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$reflection = new ReflectionClass( $api );
+		$method = $reflection->getMethod( 'prepare_payload_for_wc_order' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke(
+			$api,
+			array(
+				'order_note' => 'Objednávka vytvořena v aplikaci Melvil.',
+				'line_items' => array(
+					array(
+						'product_code' => 'dummy-name',
+						'quantity' => 1,
+					),
+				),
+			)
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertArrayNotHasKey( 'order_note', $result );
+	}
+
+	/**
 	 * Test that ambiguous productCode is rejected.
 	 */
 	public function test_prepare_payload_for_wc_order_rejects_ambiguous_product_code() {
@@ -559,6 +587,121 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 		$this->assertEquals( 'order.order_note_invalid', $response->get_error_code() );
 		$this->assertEquals( 409, $response->get_error_data()['status'] );
 		$this->assertCount( count( $orders_before ), wc_get_orders( array( 'limit' => -1, 'return' => 'ids' ) ) );
+	}
+
+	/**
+	 * A string order_note becomes one private, system-authored note on the order.
+	 */
+	public function test_create_order_adds_order_note_as_private_note() {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$text    = 'Objednávka vytvořena v aplikaci Melvil.';
+
+		$api      = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$response = $api->create_order( $this->build_order_request( $product->get_id(), array( 'order_note' => $text ) ) );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 201, $response->get_status() );
+		$order_id = $response->get_data()['id'];
+
+		$notes = $this->get_order_notes_by_content( $order_id );
+		$this->assertArrayHasKey( $text, $notes, 'The order should carry the note Miguel sent.' );
+		$this->assertFalse( $notes[ $text ]->customer_note, 'The note must be private, not a customer note.' );
+		$this->assertSame( 'system', $notes[ $text ]->added_by );
+
+		// Not forwarded to WooCommerce as anything else.
+		$order = wc_get_order( $order_id );
+		$this->assertSame( '', $order->get_customer_note() );
+		$this->assertSame( '', $order->get_meta( 'order_note' ) );
+
+		Miguel_Helper_Order::delete_order( $order_id );
+	}
+
+	/**
+	 * The note is sanitized like post content: scripts go, basic inline HTML stays.
+	 */
+	public function test_create_order_sanitizes_order_note() {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+
+		$api      = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$response = $api->create_order(
+			$this->build_order_request(
+				$product->get_id(),
+				array( 'order_note' => '<script>alert(1)</script>Objednávka z aplikace <strong>Melvil</strong>.' )
+			)
+		);
+
+		$this->assertSame( 201, $response->get_status() );
+		$order_id = $response->get_data()['id'];
+
+		$matching = array_filter(
+			array_keys( $this->get_order_notes_by_content( $order_id ) ),
+			function ( $content ) {
+				return false !== strpos( $content, '<strong>Melvil</strong>' );
+			}
+		);
+		$this->assertCount( 1, $matching, 'The sanitized note should be on the order, <strong> kept.' );
+		$this->assertStringNotContainsString( '<script', reset( $matching ) );
+
+		Miguel_Helper_Order::delete_order( $order_id );
+	}
+
+	/**
+	 * Absent, null, blank and markup-only notes add nothing: the order ends up with
+	 * exactly the notes of an identical order sent without the field.
+	 */
+	public function test_create_order_without_usable_order_note_adds_no_note() {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$api     = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$control  = $api->create_order( $this->build_order_request( $product->get_id() ) );
+		$expected = count( $this->get_order_notes_by_content( $control->get_data()['id'] ) );
+
+		foreach ( array( null, '', '   ', '<script></script>' ) as $unusable_note ) {
+			$response = $api->create_order( $this->build_order_request( $product->get_id(), array( 'order_note' => $unusable_note ) ) );
+
+			$this->assertSame( 201, $response->get_status() );
+			$this->assertCount(
+				$expected,
+				$this->get_order_notes_by_content( $response->get_data()['id'] ),
+				'An order_note of ' . wp_json_encode( $unusable_note ) . ' must not add a note.'
+			);
+
+			Miguel_Helper_Order::delete_order( $response->get_data()['id'] );
+		}
+
+		Miguel_Helper_Order::delete_order( $control->get_data()['id'] );
+	}
+
+	/**
+	 * Replaying the same request returns the existing order and adds no second note.
+	 */
+	public function test_create_order_replay_does_not_duplicate_order_note() {
+		$product   = Miguel_Helper_Product::create_downloadable_product();
+		$text      = 'Objednávka vytvořena v aplikaci Miguel.';
+		$overrides = array(
+			'idempotency_key' => 'order-note-replay-' . $product->get_id(),
+			'order_note'      => $text,
+		);
+
+		$api    = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$first  = $api->create_order( $this->build_order_request( $product->get_id(), $overrides ) );
+		$replay = $api->create_order( $this->build_order_request( $product->get_id(), $overrides ) );
+
+		$this->assertSame( 201, $first->get_status() );
+		$this->assertSame( 200, $replay->get_status() );
+		$this->assertTrue( $replay->get_data()['idempotent_replay'] );
+		$this->assertSame( $first->get_data()['id'], $replay->get_data()['id'] );
+
+		// Count raw notes: get_order_notes_by_content() keys by text and would hide a duplicate.
+		$with_text = array_filter(
+			wc_get_order_notes( array( 'order_id' => $first->get_data()['id'] ) ),
+			function ( $note ) use ( $text ) {
+				return $text === $note->content;
+			}
+		);
+		$this->assertCount( 1, $with_text );
+
+		Miguel_Helper_Order::delete_order( $first->get_data()['id'] );
 	}
 
 	/**
@@ -980,5 +1123,20 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 		$request->set_body( wp_json_encode( $payload ) );
 
 		return $request;
+	}
+
+	/**
+	 * All notes of an order, keyed by their text.
+	 *
+	 * @param int $order_id WooCommerce order ID.
+	 * @return array Note objects as returned by wc_get_order_notes(), keyed by content.
+	 */
+	private function get_order_notes_by_content( $order_id ) {
+		$notes = array();
+		foreach ( wc_get_order_notes( array( 'order_id' => $order_id ) ) as $note ) {
+			$notes[ $note->content ] = $note;
+		}
+
+		return $notes;
 	}
 }

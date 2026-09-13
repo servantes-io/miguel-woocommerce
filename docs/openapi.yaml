@@ -611,6 +611,17 @@ components:
             - customer_processing_order
             - customer_completed_order
             - customer_failed_order
+        order_note:
+          type: string
+          nullable: true
+          description: >
+            Private order note to record on the created order, e.g. which app the order
+            was placed in. Visible to the shop only — never shown or emailed to the
+            customer. Sanitized like post content, so basic inline HTML such as
+            `<strong>` is kept. Omit it, or send null or an empty string, for no note.
+            Any other type is rejected with 409 `order.order_note_invalid`. Part of
+            the idempotency payload: a replay adds no second note.
+          example: "Objednávka vytvořena v aplikaci Melvil."
 
     CreateOrderResponse:
       type: object

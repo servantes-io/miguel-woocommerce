@@ -241,7 +241,7 @@ git commit -m "feat(orders): reject an order_note that is not a string"
   - `add_miguel_order_note( $order, $note )` — `@param WC_Order $order`, `@param string $note`, `@return void`: adds a private note when `$note` is non-empty, logs when WooCommerce refuses.
   - Test helper `get_order_notes_by_content( $order_id )` — `@return array` of note objects from `wc_get_order_notes()` keyed by their `content`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `Test_Miguel_Order_Create_Api`, next to `test_prepare_payload_for_wc_order_strips_email_template_flag()`:
 
@@ -413,7 +413,7 @@ Add this private helper after `build_order_request()`:
 	}
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `docker compose -f docker-compose.test.yml run --rm phpunit --filter='order_note'`
 Expected:
@@ -423,7 +423,7 @@ Expected:
 - `test_create_order_replay_does_not_duplicate_order_note` FAILS (count 0, expected 1).
 - `test_create_order_without_usable_order_note_adds_no_note` passes already — it guards the implementation against adding blank notes.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `includes/class-miguel-order-create-api.php`:
 
@@ -505,12 +505,12 @@ e) In `create_order()`, in the block that stores the idempotency key on the crea
 
 The replay paths (`build_replay_response()`) return before this block, which is what keeps a replay from adding the note twice.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `docker compose -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Order_Create_Api`
 Expected: PASS, including every pre-existing test in the class.
 
-- [ ] **Step 5: Document the field**
+- [x] **Step 5: Document the field**
 
 `docs/openapi.yaml`, schema `CreateOrderRequest`, add after the `email_template` property (same indentation as `send_emails`):
 
@@ -540,7 +540,7 @@ Expected: PASS, including every pre-existing test in the class.
 * Orders created from the Miguel app can carry a private note, visible to the shop only, saying which app they were placed in
 ```
 
-- [ ] **Step 6: Run the whole suite and the sniffer**
+- [x] **Step 6: Run the whole suite and the sniffer**
 
 Run: `make test-docker`
 Expected: all tests PASS.
@@ -548,7 +548,7 @@ Expected: all tests PASS.
 Run: `docker compose -f docker-compose.test.yml run --rm --entrypoint vendor/bin/phpcs phpunit includes/class-miguel-order-create-api.php`
 Expected: no errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add includes/class-miguel-order-create-api.php tests/unit/test-order-create-api.php docs/openapi.yaml CHANGELOG.md readme.txt
