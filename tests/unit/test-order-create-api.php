@@ -122,6 +122,49 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * POST an order payload through the Miguel create API.
+	 *
+	 * @param array $payload Request body.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	private function post_order( array $payload ) {
+		$request = new WP_REST_Request( 'POST', '/miguel/v1/orders' );
+		$request->add_header( 'content-type', 'application/json' );
+		$request->set_body( wp_json_encode( $payload ) );
+
+		return ( new Miguel_Order_Create_Api( new Miguel_Hook_Manager() ) )->create_order( $request );
+	}
+
+	/**
+	 * The payload the Miguel backend sends for a one-item mobile order, without shipping.
+	 *
+	 * @param int    $product_id      Product ID.
+	 * @param string $idempotency_key Idempotency key.
+	 * @return array
+	 */
+	private function get_digital_order_payload( $product_id, $idempotency_key ) {
+		return array(
+			'idempotency_key' => $idempotency_key,
+			'payment_method'  => 'miguel',
+			'user_email'      => 'buyer@example.com',
+			'billing'         => array(
+				'first_name' => 'Jan Novák',
+				'address_1'  => 'Václavské náměstí 1',
+				'city'       => 'Praha',
+				'postcode'   => '11000',
+				'country'    => 'CZ',
+				'email'      => 'buyer@example.com',
+			),
+			'line_items'      => array(
+				array(
+					'product_id' => $product_id,
+					'quantity'   => 1,
+				),
+			),
+		);
+	}
+
+	/**
 	 * Test that productCode is translated to product_id in line items.
 	 */
 	public function test_prepare_payload_for_wc_order_maps_product_code_to_product_id() {
@@ -1686,5 +1729,120 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 		unset( $payload['shipping'], $payload['shipping_lines'] );
 
 		$this->assertTrue( true === $this->invoke_private( $api, 'validate_required_order_fields', array( $payload ) ) );
+	}
+
+	/**
+	 * Today's backend payload for an e-book creates an order with no shipping at all.
+	 */
+	public function test_create_order_digital_only_has_no_shipping() {
+		$ebook   = Miguel_Helper_Product::create_downloadable_product();
+		$payload = array_merge( $this->get_digital_order_payload( $ebook->get_id(), 'smp14-digital' ), $this->get_placeholder_shipping() );
+
+		$response = $this->post_order( $payload );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 201, $response->get_status() );
+
+		$order = wc_get_order( $response->get_data()['id'] );
+		$this->assertCount( 0, $order->get_shipping_methods(), 'No shipping line may be stored.' );
+		$this->assertSame( '', $order->get_shipping_address_1() );
+		$this->assertSame( '', $order->get_shipping_first_name() );
+		$this->assertFalse( $order->has_shipping_address() );
+		$this->assertFalse( $order->needs_shipping_address() );
+		$this->assertSame( 'Václavské náměstí 1', $order->get_billing_address_1(), 'Billing stays.' );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * A digital-only order without any shipping is accepted (it was a 409 before).
+	 */
+	public function test_create_order_accepts_digital_only_order_without_shipping() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+
+		$response = $this->post_order( $this->get_digital_order_payload( $ebook->get_id(), 'smp14-digital-bare' ) );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 201, $response->get_status() );
+
+		$order = wc_get_order( $response->get_data()['id'] );
+		$this->assertCount( 0, $order->get_shipping_methods() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * A digital-only order with a paid shipping line keeps it, so the total matches the payment.
+	 */
+	public function test_create_order_digital_only_keeps_paid_shipping() {
+		$ebook                     = Miguel_Helper_Product::create_downloadable_product();
+		$payload                   = array_merge( $this->get_digital_order_payload( $ebook->get_id(), 'smp14-digital-paid' ), $this->get_placeholder_shipping() );
+		$payload['shipping_lines'] = array(
+			array(
+				'method_id'    => 'flat_rate',
+				'method_title' => 'Flat rate',
+				'total'        => '49.00',
+			),
+		);
+
+		$response = $this->post_order( $payload );
+
+		$this->assertSame( 201, $response->get_status() );
+
+		$order = wc_get_order( $response->get_data()['id'] );
+		$this->assertCount( 1, $order->get_shipping_methods() );
+		$this->assertEquals( 49.0, (float) $order->get_shipping_total() );
+		$this->assertGreaterThanOrEqual( 49.0, (float) $order->get_total() );
+		$this->assertTrue( $order->has_shipping_address() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * An order with a printed book keeps its shipping line and address.
+	 */
+	public function test_create_order_mixed_keeps_shipping() {
+		$printed                   = $this->create_printed_product( 'smp14-printed-e2e' );
+		$ebook                     = Miguel_Helper_Product::create_downloadable_product();
+		$payload                   = array_merge( $this->get_digital_order_payload( $ebook->get_id(), 'smp14-mixed' ), $this->get_placeholder_shipping() );
+		$payload['line_items'][]   = array(
+			'product_id' => $printed->get_id(),
+			'quantity'   => 1,
+		);
+		$payload['shipping_lines'] = array(
+			array(
+				'method_id'    => 'flat_rate',
+				'method_title' => 'Flat rate',
+				'total'        => '89.00',
+			),
+		);
+
+		$response = $this->post_order( $payload );
+
+		$this->assertSame( 201, $response->get_status() );
+
+		$order = wc_get_order( $response->get_data()['id'] );
+		$this->assertCount( 1, $order->get_shipping_methods() );
+		$this->assertSame( 'Václavské náměstí 1', $order->get_shipping_address_1() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * A retried digital-only request replays the order it created (the hash covers the payload as sent).
+	 */
+	public function test_create_order_digital_only_replays_idempotently() {
+		$ebook   = Miguel_Helper_Product::create_downloadable_product();
+		$payload = array_merge( $this->get_digital_order_payload( $ebook->get_id(), 'smp14-replay' ), $this->get_placeholder_shipping() );
+
+		$first  = $this->post_order( $payload );
+		$second = $this->post_order( $payload );
+
+		$this->assertSame( 201, $first->get_status() );
+		$this->assertSame( 200, $second->get_status() );
+		$this->assertTrue( $second->get_data()['idempotent_replay'] );
+		$this->assertSame( $first->get_data()['id'], $second->get_data()['id'] );
+
+		Miguel_Helper_Order::delete_order( $first->get_data()['id'] );
 	}
 }

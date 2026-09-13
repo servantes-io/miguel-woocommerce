@@ -715,7 +715,7 @@ git commit -m "feat(orders): drop the placeholder shipping from digital-only Mig
 - Consumes: the behaviour of Task 2; helpers `create_printed_product()`, `get_placeholder_shipping()`.
 - Produces: helpers `private function post_order( array $payload )` (returns `WP_REST_Response|WP_Error`) and `private function get_digital_order_payload( $product_id, $idempotency_key )` (returns `array`).
 
-- [ ] **Step 1: Write the end-to-end tests**
+- [x] **Step 1: Write the end-to-end tests**
 
 Add these helpers below `get_placeholder_shipping()`:
 
@@ -883,12 +883,12 @@ Append the tests:
 	}
 ```
 
-- [ ] **Step 2: Run them**
+- [x] **Step 2: Run them**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter='Test_Miguel_Order_Create_Api::test_create_order'`
 Expected: `OK` for all `test_create_order_*` tests (the five new ones plus the three existing). These pin the whole route on top of Task 2; if one fails, the bug is in Task 2's code or in how WooCommerce stores the payload — fix the code, not the assertion.
 
-- [ ] **Step 3: Update `docs/openapi.yaml`**
+- [x] **Step 3: Update `docs/openapi.yaml`**
 
 In `components.schemas.CreateOrderRequest`:
 
@@ -921,7 +921,7 @@ In `components.schemas.CreateOrderRequest`:
             $ref: '#/components/schemas/ShippingLine'
 ```
 
-- [ ] **Step 4: Update `CHANGELOG.md`**
+- [x] **Step 4: Update `CHANGELOG.md`**
 
 Append as the last bullet of the `## 1.10.0` section:
 
@@ -929,7 +929,7 @@ Append as the last bullet of the `## 1.10.0` section:
 * `POST /orders` no longer requires a shipping address or shipping lines on an order that holds only digital formats, and drops the free placeholder shipping Miguel sends with such an order, so it shows no shipping address. An item needs delivery when its product needs shipping and is not downloadable; an order with at least one such item still requires both, with the same errors as before. A digital-only order whose shipping line has a cost keeps it, so the order total still matches what the customer paid
 ```
 
-- [ ] **Step 5: Run the full suite and the coding standard**
+- [x] **Step 5: Run the full suite and the coding standard**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit`
 Expected: `OK`, no failures or errors.
@@ -937,7 +937,7 @@ Expected: `OK`, no failures or errors.
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm --no-deps --entrypoint vendor/bin/phpcs phpunit includes/class-miguel-order-create-api.php tests/unit/test-order-create-api.php`
 Expected: no errors (fix any reported alignment/spacing issues in the new code, then re-run).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add tests/unit/test-order-create-api.php docs/openapi.yaml CHANGELOG.md

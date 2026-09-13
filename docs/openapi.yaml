@@ -547,7 +547,7 @@ components:
 
     CreateOrderRequest:
       type: object
-      required: [payment_method, billing, shipping, shipping_lines, line_items]
+      required: [payment_method, billing, line_items]
       properties:
         idempotency_key:
           type: string
@@ -587,12 +587,23 @@ components:
         billing:
           $ref: '#/components/schemas/BillingAddress'
         shipping:
-          $ref: '#/components/schemas/ShippingAddress'
+          description: >
+            Required when at least one line item needs delivery, i.e. its product needs
+            shipping and is not downloadable. On an order where no item needs delivery it is
+            dropped together with `shipping_lines` when every shipping line is free.
+          allOf:
+            - $ref: '#/components/schemas/ShippingAddress'
         shipping_lines:
           type: array
+          description: >
+            Required, with at least one line, when at least one line item needs delivery.
+            On an order where no item needs delivery, lines whose `total` is absent, empty or
+            zero are dropped together with `shipping`, so the order carries no shipping and
+            WooCommerce shows no shipping address. If any such line has a non-zero total,
+            the lines and `shipping` are kept as sent, so the order total still matches what
+            the customer paid.
           items:
             $ref: '#/components/schemas/ShippingLine'
-          minItems: 1
         line_items:
           type: array
           items:

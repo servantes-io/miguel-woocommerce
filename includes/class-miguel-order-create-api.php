@@ -706,7 +706,7 @@ class Miguel_Order_Create_Api {
 	private function order_needs_delivery( $line_items ) {
 		foreach ( $line_items as $line_item ) {
 			$variation_id = absint( $line_item['variation_id'] ?? 0 );
-			$product = wc_get_product( $variation_id > 0 ? $variation_id : absint( $line_item['product_id'] ?? 0 ) );
+			$product      = wc_get_product( $variation_id > 0 ? $variation_id : absint( $line_item['product_id'] ?? 0 ) );
 
 			if ( ! $product || ( $product->needs_shipping() && ! $product->is_downloadable() ) ) {
 				return true;
