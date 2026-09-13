@@ -110,7 +110,7 @@ class Miguel_Order_Finished_Api {
 		// "id" (Miguel's order id, in this payload's shape) otherwise outranks the URL match
 		// in WP_REST_Request's parameter precedence and would resolve the wrong order.
 		$url_params = $request->get_url_params();
-		$order_id = isset( $url_params['id'] ) ? absint( $url_params['id'] ) : 0;
+		$order_id = absint( $url_params['id'] ?? 0 );
 		if ( $order_id <= 0 ) {
 			return new WP_Error(
 				'order.invalid_id',
@@ -128,7 +128,7 @@ class Miguel_Order_Finished_Api {
 			);
 		}
 
-		$miguel_state = isset( $payload['miguel_state'] ) ? (string) $payload['miguel_state'] : '';
+		$miguel_state = (string) ( $payload['miguel_state'] ?? '' );
 		if ( self::FINISHED_STATE !== $miguel_state ) {
 			return $this->unchanged( $order, 'waiting for status: ' . self::FINISHED_STATE );
 		}

@@ -37,7 +37,7 @@ trait Miguel_Rest_Auth_Trait {
 				);
 			}
 
-			$configured_token = isset( $configuration['token'] ) ? (string) $configuration['token'] : '';
+			$configured_token = (string) ( $configuration['token'] ?? '' );
 			if ( '' === $configured_token ) {
 				return new WP_Error(
 					'auth.token_not_configured',

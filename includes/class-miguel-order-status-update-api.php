@@ -126,7 +126,7 @@ class Miguel_Order_Status_Update_Api {
 		// here is what made Miguel retry the same order once a minute indefinitely.
 		if ( 'paid' === $target_status ) {
 			$body['paid'] = ! empty( $result['paid'] );
-			$body['reason'] = isset( $result['reason'] ) ? $result['reason'] : null;
+			$body['reason'] = $result['reason'] ?? null;
 		}
 
 		return new WP_REST_Response( $body, 200 );

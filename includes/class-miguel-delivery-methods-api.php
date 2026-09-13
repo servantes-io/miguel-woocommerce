@@ -189,7 +189,7 @@ class Miguel_Delivery_Methods_Api {
 
 		$base = wc_get_base_location();
 
-		return isset( $base['country'] ) ? $base['country'] : '';
+		return $base['country'] ?? '';
 	}
 
 	/**

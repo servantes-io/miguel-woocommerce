@@ -24,7 +24,7 @@ class Miguel_V2_Order_Address {
 	public function __construct( array $fields = array() ) {
 		$this->fields = array();
 		foreach ( self::KEYS as $key ) {
-			$value = isset( $fields[ $key ] ) ? $fields[ $key ] : null;
+			$value = $fields[ $key ] ?? null;
 			if ( null === $value || '' === $value ) {
 				$this->fields[ $key ] = null;
 			} else {

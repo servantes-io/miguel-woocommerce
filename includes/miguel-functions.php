@@ -12,13 +12,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Starts_with
  *
+ * Thin wrapper over PHP 8's str_starts_with. Kept rather than inlined at the call
+ * sites because it is a global function and a shop's own code may call it.
+ *
  * @param string $haystack
  * @param string $needle
  *
  * @return boolean
  */
 function miguel_starts_with( $haystack, $needle ) {
-	return '' === $needle || strpos( $haystack, $needle ) === 0;
+	return str_starts_with( $haystack, $needle );
 }
 
 /**

@@ -292,7 +292,7 @@ class Miguel_Settings extends WC_Settings_Page {
 		$scheme = ! empty( $parts['scheme'] ) ? strtolower( $parts['scheme'] ) : ( is_ssl() ? 'https' : 'http' );
 		$host = strtolower( $parts['host'] );
 		$port = isset( $parts['port'] ) ? ':' . $parts['port'] : '';
-		$path = isset( $parts['path'] ) ? trim( (string) $parts['path'], '/' ) : '';
+		$path = trim( (string) ( $parts['path'] ?? '' ), '/' );
 
 		$canonical_url = $scheme . '://' . $host . $port;
 		if ( '' !== $path ) {
