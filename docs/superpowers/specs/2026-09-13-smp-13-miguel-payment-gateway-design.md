@@ -50,8 +50,9 @@ Orders Miguel creates in a WooCommerce shop show a proper payment method ("Migue
 
 The plugin file loads before WooCommerce (`miguel` sorts before `woocommerce`), so `WC_Payment_Gateway` does not exist when `Miguel::includes()` runs. The gateway file is therefore **not** in `includes()`; instead:
 
-- `Miguel::init_hooks()` adds a `woocommerce_payment_gateways` filter (via the hook manager, like the other hooks) whose callback `include_once`s `class-miguel-payment-gateway.php` and appends `'Miguel_Payment_Gateway'` to the list. The filter only fires once WooCommerce is loaded.
-- The filter is registered **outside** the `! defined( 'MIGUEL_TESTS' )` block, so the test suite sees the gateway exactly as a shop does. (The services inside that block are skipped in tests because they call out to Miguel; the gateway does not.)
+- `Miguel::init_hooks()` adds a `plugins_loaded` action, `include_payment_gateway()`, which `include_once`s `class-miguel-payment-gateway.php` when `WC_Payment_Gateway` exists (WooCommerce includes that abstract while it loads, so it always exists by `plugins_loaded` when WooCommerce is active). The class must be loaded whenever WooCommerce is, not only once the gateways are initialised, because `Miguel_Order_Create_Api` reads `Miguel_Payment_Gateway::ID` (see below) — including it from inside the gateways filter would leave that a fatal "class not found" on any request that reaches the API before anything initialised the gateways.
+- `Miguel::init_hooks()` also adds a `woocommerce_payment_gateways` filter, `register_payment_gateway()`, which appends `'Miguel_Payment_Gateway'` to the list. WooCommerce skips a class name that does not exist, so the filter needs no guard of its own.
+- Both hooks go through the hook manager, like the other hooks, and are registered **outside** the `! defined( 'MIGUEL_TESTS' )` block, so the test suite sees the gateway exactly as a shop does. (The services inside that block are skipped in tests because they call out to Miguel; the gateway does not.)
 - In the existing `before_woocommerce_init` callback, next to the HPOS declaration, the plugin also declares `cart_checkout_blocks` compatibility (`FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', MIGUEL_PLUGIN_FILE, true )`). The gateway never renders at checkout, so it is compatible by construction; without the declaration WooCommerce may flag the plugin as incompatible with the block checkout.
 
 ### Filling `payment_method_title`
@@ -60,9 +61,18 @@ In `Miguel_Order_Create_Api::prepare_payload_for_wc_order()`: when `payment_meth
 
 This runs after the idempotency hash is computed (the hash covers the payload as sent), so it does not affect replays.
 
-### Block checkout risk
+### Block checkout
 
-WooCommerce's block checkout editor lists enabled gateways that have no block integration as "incompatible". The `cart_checkout_blocks` declaration covers the plugin-level notice; the implementation must check the **Checkout block editor** in the Docker site (`docker-compose.yml`) with the gateway enabled. If the gateway is still listed as incompatible, add a minimal block integration — a `Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType` subclass registered on `woocommerce_blocks_payment_method_type_registration` whose `is_active()` returns `false` and which enqueues no script. If it is not listed, add nothing.
+WooCommerce's Checkout block editor lists as "incompatible with block-based checkout" every **enabled** gateway that has **no block payment method registered in JavaScript**: `Checkout::enqueue_data()` publishes all enabled gateways as `globalPaymentMethods`, and the editor's `getIncompatiblePaymentMethods` selector (`wc-blocks-data.js`) returns the ones missing from the JS-registered methods — in the editor every registered method counts as available regardless of `canMakePayment`. The Miguel gateway is enabled (that is what puts it in the order dropdown), so without a block registration it **will** be listed. (Checked against WooCommerce 9.9.5.) A PHP-only integration whose `is_active()` is `false` would not help: an inactive integration's script is never enqueued, so nothing registers in JS.
+
+The gateway therefore ships a block integration that registers a payment method which can never pay:
+
+- **`Miguel_Payment_Gateway_Blocks`** (`includes/class-miguel-payment-gateway-blocks.php`) — `extends \Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType`; `$name = Miguel_Payment_Gateway::ID`; `initialize()` reads `woocommerce_miguel_settings`; `is_active()` follows the gateway's `enabled` setting (default `yes`), so the script loads exactly when the gateway would otherwise be flagged; `get_payment_method_script_handles()` registers `assets/js/payment-method-blocks.js` (deps `wc-blocks-registry`, `wc-settings`, `wp-element`); `get_payment_method_data()` returns `title` and `supports`.
+- **`assets/js/payment-method-blocks.js`** — plain script, no build step: `registerPaymentMethod()` with name `miguel`, the title as label, empty `content`/`edit` elements, and `canMakePayment: () => false`. The editor then counts the method as compatible; the checkout never offers it.
+- Registered from `Miguel::init_hooks()` on `woocommerce_blocks_payment_method_type_registration` (hook manager, outside the tests block), whose callback includes the file and calls `$registry->register( new Miguel_Payment_Gateway_Blocks() )`. `AbstractPaymentMethodType` is autoloaded by WooCommerce by the time that hook fires.
+- Server side, the Store API still validates the chosen method against `get_available_payment_gateways()`, where the gateway never appears, so even a forged block-checkout request cannot pick it.
+
+The implementation still verifies it by hand in a real shop (Testing, Manual).
 
 ## Edge cases
 
@@ -90,18 +100,19 @@ Tests run via `make test-docker`.
   - `is_available()` is `false`, and `miguel` is absent from `WC()->payment_gateways()->get_available_payment_gateways()`;
   - `enabled` defaults to `yes`, `get_title()` defaults to "Miguel", and a saved `woocommerce_miguel_settings['title']` is returned instead;
   - `supports( 'refunds' )` is `false`;
-  - `process_payment()` returns `result => failure`.
+  - `process_payment()` returns `result => failure`;
+  - the block integration registers under `miguel` in a `PaymentMethodRegistry`, is active by default and inactive when the gateway is disabled, and exposes the `miguel-payment-method-blocks` script and the gateway title.
 - **`tests/unit/test-order-create-api.php`:**
   - `payment_method: miguel` without a title → order's `payment_method_title` is "Miguel";
   - with a title → kept verbatim;
   - another method → title untouched;
   - with a renamed gateway (settings option updated, gateways reloaded) → the new title.
-- **Manual (recorded in the PR):** in the Docker shop, an order created with `payment_method: miguel` shows "Platba přes Miguel" / "Payment via Miguel" in the header and "Miguel" selected in the dropdown; the classic and block checkout do not offer it; the Checkout block editor does not flag it.
+- **Manual (recorded in the PR):** in a WordPress + WooCommerce shop with the plugin active (the Docker site in `docker-compose.yml`, or any test shop), an order created with `payment_method: miguel` shows "Platba přes Miguel" / "Payment via Miguel" in the header and "Miguel" selected in the dropdown; the classic and block checkout do not offer it; the Checkout block editor does not flag it.
 
 ## Docs
 
-- `CHANGELOG.md`: entry under the unreleased `1.10.0`.
-- `languages/`: the new strings in both catalogues (`miguel-cs_CZ.po` and `miguel-en_US.po`; the `.mo` files are built by `make build`), with the Czech `method_description` and checkbox label translated; the title default stays "Miguel" in both.
+- `CHANGELOG.md` and the `== Changelog ==` section of `readme.txt`: entry under the unreleased `1.10.0`.
+- `languages/`: the new strings in both catalogues (`miguel-cs_CZ.po` and `miguel-en_US.po`, the only ones committed; the `.mo` files are built by `make build`), with the Czech `method_description`, field labels and checkbox label translated; the title default stays "Miguel" in both.
 - `docs/openapi.yaml`: `payment_method_title` in `CreateOrderRequest` documents the fill-in for `miguel`.
 
 ## Out of scope
