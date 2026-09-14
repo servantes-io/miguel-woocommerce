@@ -50,8 +50,8 @@ Authentication uses `Authorization: Bearer <token>` with the token configured in
 - If neither `customer_id` nor `user_email` resolves to a user, the order is created as a guest order.
 - `payment_method` is required.
 - `billing` is required and must be a non-empty object.
-- `shipping` is required and must be a non-empty object.
-- `shipping_lines` is required and must be a non-empty array.
+- `shipping` is required and must be a non-empty object when at least one line item needs delivery (its product needs shipping and is not downloadable).
+- `shipping_lines` is required and must be a non-empty array when at least one line item needs delivery.
 - Each line item must be an object.
 - Each line item must include `quantity` as a positive integer.
 - Each line item must include `product_id` or `product_code`.
@@ -64,6 +64,7 @@ Authentication uses `Authorization: Bearer <token>` with the token configured in
 - `send_emails` accepts boolean-like values such as `true`, `false`, `1`, `0`, `"true"`, `"false"`.
 - `email_template` accepts one of: `new_order`, `customer_invoice`, `customer_on_hold_order`, `customer_processing_order`, `customer_completed_order`, `customer_failed_order`.
 - `order_note` is an optional string recorded on the order as a private note, visible to the shop only. Basic inline HTML is kept; anything `wp_kses_post` strips is removed. Empty or `null` adds no note.
+- `shipping` and `shipping_lines` may be omitted on a digital-only order, where no line item needs delivery. On such an order, shipping lines whose `total` is absent, empty or zero are dropped together with `shipping`, so the order carries no shipping; a line with a non-zero total is kept as sent, address included.
 
 ### Email Dispatch Note
 
@@ -107,8 +108,8 @@ Error messages are returned in English and use stable dot-separated codes.
 - `order.order_note_invalid` - `order_note` is present but not a string, HTTP `409`
 - `order.payment_method_required` - request is missing `payment_method`, HTTP `409`
 - `order.billing_required` - request is missing valid `billing`, HTTP `409`
-- `order.shipping_required` - request is missing valid `shipping`, HTTP `409`
-- `order.shipping_lines_required` - request is missing valid `shipping_lines`, HTTP `409`
+- `order.shipping_required` - request is missing valid `shipping` and at least one line item needs delivery, HTTP `409`
+- `order.shipping_lines_required` - request is missing valid `shipping_lines` and at least one line item needs delivery, HTTP `409`
 - `product_code.required` - `product_code` is empty, HTTP `409`
 - `product_code.not_found` - `product_code` was not matched to any product, HTTP `409`
 - `product_code.ambiguous` - `product_code` matches multiple products, HTTP `409`

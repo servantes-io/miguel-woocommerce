@@ -36,6 +36,135 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * Invoke a private method of the API.
+	 *
+	 * @param object $object      Object under test.
+	 * @param string $method_name Method name.
+	 * @param array  $args        Arguments.
+	 * @return mixed
+	 */
+	private function invoke_private( $object, $method_name, array $args = array() ) {
+		$method = ( new ReflectionClass( $object ) )->getMethod( $method_name );
+		$method->setAccessible( true );
+
+		return $method->invokeArgs( $object, $args );
+	}
+
+	/**
+	 * A one-piece line item for a product. One key per line: WPCS rejects single-line
+	 * associative arrays with more than one key.
+	 *
+	 * @param int $product_id Product ID.
+	 * @return array
+	 */
+	private function line_item( $product_id ) {
+		return array(
+			'product_id' => $product_id,
+			'quantity'   => 1,
+		);
+	}
+
+	/**
+	 * Create a printed book: neither virtual nor downloadable, with an explicit SKU.
+	 *
+	 * @param string $sku Unique SKU.
+	 * @return WC_Product
+	 */
+	private function create_printed_product( $sku ) {
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_downloadable( false );
+		$product->set_virtual( false );
+		$product->set_sku( $sku );
+		$product->save();
+
+		return $product;
+	}
+
+	/**
+	 * Create a virtual product that is not downloadable (e.g. a voucher), with an explicit SKU.
+	 *
+	 * @param string $sku Unique SKU.
+	 * @return WC_Product
+	 */
+	private function create_virtual_product_without_download( $sku ) {
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_downloadable( false );
+		$product->set_virtual( true );
+		$product->set_sku( $sku );
+		$product->save();
+
+		return $product;
+	}
+
+	/**
+	 * The shipping the Miguel backend sends today with a digital-only order: a copy of the
+	 * billing address and a zero-cost free_shipping line.
+	 *
+	 * @return array
+	 */
+	private function get_placeholder_shipping() {
+		return array(
+			'shipping'       => array(
+				'first_name' => 'Jan Novák',
+				'address_1'  => 'Václavské náměstí 1',
+				'city'       => 'Praha',
+				'postcode'   => '11000',
+				'country'    => 'CZ',
+			),
+			'shipping_lines' => array(
+				array(
+					'method_id'    => 'free_shipping',
+					'method_title' => 'Free Shipping',
+					'total'        => '0.00',
+				),
+			),
+		);
+	}
+
+	/**
+	 * POST an order payload through the Miguel create API.
+	 *
+	 * @param array $payload Request body.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	private function post_order( array $payload ) {
+		$request = new WP_REST_Request( 'POST', '/miguel/v1/orders' );
+		$request->add_header( 'content-type', 'application/json' );
+		$request->set_body( wp_json_encode( $payload ) );
+
+		return ( new Miguel_Order_Create_Api( new Miguel_Hook_Manager() ) )->create_order( $request );
+	}
+
+	/**
+	 * The payload the Miguel backend sends for a one-item mobile order, without shipping.
+	 *
+	 * @param int    $product_id      Product ID.
+	 * @param string $idempotency_key Idempotency key.
+	 * @return array
+	 */
+	private function get_digital_order_payload( $product_id, $idempotency_key ) {
+		return array(
+			'idempotency_key' => $idempotency_key,
+			'payment_method'  => 'miguel',
+			'user_email'      => 'buyer@example.com',
+			'billing'         => array(
+				'first_name' => 'Jan Novák',
+				'address_1'  => 'Václavské náměstí 1',
+				'city'       => 'Praha',
+				'postcode'   => '11000',
+				'country'    => 'CZ',
+				'email'      => 'buyer@example.com',
+			),
+			'line_items'      => array(
+				array(
+					'product_id' => $product_id,
+					'quantity'   => 1,
+				),
+			),
+		);
+	}
+
+	/**
 	 * Test that productCode is translated to product_id in line items.
 	 */
 	public function test_prepare_payload_for_wc_order_maps_product_code_to_product_id() {
@@ -86,13 +215,16 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 
 		$result = $method->invoke(
 			$api,
-			array(
-				'line_items' => array(
-					array(
-						'product_code' => 'printed-book-42:print',
-						'quantity' => 1,
+			array_merge(
+				$this->get_placeholder_shipping(),
+				array(
+					'line_items' => array(
+						array(
+							'product_code' => 'printed-book-42:print',
+							'quantity' => 1,
+						),
 					),
-				),
+				)
 			)
 		);
 
@@ -828,46 +960,6 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	}
 
 	/**
-	 * Test that shipping is required.
-	 */
-	public function test_validate_required_order_fields_rejects_missing_shipping() {
-		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
-
-		$reflection = new ReflectionClass( $api );
-		$method = $reflection->getMethod( 'validate_required_order_fields' );
-		$method->setAccessible( true );
-
-		$payload = $this->get_minimal_valid_payload();
-		unset( $payload['shipping'] );
-
-		$result = $method->invoke( $api, $payload );
-
-		$this->assertTrue( is_wp_error( $result ) );
-		$this->assertEquals( 'order.shipping_required', $result->get_error_code() );
-		$this->assertEquals( 409, $result->get_error_data()['status'] );
-	}
-
-	/**
-	 * Test that shipping_lines is required.
-	 */
-	public function test_validate_required_order_fields_rejects_missing_shipping_lines() {
-		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
-
-		$reflection = new ReflectionClass( $api );
-		$method = $reflection->getMethod( 'validate_required_order_fields' );
-		$method->setAccessible( true );
-
-		$payload = $this->get_minimal_valid_payload();
-		unset( $payload['shipping_lines'] );
-
-		$result = $method->invoke( $api, $payload );
-
-		$this->assertTrue( is_wp_error( $result ) );
-		$this->assertEquals( 'order.shipping_lines_required', $result->get_error_code() );
-		$this->assertEquals( 409, $result->get_error_data()['status'] );
-	}
-
-	/**
 	 * Test that valid top-level fields pass validation.
 	 */
 	public function test_validate_required_order_fields_accepts_minimal_valid_payload() {
@@ -1323,5 +1415,434 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 		}
 
 		return $notes;
+	}
+
+	/**
+	 * An e-book (virtual + downloadable) needs no delivery.
+	 */
+	public function test_order_needs_delivery_is_false_for_downloadable_product() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+		$api   = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertFalse(
+			$this->invoke_private( $api, 'order_needs_delivery', array( array( $this->line_item( $ebook->get_id() ) ) ) )
+		);
+	}
+
+	/**
+	 * A downloadable product whose "virtual" box nobody ticked still needs no delivery.
+	 */
+	public function test_order_needs_delivery_is_false_for_downloadable_product_that_is_not_virtual() {
+		$ebook = WC_Helper_Product::create_simple_product();
+		$ebook->set_downloadable( true );
+		$ebook->set_virtual( false );
+		$ebook->set_sku( 'smp14-downloadable-not-virtual' );
+		$ebook->save();
+
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertFalse(
+			$this->invoke_private( $api, 'order_needs_delivery', array( array( $this->line_item( $ebook->get_id() ) ) ) )
+		);
+	}
+
+	/**
+	 * A virtual product that is not downloadable (e.g. a voucher) needs no delivery.
+	 */
+	public function test_order_needs_delivery_is_false_for_virtual_product() {
+		$voucher = $this->create_virtual_product_without_download( 'smp14-voucher' );
+		$api     = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertFalse(
+			$this->invoke_private( $api, 'order_needs_delivery', array( array( $this->line_item( $voucher->get_id() ) ) ) )
+		);
+	}
+
+	/**
+	 * A printed book needs delivery.
+	 */
+	public function test_order_needs_delivery_is_true_for_printed_product() {
+		$printed = $this->create_printed_product( 'smp14-printed' );
+		$api     = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertTrue(
+			$this->invoke_private( $api, 'order_needs_delivery', array( array( $this->line_item( $printed->get_id() ) ) ) )
+		);
+	}
+
+	/**
+	 * One printed book among e-books makes the whole order need delivery.
+	 */
+	public function test_order_needs_delivery_is_true_for_mixed_order() {
+		$printed = $this->create_printed_product( 'smp14-printed-mixed' );
+		$ebook   = Miguel_Helper_Product::create_downloadable_product();
+		$api     = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertTrue(
+			$this->invoke_private(
+				$api,
+				'order_needs_delivery',
+				array(
+					array(
+						$this->line_item( $ebook->get_id() ),
+						$this->line_item( $printed->get_id() ),
+					),
+				)
+			)
+		);
+	}
+
+	/**
+	 * A product that cannot be loaded counts as needing delivery.
+	 */
+	public function test_order_needs_delivery_is_true_for_unknown_product() {
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertTrue(
+			$this->invoke_private( $api, 'order_needs_delivery', array( array( $this->line_item( 999999 ) ) ) )
+		);
+	}
+
+	/**
+	 * With a variation_id the variation decides, not its parent.
+	 */
+	public function test_order_needs_delivery_uses_the_variation_when_given() {
+		$variable     = WC_Helper_Product::create_variation_product();
+		$variation_id = $variable->get_children()[0];
+		$variation    = wc_get_product( $variation_id );
+		$variation->set_virtual( true );
+		$variation->save();
+
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$this->assertFalse(
+			$this->invoke_private(
+				$api,
+				'order_needs_delivery',
+				array( array( array_merge( $this->line_item( $variable->get_id() ), array( 'variation_id' => $variation_id ) ) ) )
+			),
+			'A virtual variation needs no delivery.'
+		);
+		$this->assertTrue(
+			$this->invoke_private(
+				$api,
+				'order_needs_delivery',
+				array( array( $this->line_item( $variable->get_id() ) ) )
+			),
+			'Without variation_id the non-virtual parent decides.'
+		);
+	}
+
+	/**
+	 * Today's backend payload for an e-book: the placeholder shipping is dropped.
+	 */
+	public function test_prepare_payload_drops_free_shipping_from_digital_only_order() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+		$api   = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$payload = array_merge(
+			$this->get_placeholder_shipping(),
+			array( 'line_items' => array( $this->line_item( $ebook->get_id() ) ) )
+		);
+
+		$result = $this->invoke_private( $api, 'prepare_payload_for_wc_order', array( $payload ) );
+
+		$this->assertIsArray( $result );
+		$this->assertArrayNotHasKey( 'shipping', $result );
+		$this->assertArrayNotHasKey( 'shipping_lines', $result );
+	}
+
+	/**
+	 * A digital-only order may omit shipping altogether.
+	 */
+	public function test_prepare_payload_accepts_digital_only_order_without_shipping() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+		$api   = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$result = $this->invoke_private(
+			$api,
+			'prepare_payload_for_wc_order',
+			array( array( 'line_items' => array( $this->line_item( $ebook->get_id() ) ) ) )
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertArrayNotHasKey( 'shipping', $result );
+		$this->assertArrayNotHasKey( 'shipping_lines', $result );
+	}
+
+	/**
+	 * A shipping line without a total counts as free.
+	 */
+	public function test_prepare_payload_drops_shipping_line_without_total_from_digital_only_order() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+		$api   = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$payload                   = array_merge(
+			$this->get_placeholder_shipping(),
+			array( 'line_items' => array( $this->line_item( $ebook->get_id() ) ) )
+		);
+		$payload['shipping_lines'] = array( array( 'method_id' => 'free_shipping' ) );
+
+		$result = $this->invoke_private( $api, 'prepare_payload_for_wc_order', array( $payload ) );
+
+		$this->assertArrayNotHasKey( 'shipping', $result );
+		$this->assertArrayNotHasKey( 'shipping_lines', $result );
+	}
+
+	/**
+	 * A digital-only order whose shipping line has a cost keeps it, and its address, as sent.
+	 */
+	public function test_prepare_payload_keeps_paid_shipping_on_digital_only_order() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+		$api   = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$payload                   = array_merge(
+			$this->get_placeholder_shipping(),
+			array( 'line_items' => array( $this->line_item( $ebook->get_id() ) ) )
+		);
+		$payload['shipping_lines'] = array(
+			array(
+				'method_id' => 'flat_rate',
+				'total'     => '49.00',
+			),
+		);
+
+		$result = $this->invoke_private( $api, 'prepare_payload_for_wc_order', array( $payload ) );
+
+		$this->assertSame( $payload['shipping'], $result['shipping'] );
+		$this->assertSame( $payload['shipping_lines'], $result['shipping_lines'] );
+	}
+
+	/**
+	 * A total that is not a number counts as a cost: the line is kept for WooCommerce to judge.
+	 */
+	public function test_prepare_payload_keeps_shipping_line_with_non_numeric_total_on_digital_only_order() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+		$api   = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$payload                   = array_merge(
+			$this->get_placeholder_shipping(),
+			array( 'line_items' => array( $this->line_item( $ebook->get_id() ) ) )
+		);
+		$payload['shipping_lines'] = array(
+			array(
+				'method_id' => 'flat_rate',
+				'total'     => 'free',
+			),
+		);
+
+		$result = $this->invoke_private( $api, 'prepare_payload_for_wc_order', array( $payload ) );
+
+		$this->assertArrayHasKey( 'shipping', $result );
+		$this->assertSame( $payload['shipping_lines'], $result['shipping_lines'] );
+	}
+
+	/**
+	 * A printed book still requires a shipping address.
+	 */
+	public function test_prepare_payload_rejects_printed_order_without_shipping() {
+		$printed = $this->create_printed_product( 'smp14-printed-no-address' );
+		$api     = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$payload = array_merge(
+			$this->get_placeholder_shipping(),
+			array( 'line_items' => array( $this->line_item( $printed->get_id() ) ) )
+		);
+		unset( $payload['shipping'] );
+
+		$result = $this->invoke_private( $api, 'prepare_payload_for_wc_order', array( $payload ) );
+
+		$this->assertTrue( is_wp_error( $result ) );
+		$this->assertEquals( 'order.shipping_required', $result->get_error_code() );
+		$this->assertEquals( 409, $result->get_error_data()['status'] );
+		$this->assertEquals( 'shipping', $result->get_error_data()['field'] );
+	}
+
+	/**
+	 * A printed book still requires shipping lines.
+	 */
+	public function test_prepare_payload_rejects_printed_order_without_shipping_lines() {
+		$printed = $this->create_printed_product( 'smp14-printed-no-lines' );
+		$api     = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$payload = array_merge(
+			$this->get_placeholder_shipping(),
+			array( 'line_items' => array( $this->line_item( $printed->get_id() ) ) )
+		);
+		unset( $payload['shipping_lines'] );
+
+		$result = $this->invoke_private( $api, 'prepare_payload_for_wc_order', array( $payload ) );
+
+		$this->assertTrue( is_wp_error( $result ) );
+		$this->assertEquals( 'order.shipping_lines_required', $result->get_error_code() );
+		$this->assertEquals( 409, $result->get_error_data()['status'] );
+		$this->assertEquals( 'shipping_lines', $result->get_error_data()['field'] );
+	}
+
+	/**
+	 * An order with a printed book keeps its shipping exactly as sent, zero-cost lines included.
+	 */
+	public function test_prepare_payload_keeps_shipping_on_mixed_order() {
+		$printed = $this->create_printed_product( 'smp14-printed-mixed-payload' );
+		$ebook   = Miguel_Helper_Product::create_downloadable_product();
+		$api     = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$payload = array_merge(
+			$this->get_placeholder_shipping(),
+			array(
+				'line_items' => array(
+					$this->line_item( $ebook->get_id() ),
+					$this->line_item( $printed->get_id() ),
+				),
+			)
+		);
+
+		$result = $this->invoke_private( $api, 'prepare_payload_for_wc_order', array( $payload ) );
+
+		$this->assertSame( $payload['shipping'], $result['shipping'] );
+		$this->assertSame( $payload['shipping_lines'], $result['shipping_lines'] );
+	}
+
+	/**
+	 * An unknown product counts as needing delivery, so the old validation applies.
+	 */
+	public function test_prepare_payload_rejects_unknown_product_without_shipping() {
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$result = $this->invoke_private(
+			$api,
+			'prepare_payload_for_wc_order',
+			array( array( 'line_items' => array( $this->line_item( 999999 ) ) ) )
+		);
+
+		$this->assertTrue( is_wp_error( $result ) );
+		$this->assertEquals( 'order.shipping_required', $result->get_error_code() );
+	}
+
+	/**
+	 * Top-level validation no longer asks for shipping: it cannot know yet whether the order ships.
+	 */
+	public function test_validate_required_order_fields_accepts_payload_without_shipping() {
+		$api = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+
+		$payload = $this->get_minimal_valid_payload();
+		unset( $payload['shipping'], $payload['shipping_lines'] );
+
+		$this->assertTrue( true === $this->invoke_private( $api, 'validate_required_order_fields', array( $payload ) ) );
+	}
+
+	/**
+	 * Today's backend payload for an e-book creates an order with no shipping at all.
+	 */
+	public function test_create_order_digital_only_has_no_shipping() {
+		$ebook   = Miguel_Helper_Product::create_downloadable_product();
+		$payload = array_merge( $this->get_digital_order_payload( $ebook->get_id(), 'smp14-digital' ), $this->get_placeholder_shipping() );
+
+		$response = $this->post_order( $payload );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 201, $response->get_status() );
+
+		$order = wc_get_order( $response->get_data()['id'] );
+		$this->assertCount( 0, $order->get_shipping_methods(), 'No shipping line may be stored.' );
+		$this->assertSame( '', $order->get_shipping_address_1() );
+		$this->assertSame( '', $order->get_shipping_first_name() );
+		$this->assertFalse( $order->has_shipping_address() );
+		$this->assertFalse( $order->needs_shipping_address() );
+		$this->assertSame( 'Václavské náměstí 1', $order->get_billing_address_1(), 'Billing stays.' );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * A digital-only order without any shipping is accepted (it was a 409 before).
+	 */
+	public function test_create_order_accepts_digital_only_order_without_shipping() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+
+		$response = $this->post_order( $this->get_digital_order_payload( $ebook->get_id(), 'smp14-digital-bare' ) );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 201, $response->get_status() );
+
+		$order = wc_get_order( $response->get_data()['id'] );
+		$this->assertCount( 0, $order->get_shipping_methods() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * A digital-only order with a paid shipping line keeps it, so the total matches the payment.
+	 */
+	public function test_create_order_digital_only_keeps_paid_shipping() {
+		$ebook                     = Miguel_Helper_Product::create_downloadable_product();
+		$payload                   = array_merge( $this->get_digital_order_payload( $ebook->get_id(), 'smp14-digital-paid' ), $this->get_placeholder_shipping() );
+		$payload['shipping_lines'] = array(
+			array(
+				'method_id'    => 'flat_rate',
+				'method_title' => 'Flat rate',
+				'total'        => '49.00',
+			),
+		);
+
+		$response = $this->post_order( $payload );
+
+		$this->assertSame( 201, $response->get_status() );
+
+		$order = wc_get_order( $response->get_data()['id'] );
+		$this->assertCount( 1, $order->get_shipping_methods() );
+		$this->assertEquals( 49.0, (float) $order->get_shipping_total() );
+		$this->assertGreaterThanOrEqual( 49.0, (float) $order->get_total() );
+		$this->assertTrue( $order->has_shipping_address() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * An order with a printed book keeps its shipping line and address.
+	 */
+	public function test_create_order_mixed_keeps_shipping() {
+		$printed                   = $this->create_printed_product( 'smp14-printed-e2e' );
+		$ebook                     = Miguel_Helper_Product::create_downloadable_product();
+		$payload                   = array_merge( $this->get_digital_order_payload( $ebook->get_id(), 'smp14-mixed' ), $this->get_placeholder_shipping() );
+		$payload['line_items'][]   = array(
+			'product_id' => $printed->get_id(),
+			'quantity'   => 1,
+		);
+		$payload['shipping_lines'] = array(
+			array(
+				'method_id'    => 'flat_rate',
+				'method_title' => 'Flat rate',
+				'total'        => '89.00',
+			),
+		);
+
+		$response = $this->post_order( $payload );
+
+		$this->assertSame( 201, $response->get_status() );
+
+		$order = wc_get_order( $response->get_data()['id'] );
+		$this->assertCount( 1, $order->get_shipping_methods() );
+		$this->assertSame( 'Václavské náměstí 1', $order->get_shipping_address_1() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * A retried digital-only request replays the order it created (the hash covers the payload as sent).
+	 */
+	public function test_create_order_digital_only_replays_idempotently() {
+		$ebook   = Miguel_Helper_Product::create_downloadable_product();
+		$payload = array_merge( $this->get_digital_order_payload( $ebook->get_id(), 'smp14-replay' ), $this->get_placeholder_shipping() );
+
+		$first  = $this->post_order( $payload );
+		$second = $this->post_order( $payload );
+
+		$this->assertSame( 201, $first->get_status() );
+		$this->assertSame( 200, $second->get_status() );
+		$this->assertTrue( $second->get_data()['idempotent_replay'] );
+		$this->assertSame( $first->get_data()['id'], $second->get_data()['id'] );
+
+		Miguel_Helper_Order::delete_order( $first->get_data()['id'] );
 	}
 }
