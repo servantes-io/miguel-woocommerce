@@ -350,3 +350,7 @@ msgstr "Parametr updated_since je povinný."
 #: includes/class-miguel-orders-api.php
 msgid "The updated_since parameter is not a valid date."
 msgstr "Parametr updated_since není platné datum."
+
+#: includes/class-miguel-order-create-api.php
+msgid "Order order_note must be a string."
+msgstr "Poznámka objednávky (order_note) musí být text."
