@@ -10,6 +10,8 @@
 * Added automatic order status change when Miguel finishes an order: choose a target status for orders holding only Miguel books and another for mixed orders, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
 * Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
 * `POST /orders` accepts an optional `order_note` and records it on the created order as a private note, visible to the shop only. Miguel uses it to say which app an order was placed in; the text comes from Miguel, so its wording can change without a plugin release
+* Orders Miguel creates show "Miguel" as their payment method instead of "Other": the plugin now registers a Miguel payment gateway and names it on those orders when Miguel sends no title of its own. The gateway is never offered at checkout, classic or block, and supports no automatic refunds, since the money is taken by Miguel. Rename it in WooCommerce → Settings → Payments; disabling it only brings the "Other" label back
+* The plugin header now declares its `Domain Path`, so WordPress finds the bundled translations even when something asks for them before `init`. Without it, WordPress 6.7 and later looked in the plugin root; the Miguel gateway translates its labels when WooCommerce builds its gateways, which some payment plugins do that early, and every Miguel string then stayed in English for the rest of the request
 
 ## 1.9.1
 

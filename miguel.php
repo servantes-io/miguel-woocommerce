@@ -7,6 +7,7 @@
  * Requires PHP: 8.1
  * Tested up to: 7.0
  * Text Domain: miguel
+ * Domain Path: /languages
  * Author: Servantes, s.r.o.
  * Author URI: https://servantes.io
  * Version: 1.10.0

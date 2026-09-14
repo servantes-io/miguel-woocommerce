@@ -557,10 +557,17 @@ components:
           example: "order-2024-abc123"
         payment_method:
           type: string
-          description: WooCommerce payment method ID.
+          description: >
+            WooCommerce payment method ID. Miguel sends `miguel`, the plugin's own payment
+            gateway, which names these orders' payment method in the shop and is never offered
+            at checkout.
           example: bacs
         payment_method_title:
           type: string
+          description: >
+            Payment method name stored on the order. When `payment_method` is `miguel` and this
+            is missing or blank, the title of the plugin's Miguel gateway is used ("Miguel"
+            unless renamed in WooCommerce → Settings → Payments). A non-blank value is kept as sent.
           example: Direct Bank Transfer
         customer_id:
           type: integer

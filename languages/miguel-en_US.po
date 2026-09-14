@@ -113,3 +113,27 @@ msgstr "Idempotency key was already used with different payload."
 #: includes/class-miguel-order-create-api.php
 msgid "Order order_note must be a string."
 msgstr "Order order_note must be a string."
+
+#: includes/class-miguel-payment-gateway.php
+msgid "Orders placed and paid in a Miguel app. Miguel creates these orders itself; this method is never offered at checkout."
+msgstr "Orders placed and paid in a Miguel app. Miguel creates these orders itself; this method is never offered at checkout."
+
+#: includes/class-miguel-payment-gateway.php
+msgid "Enable/Disable"
+msgstr "Enable/Disable"
+
+#: includes/class-miguel-payment-gateway.php
+msgid "Show Miguel as the payment method of orders from the Miguel app"
+msgstr "Show Miguel as the payment method of orders from the Miguel app"
+
+#: includes/class-miguel-payment-gateway.php
+msgid "Title"
+msgstr "Title"
+
+#: includes/class-miguel-payment-gateway.php
+msgid "The payment method name shown on orders from the Miguel app."
+msgstr "The payment method name shown on orders from the Miguel app."
+
+#: includes/class-miguel-payment-gateway.php
+msgid "Description"
+msgstr "Description"

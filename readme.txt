@@ -132,5 +132,6 @@ The interactive wizard allows you to set the screen size for which the resulting
 * Added automatic order status change when Miguel finishes an order: choose a target status for orders holding only Miguel books and another for orders that also hold other products, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
 * Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
 * Orders created from the Miguel app can carry a private note, visible to the shop only, saying which app they were placed in
+* Orders created by Miguel show "Miguel" as their payment method instead of "Other". The new Miguel payment gateway is never offered at checkout
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

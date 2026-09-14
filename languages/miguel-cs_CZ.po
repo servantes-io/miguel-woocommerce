@@ -27,6 +27,7 @@ msgid "Sell your e-books and audiobooks directly on your e-shop."
 msgstr "Prodávejte své e-knihy i audioknihy přímo na svém e-shopu."
 
 #: includes/admin/class-miguel-settings.php:18
+#: includes/class-miguel-payment-gateway.php
 msgid "Miguel"
 msgstr "Miguel"
 
@@ -354,3 +355,27 @@ msgstr "Parametr updated_since není platné datum."
 #: includes/class-miguel-order-create-api.php
 msgid "Order order_note must be a string."
 msgstr "Poznámka objednávky (order_note) musí být text."
+
+#: includes/class-miguel-payment-gateway.php
+msgid "Orders placed and paid in a Miguel app. Miguel creates these orders itself; this method is never offered at checkout."
+msgstr "Objednávky zadané a zaplacené v aplikaci Miguel. Miguel je zakládá sám; na pokladně se tento způsob platby nikdy nenabízí."
+
+#: includes/class-miguel-payment-gateway.php
+msgid "Enable/Disable"
+msgstr "Povolit/Zakázat"
+
+#: includes/class-miguel-payment-gateway.php
+msgid "Show Miguel as the payment method of orders from the Miguel app"
+msgstr "Zobrazovat Miguel jako způsob platby u objednávek z aplikace Miguel"
+
+#: includes/class-miguel-payment-gateway.php
+msgid "Title"
+msgstr "Název"
+
+#: includes/class-miguel-payment-gateway.php
+msgid "The payment method name shown on orders from the Miguel app."
+msgstr "Název způsobu platby zobrazený u objednávek z aplikace Miguel."
+
+#: includes/class-miguel-payment-gateway.php
+msgid "Description"
+msgstr "Popis"
