@@ -29,7 +29,7 @@ class Miguel_Order_Mapper {
 	 *
 	 * @param WC_Order $order      Order object.
 	 * @param bool     $send_email Whether Miguel's backend should send order emails.
-	 * @return Miguel_V2_Order_Create|null Null when there are no Miguel items.
+	 * @return Miguel_V2_Order_Create|null Null when no Miguel item is left (none ordered, or all refunded).
 	 */
 	public function map( $order, $send_email = false ) {
 		$items = array();
@@ -44,8 +44,14 @@ class Miguel_Order_Mapper {
 				continue;
 			}
 
+			// What the customer still owns of this line: WooCommerce keeps refunded lines as they
+			// were ordered and records the refund separately.
+			$quantity = Miguel_Order_Refunds::get_entitled_quantity( $order, $item );
+			if ( $quantity <= 0 ) {
+				continue;
+			}
+
 			$item_total = $order->get_item_total( $item, false, false );
-			$quantity   = (int) $item->get_quantity();
 
 			foreach ( $this->get_miguel_products_from_item( $product, $item_total ) as $miguel_product ) {
 				$items[] = new Miguel_V2_Order_Create_Item(

@@ -355,7 +355,7 @@ git commit -m "feat(orders): work out what refunds leave the customer of each li
 - Consumes: `Miguel_Order_Refunds::get_entitled_quantity( $order, $item ): int`; `Miguel_Helper_Order::refund_line( $order, $item_id, $qty, $amount )` (Task 1).
 - Produces: `Miguel_Order_Mapper::map()` — unchanged signature; lines with 0 entitled units are skipped, others carry `quantity = entitled units`, `null` when no line is left. Test helper `Miguel_Helper_Product::create_miguel_product( string $code ): WC_Product` (static).
 
-- [ ] **Step 1: Add the product test helper**
+- [x] **Step 1: Add the product test helper**
 
 In `tests/helpers/class-miguel-helper-product.php`, add after `create_downloadable_product()`:
 
@@ -384,7 +384,7 @@ In `tests/helpers/class-miguel-helper-product.php`, add after `create_downloadab
 	}
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Add to `tests/unit/test-order-mapper.php`, before the closing `}` of the class:
 
@@ -474,12 +474,12 @@ Add to `tests/unit/test-order-mapper.php`, before the closing `}` of the class:
 	}
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter=Miguel_Test_Order_Mapper`
 Expected: the four new tests FAIL (quantity 2 instead of 1; the refunded codes still present; a DTO instead of `null`); the existing mapper tests still pass.
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 In `includes/api/v2/mappers/class-miguel-order-mapper.php`, `map()`, replace the lines between the `$product` check and the inner `foreach`:
 
@@ -507,16 +507,16 @@ Also update the `map()` docblock's return line to:
 	 * @return Miguel_V2_Order_Create|null Null when no Miguel item is left (none ordered, or all refunded).
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter=Miguel_Test_Order_Mapper`
 Expected: PASS, all mapper tests.
 
-- [ ] **Step 6: phpcs**
+- [x] **Step 6: phpcs**
 
 Both phpcs commands on `includes/api/v2/mappers/class-miguel-order-mapper.php tests/unit/test-order-mapper.php tests/helpers/class-miguel-helper-product.php`. Expected: 0 errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add includes/api/v2/mappers/class-miguel-order-mapper.php tests/unit/test-order-mapper.php tests/helpers/class-miguel-helper-product.php docs/superpowers/plans/2026-09-15-smp-16-partial-refunds.md

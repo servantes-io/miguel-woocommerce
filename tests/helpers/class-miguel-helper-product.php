@@ -80,6 +80,29 @@ class Miguel_Helper_Product {
 	}
 
 	/**
+	 * A downloadable 10.00 product whose single download carries the given Miguel code.
+	 *
+	 * @param string $code Miguel code.
+	 * @return WC_Product
+	 */
+	public static function create_miguel_product( $code ) {
+		$product = self::create_downloadable_product();
+
+		self::set_product_downloads_bypass_validation(
+			$product,
+			array(
+				$code . '_epub_' . wp_generate_uuid4() => array(
+					'name' => 'Book ' . $code,
+					'file' => '[miguel id="' . $code . '" format="epub"]',
+				),
+			)
+		);
+
+		// Reload: the downloads were written straight to post meta.
+		return wc_get_product( $product->get_id() );
+	}
+
+	/**
 	 * @param int $product_id
 	 */
 	public static function delete_product( $product_id ) {
