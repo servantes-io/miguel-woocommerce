@@ -133,5 +133,6 @@ The interactive wizard allows you to set the screen size for which the resulting
 * Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
 * Orders created from the Miguel app can carry a private note, visible to the shop only, saying which app they were placed in
 * Orders created by Miguel show "Miguel" as their payment method instead of "Other". The new Miguel payment gateway is never offered at checkout
+* A partial refund takes the refunded products out of the order in Miguel, so the customer loses access to what they were refunded for
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

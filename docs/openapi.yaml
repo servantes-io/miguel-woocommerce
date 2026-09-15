@@ -214,6 +214,14 @@ components:
           type: string
           description: WooCommerce order status slug (without wc- prefix).
           example: processing
+        deleted:
+          type: boolean
+          description: >
+            Whether the customer no longer has the order: its status is one of the
+            statuses configured to remove orders from Miguel (by default refunded,
+            cancelled and failed), or refunds took away every product Miguel delivers
+            in it while WooCommerce kept its status. Such orders are still reported so
+            that Miguel can repair a removal whose push never arrived.
         currency_code:
           type: string
           description: ISO 4217 currency code.
@@ -240,7 +248,9 @@ components:
           description: >
             Line items whose product exposes a Miguel code are included: digital items
             with a Miguel shortcode, and printed books when a printed-book suffix is
-            configured. Items with no Miguel code are omitted.
+            configured. Items with no Miguel code are omitted, and so are items the
+            customer was refunded for in full — by refunded quantity, or by a refunded
+            amount covering every unit of the line.
 
     OrderLineItem:
       type: object

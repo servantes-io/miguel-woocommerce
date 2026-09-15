@@ -953,7 +953,7 @@ git commit -m "feat(orders-api): leave refunded products out of the pull, and fl
 - Consumes: the behaviour of Tasks 1–4.
 - Produces: nothing code relies on.
 
-- [ ] **Step 1: OpenAPI**
+- [x] **Step 1: OpenAPI**
 
 In `docs/openapi.yaml`, `components.schemas.Order.properties`:
 
@@ -983,7 +983,7 @@ Replace the `products` description with:
 
 Check it still parses: `python3 -c "import yaml,sys; yaml.safe_load(open('docs/openapi.yaml'))"`.
 
-- [ ] **Step 2: CHANGELOG.md and readme.txt**
+- [x] **Step 2: CHANGELOG.md and readme.txt**
 
 `CHANGELOG.md`, append to the end of the `## 1.10.0` list (after the `Domain Path` entry):
 
@@ -997,16 +997,16 @@ Check it still parses: `python3 -c "import yaml,sys; yaml.safe_load(open('docs/o
 * A partial refund takes the refunded products out of the order in Miguel, so the customer loses access to what they were refunded for
 ```
 
-- [ ] **Step 3: Full suite**
+- [x] **Step 3: Full suite**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit`
 Expected: `OK (260 tests, …)` — 234 baseline + 14 (Task 1) + 4 (Task 2) + 6 (Task 3) + 2 (Task 4). If the count differs, the difference must be explained by the tests you added, never by a skipped or failing one.
 
-- [ ] **Step 4: phpcs on everything touched**
+- [x] **Step 4: phpcs on everything touched**
 
 Both phpcs commands on: `includes/class-miguel-order-refunds.php includes/class-miguel.php includes/api/v2/mappers/class-miguel-order-mapper.php includes/class-miguel-orders.php includes/class-miguel-orders-api.php tests/unit/test-order-refunds.php tests/unit/test-order-mapper.php tests/unit/test-orders.php tests/unit/test-orders-api.php tests/helpers/class-miguel-helper-order.php tests/helpers/class-miguel-helper-product.php`. Expected: 0 errors (warnings only where the same file already had them on `origin/main`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/openapi.yaml CHANGELOG.md readme.txt docs/superpowers/plans/2026-09-15-smp-16-partial-refunds.md
