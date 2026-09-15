@@ -199,4 +199,88 @@ class Miguel_Test_Order_Mapper extends Miguel_Test_Case {
 
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 	}
+
+	public function test_a_refunded_quantity_lowers_the_quantity_sent(): void {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$item_id = $order->add_product( $product, 2 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $item_id, 1, 10.00 );
+
+		$arr = ( new Miguel_Order_Mapper() )->map( wc_get_order( $order->get_id() ) )->to_array();
+
+		$this->assertCount( 1, $arr['items'] );
+		$this->assertSame( 'dummy-name', $arr['items'][0]['code'] );
+		$this->assertSame( 1, $arr['items'][0]['quantity'] );
+		$this->assertSame( 10.0, $arr['items'][0]['soldPrice'], 'the price of the units kept is unchanged' );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	public function test_a_fully_refunded_line_is_left_out(): void {
+		$kept     = Miguel_Helper_Product::create_miguel_product( 'kept-book' );
+		$refunded = Miguel_Helper_Product::create_miguel_product( 'refunded-book' );
+
+		$order = Miguel_Helper_Order::create_order();
+		$order->add_product( $kept, 1 );
+		$refunded_item_id = $order->add_product( $refunded, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		// Amount only, as shops refunding e-books often do.
+		Miguel_Helper_Order::refund_line( $order, $refunded_item_id, 0, 10.00 );
+
+		$arr = ( new Miguel_Order_Mapper() )->map( wc_get_order( $order->get_id() ) )->to_array();
+
+		$this->assertSame( array( 'kept-book' ), array_column( $arr['items'], 'code' ) );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	public function test_a_refunded_bundle_line_leaves_out_all_its_codes(): void {
+		$book1 = Miguel_Helper_Product::create_miguel_product( 'bundle-book-1' );
+		$book2 = Miguel_Helper_Product::create_miguel_product( 'bundle-book-2' );
+
+		$bundle = WC_Helper_Product::create_simple_product();
+		$bundle->set_regular_price( '20' );
+		$bundle->save();
+		update_post_meta(
+			$bundle->get_id(),
+			'_bundle_ids',
+			array(
+				(string) $book1->get_id() => array(),
+				(string) $book2->get_id() => array(),
+			)
+		);
+
+		$order = Miguel_Helper_Order::create_order();
+		$order->add_product( Miguel_Helper_Product::create_downloadable_product(), 1 );
+		$bundle_item_id = $order->add_product( $bundle, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $bundle_item_id, 1, 20.00 );
+
+		$arr = ( new Miguel_Order_Mapper() )->map( wc_get_order( $order->get_id() ) )->to_array();
+
+		$this->assertSame( array( 'dummy-name' ), array_column( $arr['items'], 'code' ) );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	public function test_returns_null_once_every_miguel_line_is_refunded(): void {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$item_id = $order->add_product( $product, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $item_id, 1, 10.00 );
+
+		$this->assertNull( ( new Miguel_Order_Mapper() )->map( wc_get_order( $order->get_id() ) ) );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
 }

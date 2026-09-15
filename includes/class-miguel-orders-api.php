@@ -26,6 +26,14 @@ class Miguel_Orders_Api {
 	private Miguel_Product_Code_Source $code_source;
 
 	/**
+	 * Order mapper, used only for its bundle-aware `has_miguel_codes()` check so the pull's
+	 * "everything refunded" judgment matches the push's.
+	 *
+	 * @var Miguel_Order_Mapper
+	 */
+	private Miguel_Order_Mapper $mapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager.
@@ -33,6 +41,7 @@ class Miguel_Orders_Api {
 	public function __construct( Miguel_Hook_Manager_Interface $hook_manager ) {
 		$this->hook_manager = $hook_manager;
 		$this->code_source  = new Miguel_Product_Code_Source();
+		$this->mapper       = new Miguel_Order_Mapper();
 	}
 
 	/**
@@ -151,10 +160,17 @@ class Miguel_Orders_Api {
 		return array(
 			'id'            => strval( $order->get_id() ),
 			'status'        => $order->get_status(),
-			// Whether this status means the customer no longer has the order. Reported rather than
-			// withheld: Miguel needs the pull to repair a delete whose push never arrived, so the
-			// shop states the fact and Miguel acts on it.
-			'deleted'       => Miguel_Orders::is_deleted_order_status( $order->get_status() ),
+			// Whether the customer no longer has the order: its status says so, or refunds took away
+			// every Miguel product in it. Reported rather than withheld: Miguel needs the pull to
+			// repair a delete whose push never arrived, so the shop states the fact and Miguel acts
+			// on it. Judged with the mapper's bundle-aware has_miguel_codes(), the same check the
+			// push uses, so a bundle with codes left does not get reported as deleted here while the
+			// push still sends it.
+			'deleted'       => Miguel_Orders::is_deleted_order_status( $order->get_status() )
+				|| Miguel_Order_Refunds::has_refunded_all_miguel_items(
+					$order,
+					array( $this->mapper, 'has_miguel_codes' )
+				),
 			'currency_code' => $order->get_currency(),
 			'paid'          => $order->is_paid(),
 			'purchase_date' => Miguel_Order_Utils::get_purchase_date_for_order( $order ),
@@ -196,6 +212,7 @@ class Miguel_Orders_Api {
 	 * Line items whose product exposes a Miguel code via the shared product code
 	 * source are included (digital shortcode codes and printed-book codes); items
 	 * with no Miguel code are omitted.
+	 * Lines the customer was refunded for in full (see Miguel_Order_Refunds) are omitted too.
 	 *
 	 * @param WC_Order $order WooCommerce order.
 	 * @return array
@@ -206,6 +223,11 @@ class Miguel_Orders_Api {
 		foreach ( $order->get_items() as $item ) {
 			$codes = $this->get_miguel_codes_for_item( $item );
 			if ( empty( $codes ) ) {
+				continue;
+			}
+
+			// A line the customer was refunded for no longer belongs to them.
+			if ( 0 === Miguel_Order_Refunds::get_entitled_quantity( $order, $item ) ) {
 				continue;
 			}
 

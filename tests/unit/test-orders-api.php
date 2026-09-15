@@ -398,6 +398,130 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * The pull must not hand back a product the customer was refunded for, or Miguel would
+	 * re-create the item the push just removed.
+	 */
+	public function test_get_order_products_leave_out_a_refunded_line() {
+		$kept     = Miguel_Helper_Product::create_miguel_product( 'kept-book' );
+		$refunded = Miguel_Helper_Product::create_miguel_product( 'refunded-book' );
+
+		$order = Miguel_Helper_Order::create_order();
+		$order->add_product( $kept, 1 );
+		$refunded_item_id = $order->add_product( $refunded, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $refunded_item_id, 1, 10.00 );
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/' . $order->get_id() );
+		$request->set_param( 'id', $order->get_id() );
+
+		$data = $api->get_order( $request )->get_data();
+
+		$this->assertSame( array( 'kept-book' ), array_column( $data['products'], 'code' ) );
+		$this->assertFalse( $data['deleted'], 'one Miguel product is left, so the order stays' );
+	}
+
+	/**
+	 * Mirrors the push: an order whose Miguel products were all refunded is reported as deleted,
+	 * so the pull can repair a delete whose push never arrived.
+	 */
+	public function test_get_orders_flags_an_order_whose_miguel_products_were_all_refunded() {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$item_id = $order->add_product( $product, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $item_id, 0, 10.00 );
+
+		$orders = $this->fetch_orders_by_id();
+		$id     = strval( $order->get_id() );
+
+		$this->assertArrayHasKey( $id, $orders );
+		$this->assertSame( 'processing', $orders[ $id ]['status'] );
+		$this->assertTrue( $orders[ $id ]['deleted'] );
+		$this->assertSame( array(), $orders[ $id ]['products'] );
+	}
+
+	/**
+	 * The pull must judge "everything refunded" the same way the push does: a bundle still counts
+	 * as a live Miguel line as long as one of its bundled codes is un-refunded, even though the
+	 * pull's own code source (unlike the mapper) does not see bundles at all.
+	 */
+	public function test_get_orders_does_not_flag_an_order_whose_bundle_still_has_codes_left() {
+		$book1 = Miguel_Helper_Product::create_miguel_product( 'bundle-book-1' );
+		$book2 = Miguel_Helper_Product::create_miguel_product( 'bundle-book-2' );
+
+		$bundle = WC_Helper_Product::create_simple_product();
+		$bundle->set_regular_price( '20' );
+		$bundle->save();
+		update_post_meta(
+			$bundle->get_id(),
+			'_bundle_ids',
+			array(
+				(string) $book1->get_id() => array(),
+				(string) $book2->get_id() => array(),
+			)
+		);
+
+		$ebook = Miguel_Helper_Product::create_miguel_product( 'loose-ebook' );
+
+		$order          = Miguel_Helper_Order::create_order();
+		$order->add_product( $bundle, 1 );
+		$ebook_item_id  = $order->add_product( $ebook, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $ebook_item_id, 1, 10.00 );
+
+		$orders = $this->fetch_orders_by_id();
+		$id     = strval( $order->get_id() );
+
+		$this->assertArrayHasKey( $id, $orders );
+		$this->assertFalse( $orders[ $id ]['deleted'], 'the bundle still delivers codes, so the order stays' );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * When the only Miguel product in the order is a bundle and its line is refunded, the pull
+	 * must flag the order as deleted, mirroring the push's bundle-aware check.
+	 */
+	public function test_get_orders_flags_an_order_whose_only_miguel_product_is_a_refunded_bundle() {
+		$book1 = Miguel_Helper_Product::create_miguel_product( 'solo-bundle-book-1' );
+		$book2 = Miguel_Helper_Product::create_miguel_product( 'solo-bundle-book-2' );
+
+		$bundle = WC_Helper_Product::create_simple_product();
+		$bundle->set_regular_price( '20' );
+		$bundle->save();
+		update_post_meta(
+			$bundle->get_id(),
+			'_bundle_ids',
+			array(
+				(string) $book1->get_id() => array(),
+				(string) $book2->get_id() => array(),
+			)
+		);
+
+		$order          = Miguel_Helper_Order::create_order();
+		$bundle_item_id = $order->add_product( $bundle, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $bundle_item_id, 1, 20.00 );
+
+		$orders = $this->fetch_orders_by_id();
+		$id     = strval( $order->get_id() );
+
+		$this->assertArrayHasKey( $id, $orders );
+		$this->assertTrue( $orders[ $id ]['deleted'], 'the bundle was the only Miguel product and it is fully refunded' );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
 	 * Orders returned by the pull for everything modified since the epoch, keyed by id.
 	 *
 	 * @return array

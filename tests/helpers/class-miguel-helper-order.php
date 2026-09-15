@@ -70,6 +70,41 @@ class Miguel_Helper_Order {
 	}
 
 	/**
+	 * Refund part of one line the way the admin refund form does.
+	 *
+	 * The order's totals must be calculated first ($order->calculate_totals( false )), because
+	 * WooCommerce refuses a refund larger than what is left to refund. Orders loaded before the
+	 * refund see it straight away.
+	 *
+	 * @param WC_Order $order   Order.
+	 * @param int      $item_id Line item ID.
+	 * @param int      $qty     Quantity to refund; 0 for an amount-only refund.
+	 * @param float    $amount  Amount to refund on the line, without tax.
+	 * @return WC_Order_Refund
+	 * @throws Exception When WooCommerce refuses the refund.
+	 */
+	public static function refund_line( $order, $item_id, $qty, $amount ) {
+		$refund = wc_create_refund(
+			array(
+				'order_id'   => $order->get_id(),
+				'amount'     => $amount,
+				'line_items' => array(
+					$item_id => array(
+						'qty'          => $qty,
+						'refund_total' => $amount,
+					),
+				),
+			)
+		);
+
+		if ( is_wp_error( $refund ) ) {
+			throw new Exception( 'Refund failed: ' . $refund->get_error_message() );
+		}
+
+		return $refund;
+	}
+
+	/**
 	 * @param int $order_id
 	 */
 	public static function delete_order( $order_id ) {

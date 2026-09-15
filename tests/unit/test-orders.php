@@ -458,4 +458,291 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 			delete_option( Miguel_Orders::DELETED_STATUSES_OPTION );
 		}
 	}
+
+	/**
+	 * A partial refund reaches Miguel as the order without the refunded product; Miguel then
+	 * deletes that item and expires its links.
+	 */
+	public function test_a_partial_refund_sends_the_order_without_the_refunded_product() {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array(
+				'POST' => array(
+					'body'     => '{}',
+					'response' => array( 'code' => 201, 'message' => 'Created' ),
+				),
+			)
+		);
+
+		$kept     = Miguel_Helper_Product::create_miguel_product( 'kept-book' );
+		$refunded = Miguel_Helper_Product::create_miguel_product( 'refunded-book' );
+
+		$order = Miguel_Helper_Order::create_order();
+		$order->add_product( $kept, 1 );
+		$refunded_item_id = $order->add_product( $refunded, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $refunded_item_id, 1, 10.00 );
+		$order = wc_get_order( $order->get_id() );
+
+		$this->get_sut()->sync_order( $order->get_id(), '', $order->get_status(), $order );
+
+		$requests = Miguel_Helper_HTTP::get_requests();
+		$this->assertCount( 1, $requests, 'Different number of requests: ' . print_r( $requests, true ) );
+		$this->assertEquals( 'POST', $requests[0]['method'] );
+		$body = json_decode( $requests[0]['body'], true );
+		$this->assertSame( array( 'kept-book' ), array_column( $body['items'], 'code' ) );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * Refunding every Miguel product removes the order from Miguel even though WooCommerce keeps
+	 * the order's status, because something else in it (here a non-Miguel line) was not refunded.
+	 */
+	public function test_refunding_every_miguel_product_deletes_the_order_in_miguel() {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array(
+				'DELETE' => array(
+					'body'     => '',
+					'response' => array( 'code' => 204, 'message' => 'No Content' ),
+				),
+			)
+		);
+
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$item_id = $order->add_product( $product, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $item_id, 0, 10.00 );
+		$order = wc_get_order( $order->get_id() );
+		$this->assertSame( 'processing', $order->get_status(), 'only part of the order is refunded, so its status stays' );
+
+		$sut = $this->get_sut();
+		$sut->sync_order( $order->get_id(), '', $order->get_status(), $order );
+
+		$requests = Miguel_Helper_HTTP::get_requests();
+		$this->assertCount( 1, $requests, 'Different number of requests: ' . print_r( $requests, true ) );
+		$this->assertEquals( 'DELETE', $requests[0]['method'] );
+		$this->assertStringContains( '/v2/orders/' . $order->get_id(), $requests[0]['url'] );
+
+		// The same state again sends nothing.
+		$sut->sync_order( $order->get_id(), '', $order->get_status(), $order );
+		$this->assertCount( 1, Miguel_Helper_HTTP::get_requests() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * An order that never held a Miguel product is not deleted in Miguel because of a refund.
+	 */
+	public function test_a_refund_on_an_order_without_miguel_products_sends_nothing() {
+		Miguel_Helper_HTTP::mock_api_responses( array() );
+
+		$order   = Miguel_Helper_Order::create_order();
+		$item_id = $order->add_product( Miguel_Helper_Product::create_virtual_product(), 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $item_id, 1, 10.00 );
+		$order = wc_get_order( $order->get_id() );
+
+		$this->get_sut()->sync_order( $order->get_id(), '', $order->get_status(), $order );
+
+		$this->assertCount( 0, Miguel_Helper_HTTP::get_requests() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * Deleting a refund gives the product back: the order is saved, which queues the usual sync,
+	 * and that sync sends the product again.
+	 */
+	public function test_deleting_a_refund_resyncs_the_order_with_the_product_back() {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array(
+				'POST'   => array(
+					'body'     => '{}',
+					'response' => array( 'code' => 201, 'message' => 'Created' ),
+				),
+				'DELETE' => array(
+					'body'     => '',
+					'response' => array( 'code' => 204, 'message' => 'No Content' ),
+				),
+			)
+		);
+
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$item_id = $order->add_product( $product, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		$refund = Miguel_Helper_Order::refund_line( $order, $item_id, 1, 10.00 );
+
+		$sut   = $this->get_sut();
+		$order = wc_get_order( $order->get_id() );
+		$sut->sync_order( $order->get_id(), '', $order->get_status(), $order );
+		$this->assertEquals( 'DELETE', Miguel_Helper_HTTP::get_requests()[0]['method'] );
+
+		$refund_id = $refund->get_id();
+		$refund->delete( true );
+
+		// Push the order's modified date into the past first, so a real advance is unambiguous
+		// rather than possibly already "now" from an earlier step in this test.
+		$order = wc_get_order( $order->get_id() );
+		$order->set_date_modified( '2018-01-01T00:00:00' );
+		$order->save();
+		$modified_before = $order->get_date_modified()->getTimestamp();
+
+		$saved    = array();
+		$listener = function ( $order_id ) use ( &$saved ) {
+			$saved[] = $order_id;
+		};
+		add_action( 'woocommerce_update_order', $listener );
+		$sut->handle_refund_deleted( $refund_id, $order->get_id() );
+		remove_action( 'woocommerce_update_order', $listener );
+
+		$this->assertContains( $order->get_id(), $saved, 'deleting a refund must save the order, which is what queues its sync' );
+
+		$order = wc_get_order( $order->get_id() );
+		$this->assertGreaterThan(
+			$modified_before,
+			$order->get_date_modified()->getTimestamp(),
+			'the modified date must advance, or GET /orders?updated_since will not report the order again'
+		);
+		$sut->sync_order( $order->get_id(), '', $order->get_status(), $order );
+
+		$requests = Miguel_Helper_HTTP::get_requests();
+		$this->assertCount( 2, $requests, 'Different number of requests: ' . print_r( $requests, true ) );
+		$this->assertEquals( 'POST', $requests[1]['method'] );
+		$body = json_decode( $requests[1]['body'], true );
+		$this->assertSame( array( 'dummy-name' ), array_column( $body['items'], 'code' ) );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	public function test_handle_refund_deleted_ignores_a_missing_order() {
+		$saved    = array();
+		$listener = function ( $order_id ) use ( &$saved ) {
+			$saved[] = $order_id;
+		};
+		add_action( 'woocommerce_update_order', $listener );
+		$this->get_sut()->handle_refund_deleted( 0, 999999 );
+		remove_action( 'woocommerce_update_order', $listener );
+
+		$this->assertSame( array(), $saved );
+	}
+
+	public function test_registers_the_refund_deleted_hook() {
+		$hook_manager = new Miguel_Hook_Manager();
+		$sut          = $this->create_service_with_mocks(
+			'Miguel_Orders',
+			array(
+				'hook_manager' => $hook_manager,
+				'client'       => new Miguel_V2_Client( 'https://example.com', 'test-token' ),
+			)
+		);
+
+		$sut->register_hooks();
+
+		try {
+			$this->assertTrue( $hook_manager->is_hook_registered( 'woocommerce_refund_deleted', array( $sut, 'handle_refund_deleted' ) ) );
+
+			$registered = array_values(
+				array_filter(
+					$hook_manager->get_registered_hooks(),
+					function ( $hook ) {
+						return 'woocommerce_refund_deleted' === $hook['hook'];
+					}
+				)
+			);
+			$this->assertSame( 2, $registered[0]['accepted_args'] );
+		} finally {
+			$hook_manager->remove_all_hooks();
+		}
+	}
+
+	/**
+	 * The admin screen fires woocommerce_refund_deleted, but deleting a refund through the REST
+	 * API (DELETE /wc/v2/orders/{order_id}/refunds/{id}) instead fires
+	 * woocommerce_rest_delete_shop_order_refund_object with the deleted WC_Order_Refund object.
+	 * Without this, a refund deleted through the API leaves the order out of sync forever.
+	 */
+	public function test_registers_the_rest_refund_deleted_hook() {
+		$hook_manager = new Miguel_Hook_Manager();
+		$sut          = $this->create_service_with_mocks(
+			'Miguel_Orders',
+			array(
+				'hook_manager' => $hook_manager,
+				'client'       => new Miguel_V2_Client( 'https://example.com', 'test-token' ),
+			)
+		);
+
+		$sut->register_hooks();
+
+		try {
+			$this->assertTrue(
+				$hook_manager->is_hook_registered(
+					'woocommerce_rest_delete_shop_order_refund_object',
+					array( $sut, 'handle_refund_deleted_via_rest' )
+				)
+			);
+
+			$registered = array_values(
+				array_filter(
+					$hook_manager->get_registered_hooks(),
+					function ( $hook ) {
+						return 'woocommerce_rest_delete_shop_order_refund_object' === $hook['hook'];
+					}
+				)
+			);
+			$this->assertSame( 1, $registered[0]['accepted_args'] );
+		} finally {
+			$hook_manager->remove_all_hooks();
+		}
+	}
+
+	/**
+	 * The REST handler receives the deleted WC_Order_Refund object (WooCommerce has already
+	 * deleted it by the time the action fires) and must resync the parent the same way the admin
+	 * screen's handle_refund_deleted() does.
+	 */
+	public function test_handle_refund_deleted_via_rest_resyncs_the_parent_order() {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$item_id = $order->add_product( $product, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		$refund   = Miguel_Helper_Order::refund_line( $order, $item_id, 1, 10.00 );
+		$order_id = $order->get_id();
+
+		$order->set_date_modified( '2018-01-01T00:00:00' );
+		$order->save();
+		$modified_before = $order->get_date_modified()->getTimestamp();
+
+		// WooCommerce's REST delete_item() only fires the action after actually deleting the
+		// refund (force delete, since refunds do not support trashing), which resets the object's
+		// own ID to 0 but leaves its parent_id in place. Deleting it first here mirrors that.
+		$refund->delete( true );
+		$this->assertSame( 0, $refund->get_id(), 'sanity check: force delete resets the refund object id' );
+
+		$saved    = array();
+		$listener = function ( $updated_order_id ) use ( &$saved ) {
+			$saved[] = $updated_order_id;
+		};
+		add_action( 'woocommerce_update_order', $listener );
+		$this->get_sut()->handle_refund_deleted_via_rest( $refund );
+		remove_action( 'woocommerce_update_order', $listener );
+
+		$this->assertContains( $order_id, $saved, 'the REST delete path must save the parent order too' );
+
+		$order = wc_get_order( $order_id );
+		$this->assertGreaterThan( $modified_before, $order->get_date_modified()->getTimestamp() );
+
+		Miguel_Helper_Order::delete_order( $order_id );
+	}
 }
