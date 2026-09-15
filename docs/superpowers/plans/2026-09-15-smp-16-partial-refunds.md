@@ -535,7 +535,7 @@ git commit -m "feat(orders): send Miguel only the products a refund leaves the c
 - Consumes: `Miguel_Order_Refunds::has_refunded_all_miguel_items( $order, callable ): bool` (Task 1); `Miguel_Order_Mapper::has_miguel_codes( WC_Product ): bool` (existing, public); the mapper's refund-aware `map()` (Task 2); test helpers `Miguel_Helper_Order::refund_line()` (Task 1) and `Miguel_Helper_Product::create_miguel_product()` (Task 2).
 - Produces: `Miguel_Orders::handle_refund_deleted( int $refund_id, int $order_id ): void` (public), registered on `woocommerce_refund_deleted` with priority 10 and 2 accepted args.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `tests/unit/test-orders.php`, before the closing `}` of the class:
 
@@ -735,12 +735,12 @@ Add to `tests/unit/test-orders.php`, before the closing `}` of the class:
 	}
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Orders`
 Expected: `test_refunding_every_miguel_product_deletes_the_order_in_miguel` FAILs (0 requests: the mapper returns `null`, so the sync does nothing); `test_deleting_a_refund_resyncs…`, `test_handle_refund_deleted_ignores…` and `test_registers_the_refund_deleted_hook` FAIL (`handle_refund_deleted` does not exist / hook not registered). `test_a_partial_refund_sends…` and `test_a_refund_on_an_order_without_miguel_products_sends_nothing` already pass (Task 2); all existing tests pass.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `includes/class-miguel-orders.php`:
 
@@ -807,16 +807,16 @@ and add this private method after `sync_order()`:
 	}
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Orders`
 Expected: PASS, all tests in the class.
 
-- [ ] **Step 5: phpcs**
+- [x] **Step 5: phpcs**
 
 Both phpcs commands on `includes/class-miguel-orders.php tests/unit/test-orders.php`. Expected: 0 errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add includes/class-miguel-orders.php tests/unit/test-orders.php docs/superpowers/plans/2026-09-15-smp-16-partial-refunds.md
