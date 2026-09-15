@@ -62,6 +62,7 @@ Examples (2-decimal store):
 | qty 2, 398.00 | amount 250.00 | 1 |
 | qty 1, 0.00 (free) | qty 1 | 0 |
 | qty 1, 0.00 (free) | none | 1 |
+| qty 3, 100.00 | amount 33.33 | 2 (the tolerance: 33.33 is one unit of 33.333…) |
 
 A second static method, used by the sync and the pull:
 
@@ -74,13 +75,13 @@ True when the order has at least one product line whose product yields Miguel co
 ## Changes
 
 1. **`Miguel_Order_Mapper::map()`** sends each line with `quantity = get_entitled_quantity()` and skips lines with 0 (for a bundle, all its codes). Per-unit `sold_price` is unchanged. When no line is left it returns `null`, as it does today for an order without Miguel products.
-2. **`Miguel_Orders::sync_order()`**, non-removal status: when the mapper returns `null` **and** `has_refunded_all_miguel_items()` is true, delete the order in Miguel through the existing delete branch (same `delete_order()` call, same `'delete'` hash, same logging). An order that simply has no Miguel products still does nothing.
+2. **`Miguel_Orders::sync_order()`**: an order for which `has_refunded_all_miguel_items()` is true (checked with the mapper's bundle-aware `has_miguel_codes()`) takes the existing delete branch, like a removal status — same `delete_order()` call, same `'delete'` hash, same logging. For such an order the mapper would return `null` anyway, since no Miguel line has units left. An order that simply has no Miguel products still does nothing.
 3. **`Miguel_Orders`** registers `woocommerce_refund_deleted` → `handle_refund_deleted( $refund_id, $order_id )`: loads the parent order, `set_date_modified( time() )` and `save()`. The save fires `woocommerce_update_order`, which queues the usual sync (products return), and the new modified date makes `GET /orders?updated_since` report the order again. A missing order is ignored.
 4. **`Miguel_Orders_Api`**:
    - `collect_products_from_order()` skips lines whose entitled quantity is 0.
    - `format_order()` reports `deleted: true` also when `has_refunded_all_miguel_items()` is true (its code check: `get_miguel_codes_for_item()` non-empty), so a pull repairs a delete whose push never arrived.
    - `format_line_items()` (order detail) is unchanged — it is a raw view of WooCommerce's lines.
-5. **Docs:** `docs/openapi.yaml` — `products` omits fully refunded lines; `deleted` also covers "everything refunded". `README.md` if it describes these fields. `CHANGELOG.md` entry under the unreleased `1.10.0`.
+5. **Docs:** `docs/openapi.yaml` — `products` omits fully refunded lines; the `Order` schema gains its missing `deleted` property, documented with both meanings (removal status, everything refunded). `README.md` if it describes these fields. `CHANGELOG.md` entry under the unreleased `1.10.0`.
 
 ## Edge cases
 
