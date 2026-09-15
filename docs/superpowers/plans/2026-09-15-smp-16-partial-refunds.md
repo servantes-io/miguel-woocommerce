@@ -59,7 +59,7 @@
   - `Miguel_Order_Refunds::has_refunded_all_miguel_items( WC_Order $order, callable $has_miguel_codes ): bool` (static; the callable receives a `WC_Product` and returns bool)
   - Test helper `Miguel_Helper_Order::refund_line( WC_Order $order, int $item_id, int $qty, float $amount ): WC_Order_Refund` (static; throws on failure)
 
-- [ ] **Step 1: Add the refund test helper**
+- [x] **Step 1: Add the refund test helper**
 
 In `tests/helpers/class-miguel-helper-order.php`, add this method after `create_order_downloadable()`:
 
@@ -100,7 +100,7 @@ In `tests/helpers/class-miguel-helper-order.php`, add this method after `create_
 	}
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `tests/unit/test-order-refunds.php`:
 
@@ -224,12 +224,12 @@ class Miguel_Test_Order_Refunds extends Miguel_Test_Case {
 }
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter=Miguel_Test_Order_Refunds`
 Expected: FAIL — `Error: Class "Miguel_Order_Refunds" not found` for every test.
 
-- [ ] **Step 4: Implement the class**
+- [x] **Step 4: Implement the class**
 
 Create `includes/class-miguel-order-refunds.php`:
 
@@ -326,16 +326,16 @@ In `includes/class-miguel.php`, `includes()`, add the new file right after the `
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-refunds.php';
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter=Miguel_Test_Order_Refunds`
 Expected: PASS — `OK (14 tests, …)` (11 data-provider rows + 3 tests).
 
-- [ ] **Step 6: phpcs**
+- [x] **Step 6: phpcs**
 
 Run both phpcs commands from Global Constraints on `includes/class-miguel-order-refunds.php includes/class-miguel.php tests/unit/test-order-refunds.php tests/helpers/class-miguel-helper-order.php`. Expected: 0 errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add includes/class-miguel-order-refunds.php includes/class-miguel.php tests/unit/test-order-refunds.php tests/helpers/class-miguel-helper-order.php docs/superpowers/plans/2026-09-15-smp-16-partial-refunds.md
