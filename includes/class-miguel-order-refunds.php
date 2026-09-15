@@ -35,7 +35,17 @@ class Miguel_Order_Refunds {
 		$item_id        = (int) $item->get_id();
 		$refunded_qty   = (int) abs( $order->get_qty_refunded_for_item( $item_id ) );
 		$refunded_total = abs( (float) $order->get_total_refunded_for_item( $item_id ) );
-		$unit_price     = (float) $item->get_total() / $ordered;
+
+		// Rounded to the store's price precision, so several refunds each covering one rounded
+		// unit price (33.33 against a 3 x 33.333... line) add up to the whole line instead of
+		// falling short by floating-point error against the unrounded price. A line so cheap per
+		// unit that rounding would make it look free (0) falls back to the unrounded price, since a
+		// line that is not actually free must still be losable by money.
+		$raw_unit_price = (float) $item->get_total() / $ordered;
+		$unit_price     = round( $raw_unit_price, wc_get_price_decimals() );
+		if ( 0.0 === $unit_price && $raw_unit_price > 0 ) {
+			$unit_price = $raw_unit_price;
+		}
 
 		$money_units = 0;
 		if ( $unit_price > 0 ) {
