@@ -398,6 +398,54 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * The pull must not hand back a product the customer was refunded for, or Miguel would
+	 * re-create the item the push just removed.
+	 */
+	public function test_get_order_products_leave_out_a_refunded_line() {
+		$kept     = Miguel_Helper_Product::create_miguel_product( 'kept-book' );
+		$refunded = Miguel_Helper_Product::create_miguel_product( 'refunded-book' );
+
+		$order = Miguel_Helper_Order::create_order();
+		$order->add_product( $kept, 1 );
+		$refunded_item_id = $order->add_product( $refunded, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $refunded_item_id, 1, 10.00 );
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/' . $order->get_id() );
+		$request->set_param( 'id', $order->get_id() );
+
+		$data = $api->get_order( $request )->get_data();
+
+		$this->assertSame( array( 'kept-book' ), array_column( $data['products'], 'code' ) );
+		$this->assertFalse( $data['deleted'], 'one Miguel product is left, so the order stays' );
+	}
+
+	/**
+	 * Mirrors the push: an order whose Miguel products were all refunded is reported as deleted,
+	 * so the pull can repair a delete whose push never arrived.
+	 */
+	public function test_get_orders_flags_an_order_whose_miguel_products_were_all_refunded() {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$item_id = $order->add_product( $product, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		Miguel_Helper_Order::refund_line( $order, $item_id, 0, 10.00 );
+
+		$orders = $this->fetch_orders_by_id();
+		$id     = strval( $order->get_id() );
+
+		$this->assertArrayHasKey( $id, $orders );
+		$this->assertSame( 'processing', $orders[ $id ]['status'] );
+		$this->assertTrue( $orders[ $id ]['deleted'] );
+		$this->assertSame( array(), $orders[ $id ]['products'] );
+	}
+
+	/**
 	 * Orders returned by the pull for everything modified since the epoch, keyed by id.
 	 *
 	 * @return array

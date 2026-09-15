@@ -835,7 +835,7 @@ git commit -m "feat(orders): remove a fully refunded order from Miguel, and resy
 - Consumes: `Miguel_Order_Refunds::get_entitled_quantity()` and `::has_refunded_all_miguel_items()` (Task 1); test helpers `refund_line()` (Task 1), `create_miguel_product()` (Task 2); the existing private test helper `fetch_orders_by_id()` in this test class.
 - Produces: `GET /miguel/v1/orders` and `/orders/{id}` — `products` omits lines with 0 entitled units; `deleted` is also true when every Miguel line is refunded. `line_items` unchanged.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `tests/unit/test-orders-api.php`, before the private `fetch_orders_by_id()` helper:
 
@@ -889,12 +889,12 @@ Add to `tests/unit/test-orders-api.php`, before the private `fetch_orders_by_id(
 	}
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Orders_Api`
 Expected: both new tests FAIL (`refunded-book` still in `products`; `deleted` false); existing tests pass.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `includes/class-miguel-orders-api.php`:
 
@@ -925,16 +925,16 @@ In `includes/class-miguel-orders-api.php`:
 
 and extend its docblock's description with the sentence: `Lines the customer was refunded for in full (see Miguel_Order_Refunds) are omitted too.`
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `docker compose -p miguel-woocommerce -f docker-compose.test.yml run --rm phpunit --filter=Test_Miguel_Orders_Api`
 Expected: PASS.
 
-- [ ] **Step 5: phpcs**
+- [x] **Step 5: phpcs**
 
 Both phpcs commands on `includes/class-miguel-orders-api.php tests/unit/test-orders-api.php`. Expected: 0 errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add includes/class-miguel-orders-api.php tests/unit/test-orders-api.php docs/superpowers/plans/2026-09-15-smp-16-partial-refunds.md
