@@ -590,6 +590,13 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$refund_id = $refund->get_id();
 		$refund->delete( true );
 
+		// Push the order's modified date into the past first, so a real advance is unambiguous
+		// rather than possibly already "now" from an earlier step in this test.
+		$order = wc_get_order( $order->get_id() );
+		$order->set_date_modified( '2018-01-01T00:00:00' );
+		$order->save();
+		$modified_before = $order->get_date_modified()->getTimestamp();
+
 		$saved    = array();
 		$listener = function ( $order_id ) use ( &$saved ) {
 			$saved[] = $order_id;
@@ -601,6 +608,11 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		$this->assertContains( $order->get_id(), $saved, 'deleting a refund must save the order, which is what queues its sync' );
 
 		$order = wc_get_order( $order->get_id() );
+		$this->assertGreaterThan(
+			$modified_before,
+			$order->get_date_modified()->getTimestamp(),
+			'the modified date must advance, or GET /orders?updated_since will not report the order again'
+		);
 		$sut->sync_order( $order->get_id(), '', $order->get_status(), $order );
 
 		$requests = Miguel_Helper_HTTP::get_requests();
@@ -651,5 +663,86 @@ class Test_Miguel_Orders extends Miguel_Test_Case {
 		} finally {
 			$hook_manager->remove_all_hooks();
 		}
+	}
+
+	/**
+	 * The admin screen fires woocommerce_refund_deleted, but deleting a refund through the REST
+	 * API (DELETE /wc/v2/orders/{order_id}/refunds/{id}) instead fires
+	 * woocommerce_rest_delete_shop_order_refund_object with the deleted WC_Order_Refund object.
+	 * Without this, a refund deleted through the API leaves the order out of sync forever.
+	 */
+	public function test_registers_the_rest_refund_deleted_hook() {
+		$hook_manager = new Miguel_Hook_Manager();
+		$sut          = $this->create_service_with_mocks(
+			'Miguel_Orders',
+			array(
+				'hook_manager' => $hook_manager,
+				'client'       => new Miguel_V2_Client( 'https://example.com', 'test-token' ),
+			)
+		);
+
+		$sut->register_hooks();
+
+		try {
+			$this->assertTrue(
+				$hook_manager->is_hook_registered(
+					'woocommerce_rest_delete_shop_order_refund_object',
+					array( $sut, 'handle_refund_deleted_via_rest' )
+				)
+			);
+
+			$registered = array_values(
+				array_filter(
+					$hook_manager->get_registered_hooks(),
+					function ( $hook ) {
+						return 'woocommerce_rest_delete_shop_order_refund_object' === $hook['hook'];
+					}
+				)
+			);
+			$this->assertSame( 1, $registered[0]['accepted_args'] );
+		} finally {
+			$hook_manager->remove_all_hooks();
+		}
+	}
+
+	/**
+	 * The REST handler receives the deleted WC_Order_Refund object (WooCommerce has already
+	 * deleted it by the time the action fires) and must resync the parent the same way the admin
+	 * screen's handle_refund_deleted() does.
+	 */
+	public function test_handle_refund_deleted_via_rest_resyncs_the_parent_order() {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+		$order   = Miguel_Helper_Order::create_order();
+		$item_id = $order->add_product( $product, 1 );
+		$order->calculate_totals( false );
+		$order->save();
+
+		$refund   = Miguel_Helper_Order::refund_line( $order, $item_id, 1, 10.00 );
+		$order_id = $order->get_id();
+
+		$order->set_date_modified( '2018-01-01T00:00:00' );
+		$order->save();
+		$modified_before = $order->get_date_modified()->getTimestamp();
+
+		// WooCommerce's REST delete_item() only fires the action after actually deleting the
+		// refund (force delete, since refunds do not support trashing), which resets the object's
+		// own ID to 0 but leaves its parent_id in place. Deleting it first here mirrors that.
+		$refund->delete( true );
+		$this->assertSame( 0, $refund->get_id(), 'sanity check: force delete resets the refund object id' );
+
+		$saved    = array();
+		$listener = function ( $updated_order_id ) use ( &$saved ) {
+			$saved[] = $updated_order_id;
+		};
+		add_action( 'woocommerce_update_order', $listener );
+		$this->get_sut()->handle_refund_deleted_via_rest( $refund );
+		remove_action( 'woocommerce_update_order', $listener );
+
+		$this->assertContains( $order_id, $saved, 'the REST delete path must save the parent order too' );
+
+		$order = wc_get_order( $order_id );
+		$this->assertGreaterThan( $modified_before, $order->get_date_modified()->getTimestamp() );
+
+		Miguel_Helper_Order::delete_order( $order_id );
 	}
 }

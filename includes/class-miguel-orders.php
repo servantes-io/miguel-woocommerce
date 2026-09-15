@@ -79,6 +79,10 @@ class Miguel_Orders {
 		$this->hook_manager->add_action( 'woocommerce_update_order', array( $this, 'queue_order_update_sync' ), 10, 1 );
 		$this->hook_manager->add_action( self::ASYNC_SYNC_ACTION, array( $this, 'handle_async_order_sync' ), 10, 3 );
 		$this->hook_manager->add_action( 'woocommerce_refund_deleted', array( $this, 'handle_refund_deleted' ), 10, 2 );
+		// The admin screen ("delete refund" in the order edit page) fires woocommerce_refund_deleted
+		// above. Deleting a refund through the REST API instead fires this action, with the deleted
+		// WC_Order_Refund object rather than separate IDs.
+		$this->hook_manager->add_action( 'woocommerce_rest_delete_shop_order_refund_object', array( $this, 'handle_refund_deleted_via_rest' ), 10, 1 );
 	}
 
 	/**
@@ -194,6 +198,25 @@ class Miguel_Orders {
 
 		$order->set_date_modified( time() );
 		$order->save();
+	}
+
+	/**
+	 * Resync an order after one of its refunds is deleted through the REST API.
+	 *
+	 * WooCommerce's REST API deletes a refund by force (refunds do not support trashing) and fires
+	 * `woocommerce_rest_delete_shop_order_refund_object` with the now-deleted WC_Order_Refund
+	 * object afterwards. By then the refund's own ID has been reset to 0, but its parent order ID
+	 * is still available, which is all handle_refund_deleted() needs.
+	 *
+	 * @param WC_Order_Refund $refund The deleted refund.
+	 * @return void
+	 */
+	public function handle_refund_deleted_via_rest( $refund ) {
+		if ( ! ( $refund instanceof WC_Order_Refund ) ) {
+			return;
+		}
+
+		$this->handle_refund_deleted( $refund->get_id(), $refund->get_parent_id() );
 	}
 
 	/**
