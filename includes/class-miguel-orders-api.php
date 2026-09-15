@@ -26,6 +26,14 @@ class Miguel_Orders_Api {
 	private Miguel_Product_Code_Source $code_source;
 
 	/**
+	 * Order mapper, used only for its bundle-aware `has_miguel_codes()` check so the pull's
+	 * "everything refunded" judgment matches the push's.
+	 *
+	 * @var Miguel_Order_Mapper
+	 */
+	private Miguel_Order_Mapper $mapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager.
@@ -33,6 +41,7 @@ class Miguel_Orders_Api {
 	public function __construct( Miguel_Hook_Manager_Interface $hook_manager ) {
 		$this->hook_manager = $hook_manager;
 		$this->code_source  = new Miguel_Product_Code_Source();
+		$this->mapper       = new Miguel_Order_Mapper();
 	}
 
 	/**
@@ -154,13 +163,13 @@ class Miguel_Orders_Api {
 			// Whether the customer no longer has the order: its status says so, or refunds took away
 			// every Miguel product in it. Reported rather than withheld: Miguel needs the pull to
 			// repair a delete whose push never arrived, so the shop states the fact and Miguel acts
-			// on it.
+			// on it. Judged with the mapper's bundle-aware has_miguel_codes(), the same check the
+			// push uses, so a bundle with codes left does not get reported as deleted here while the
+			// push still sends it.
 			'deleted'       => Miguel_Orders::is_deleted_order_status( $order->get_status() )
 				|| Miguel_Order_Refunds::has_refunded_all_miguel_items(
 					$order,
-					function ( $product ) {
-						return ! empty( $this->code_source->get_codes( $product ) );
-					}
+					array( $this->mapper, 'has_miguel_codes' )
 				),
 			'currency_code' => $order->get_currency(),
 			'paid'          => $order->is_paid(),
