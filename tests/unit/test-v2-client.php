@@ -169,6 +169,20 @@ class Miguel_Test_V2_Client extends WP_UnitTestCase {
 		$this->assertSame( 'Bearer ' . $this->token, $requests[1]['headers']['Authorization'] );
 	}
 
+	/**
+	 * The list is read while an admin page renders, so a slow Miguel must fail within the
+	 * web server's own limit (commonly 60 s) and show the page's error, not a gateway timeout.
+	 */
+	public function test_get_all_product_variants_uses_a_short_timeout(): void {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array( 'page=1&' => $this->variants_page( array( 'a' ), null ) )
+		);
+
+		$this->sut->get_all_product_variants();
+
+		$this->assertLessThanOrEqual( 30, Miguel_Helper_HTTP::get_last_request()['timeout'] );
+	}
+
 	public function test_get_all_product_variants_returns_error_on_401(): void {
 		Miguel_Helper_HTTP::mock_api_responses(
 			array( 'GET' => array( 'body' => '', 'response' => array( 'code' => 401, 'message' => 'Unauthorized' ) ) )

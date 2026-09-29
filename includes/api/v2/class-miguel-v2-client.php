@@ -25,6 +25,12 @@ class Miguel_V2_Client {
 	 */
 	const PRODUCT_VARIANTS_MAX_PAGES = 1000;
 
+	/**
+	 * Seconds to wait for one page. The list is read while an admin page renders, so a slow
+	 * Miguel must fail before the web server gives up on the page (commonly after 60 s).
+	 */
+	const PRODUCT_VARIANTS_TIMEOUT = 30;
+
 	/** @var string */
 	private string $url;
 
@@ -147,7 +153,7 @@ class Miguel_V2_Client {
 					'limit' => self::PRODUCT_VARIANTS_PAGE_SIZE,
 				)
 			);
-			$response = $this->send( 'GET', 'v2/product-variants?' . $query );
+			$response = $this->send( 'GET', 'v2/product-variants?' . $query, null, self::PRODUCT_VARIANTS_TIMEOUT );
 			if ( is_wp_error( $response ) ) {
 				return $response;
 			}

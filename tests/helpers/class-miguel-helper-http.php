@@ -62,6 +62,7 @@ class Miguel_Helper_HTTP {
 			'method' => isset( $args['method'] ) ? $args['method'] : 'GET',
 			'body' => isset( $args['body'] ) ? $args['body'] : '',
 			'headers' => isset( $args['headers'] ) ? $args['headers'] : array(),
+			'timeout' => isset( $args['timeout'] ) ? $args['timeout'] : null,
 			'stacktrace' => $stacktrace,
 		);
 

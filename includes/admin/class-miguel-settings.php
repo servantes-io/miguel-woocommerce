@@ -264,11 +264,17 @@ class Miguel_Settings extends WC_Settings_Page {
 				$shop_products[] = $this->get_product_link( $product_id );
 			}
 
+			$miguel_product = esc_html( (string) $row['miguel_name'] );
+			if ( null !== $row['miguel_code'] && $row['miguel_code'] !== $row['code'] ) {
+				// Paired regardless of case, but spelled differently in Miguel.
+				$miguel_product .= '<br /><code>' . esc_html( $row['miguel_code'] ) . '</code>';
+			}
+
 			echo '<tr>';
 			echo '<td><code>' . esc_html( $row['code'] ) . '</code></td>';
 			echo '<td>' . $status . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
 			echo '<td>' . implode( '<br />', $shop_products ) . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in get_product_link().
-			echo '<td>' . esc_html( (string) $row['miguel_name'] ) . '</td>';
+			echo '<td>' . $miguel_product . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
 			echo '</tr>';
 		}
 

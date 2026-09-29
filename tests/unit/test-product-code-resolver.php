@@ -156,6 +156,18 @@ class Test_Miguel_Product_Code_Resolver extends Miguel_Test_Case {
 	}
 
 	/**
+	 * A numeric code becomes an integer array key in PHP; it must still be found.
+	 */
+	public function test_numeric_code_resolves() {
+		$product = $this->create_product_with_miguel_code( '12345' );
+
+		$res = ( new Miguel_Product_Code_Resolver() )->resolve_product_code( '12345' );
+
+		$this->assertIsArray( $res );
+		$this->assertSame( $product->get_id(), $res['product_id'] );
+	}
+
+	/**
 	 * A downloadable product whose Miguel code is set through the `_miguel_code` meta.
 	 * (SKUs cannot differ only in case: WooCommerce's unique-SKU check is case-insensitive.)
 	 *
