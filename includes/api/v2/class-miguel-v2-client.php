@@ -15,6 +15,16 @@ class Miguel_V2_Client {
 	 */
 	const ALLOWED_FORMATS = array( 'epub', 'mobi', 'pdf', 'audio' );
 
+	/**
+	 * Product variants per page; Miguel clamps anything larger to 200.
+	 */
+	const PRODUCT_VARIANTS_PAGE_SIZE = 200;
+
+	/**
+	 * Pages read before giving up, so a misbehaving server cannot keep the loop going.
+	 */
+	const PRODUCT_VARIANTS_MAX_PAGES = 1000;
+
 	/** @var string */
 	private string $url;
 
@@ -119,6 +129,53 @@ class Miguel_V2_Client {
 		}
 
 		return $this->problem_to_wp_error( $response );
+	}
+
+	/**
+	 * List every product variant of the workspace, following the pages to the last one.
+	 *
+	 * @return array|WP_Error Decoded variants ({ code, name, product: { title }, … }) or error.
+	 */
+	public function get_all_product_variants() {
+		$variants = array();
+		$page     = 1;
+
+		for ( $fetched = 0; $fetched < self::PRODUCT_VARIANTS_MAX_PAGES; $fetched++ ) {
+			$query    = http_build_query(
+				array(
+					'page'  => $page,
+					'limit' => self::PRODUCT_VARIANTS_PAGE_SIZE,
+				)
+			);
+			$response = $this->send( 'GET', 'v2/product-variants?' . $query );
+			if ( is_wp_error( $response ) ) {
+				return $response;
+			}
+
+			if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+				return $this->problem_to_wp_error( $response );
+			}
+
+			$decoded = json_decode( wp_remote_retrieve_body( $response ), true );
+			if ( ! is_array( $decoded ) || ! isset( $decoded['data'] ) || ! is_array( $decoded['data'] ) ) {
+				return new WP_Error( 'miguel.invalid_response', __( 'Miguel API returned an unexpected response.', 'miguel' ) );
+			}
+
+			foreach ( $decoded['data'] as $variant ) {
+				if ( is_array( $variant ) ) {
+					$variants[] = $variant;
+				}
+			}
+
+			$next_page = $decoded['meta']['nextPage'] ?? null;
+			if ( ! is_int( $next_page ) || $next_page <= $page ) {
+				return $variants;
+			}
+
+			$page = $next_page;
+		}
+
+		return new WP_Error( 'miguel.too_many_pages', __( 'Miguel API returned more pages than expected.', 'miguel' ) );
 	}
 
 	/**
