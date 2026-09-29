@@ -379,3 +379,64 @@ msgstr "Název způsobu platby zobrazený u objednávek z aplikace Miguel."
 #: includes/class-miguel-payment-gateway.php
 msgid "Description"
 msgstr "Popis"
+
+#: includes/api/v2/class-miguel-v2-client.php
+msgid "Miguel API returned an unexpected response."
+msgstr "Miguel API vrátilo neočekávanou odpověď."
+
+#: includes/api/v2/class-miguel-v2-client.php
+msgid "Miguel API returned more pages than expected."
+msgstr "Miguel API vrátilo víc stránek, než se čekalo."
+
+#: includes/class-miguel-product-pairing.php
+msgid "The connection to Miguel is not set up: enter the API key in the Miguel settings, then try again."
+msgstr "Připojení k Miguelovi není nastavené: zadejte API klíč v nastavení Miguela a zkuste to znovu."
+
+#: includes/class-miguel-product-pairing.php
+#, php-format
+msgid "Could not load the products from Miguel: %s"
+msgstr "Produkty z Miguela se nepodařilo načíst: %s"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Product pairing"
+msgstr "Párování produktů"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Compares the Miguel codes of your products (by the same rules as orders from Miguel are paired) with the products in Miguel. Letter case does not matter. Nothing is changed in your e-shop or in Miguel."
+msgstr "Porovná Miguel kódy vašich produktů (podle stejných pravidel, podle kterých se párují objednávky z Miguela) s produkty v Miguelovi. Na velikosti písmen nezáleží. V e-shopu ani v Miguelovi se nic nemění."
+
+#: includes/admin/class-miguel-settings.php
+msgid "Paired"
+msgstr "Spárováno"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Only in e-shop"
+msgstr "Jen v e-shopu"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Only in Miguel"
+msgstr "Jen v Miguelovi"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Code"
+msgstr "Kód"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Status"
+msgstr "Stav"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Product in e-shop"
+msgstr "Produkt v e-shopu"
+
+#: includes/admin/class-miguel-settings.php
+msgid "Product in Miguel"
+msgstr "Produkt v Miguelovi"
+
+#: includes/admin/class-miguel-settings.php
+msgid "No products found in the e-shop or in Miguel."
+msgstr "V e-shopu ani v Miguelovi nejsou žádné produkty."
+
+#: includes/admin/class-miguel-settings.php
+msgid "Duplicate code: matches several products in the e-shop"
+msgstr "Duplicitní kód: odpovídá více produktům v e-shopu"

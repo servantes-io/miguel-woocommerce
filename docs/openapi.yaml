@@ -826,7 +826,7 @@ paths:
         Line items may reference products by `product_id` (WooCommerce ID) or `productCode`
         (a Miguel code: a digital shortcode code, a printed book's SKU plus the configured
         printed-book suffix, or a bare product SKU). When `productCode` is supplied it is
-        resolved to a `product_id` before the order is created.
+        resolved to a `product_id` before the order is created, without regard to letter case.
       parameters:
         - in: header
           name: Idempotency-Key
@@ -1116,6 +1116,9 @@ paths:
         product IDs: codes from downloadable product files, plus printed-book codes
         (SKU plus the configured suffix) when a printed-book suffix is configured.
         Useful for detecting duplicate codes (same code on multiple products).
+        Codes are compared without regard to letter case, as Miguel compares them:
+        codes differing only in case are one code, listed under the spelling of the
+        product with the lowest ID.
       responses:
         "200":
           description: OK

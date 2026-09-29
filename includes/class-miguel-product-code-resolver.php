@@ -113,7 +113,7 @@ class Miguel_Product_Code_Resolver {
 		}
 
 		$product_code_details_map = $this->get_product_code_details_map();
-		$normalized_code = self::normalize_code( $product_code );
+		$normalized_code          = self::normalize_code( $product_code );
 		if ( ! isset( $this->product_code_index[ $normalized_code ] ) ) {
 			return new WP_Error(
 				'product_code.not_found',
@@ -194,7 +194,7 @@ class Miguel_Product_Code_Resolver {
 			foreach ( $product_codes as $product_code ) {
 				$normalized_code = self::normalize_code( $product_code );
 				if ( ! isset( $listed_codes[ $normalized_code ] ) ) {
-					$listed_codes[ $normalized_code ] = $product_code;
+					$listed_codes[ $normalized_code ]      = $product_code;
 					$product_code_entries[ $product_code ] = array();
 				}
 				$product_code = $listed_codes[ $normalized_code ];
