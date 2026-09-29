@@ -73,5 +73,28 @@ class Test_Miguel_Product_Code_Map_Api extends Miguel_Test_Case {
 			$data['product_code_details']['book-2']['product_ids']
 		);
 	}
+
+	/**
+	 * Codes that differ only in case are reported as one duplicate code.
+	 */
+	public function test_get_product_code_map_groups_codes_differing_only_in_case() {
+		$ids = array();
+		foreach ( array( 'ABC-1', 'abc-1' ) as $code ) {
+			$product = WC_Helper_Product::create_simple_product();
+			$product->set_virtual( true );
+			$product->set_downloadable( true );
+			$product->update_meta_data( '_miguel_code', $code );
+			$product->save();
+			$ids[] = $product->get_id();
+		}
+
+		$api  = new Miguel_Product_Code_Map_Api( new Miguel_Hook_Manager() );
+		$data = $api->get_product_code_map()->get_data();
+
+		$this->assertEquals( 1, $data['count'] );
+		$this->assertEquals( 1, $data['duplicate_count'] );
+		$this->assertFalse( $data['product_code_details']['ABC-1']['is_unique'] );
+		$this->assertEquals( $ids, $data['product_code_details']['ABC-1']['product_ids'] );
+	}
 }
 

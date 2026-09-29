@@ -373,6 +373,70 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * Miguel compares product codes without regard to letter case: an order line whose
+	 * code differs from the product's only in case creates the order with that product.
+	 */
+	public function test_create_order_resolves_product_code_in_another_case() {
+		$print = WC_Helper_Product::create_simple_product();
+		$print->set_downloadable( false );
+		$print->set_virtual( false );
+		$print->set_sku( 'musk' );
+		$print->save();
+
+		$api      = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$response = $api->create_order( $this->build_musk_order_request( 'MUSK' ) );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Order creation should succeed.' );
+		$this->assertSame( 201, $response->get_status() );
+
+		$order       = wc_get_order( $response->get_data()['id'] );
+		$product_ids = array();
+		foreach ( $order->get_items() as $item ) {
+			$product_ids[] = $item->get_product_id();
+		}
+		$this->assertSame( array( $print->get_id() ), $product_ids );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * Two products whose codes differ only in case make that code ambiguous for an
+	 * order line, rather than the order picking one of them.
+	 */
+	public function test_prepare_payload_for_wc_order_rejects_code_matching_products_differing_in_case() {
+		$ids = array();
+		foreach ( array( 'Case-Book', 'case-book' ) as $code ) {
+			$product = WC_Helper_Product::create_simple_product();
+			$product->set_virtual( true );
+			$product->set_downloadable( true );
+			$product->update_meta_data( '_miguel_code', $code );
+			$product->save();
+			$ids[] = $product->get_id();
+		}
+
+		$api        = new Miguel_Order_Create_Api( new Miguel_Hook_Manager() );
+		$reflection = new ReflectionClass( $api );
+		$method     = $reflection->getMethod( 'prepare_payload_for_wc_order' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke(
+			$api,
+			array(
+				'line_items' => array(
+					array(
+						'product_code' => 'CASE-BOOK',
+						'quantity'     => 1,
+					),
+				),
+			)
+		);
+
+		$this->assertTrue( is_wp_error( $result ) );
+		$this->assertSame( 'product_code.ambiguous', $result->get_error_code() );
+		$this->assertEquals( $ids, $result->get_error_data()['product_ids'] );
+	}
+
+	/**
 	 * Test that quantity zero is rejected before passing payload to WooCommerce.
 	 */
 	public function test_prepare_payload_for_wc_order_rejects_zero_quantity() {
