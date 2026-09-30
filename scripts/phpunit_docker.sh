@@ -12,7 +12,8 @@
 #   docker compose -f docker-compose.test.yml run --rm phpunit --filter X
 #
 # What it does, in order:
-#   1. takes a lock, so two runs never share one test database;
+#   1. takes a host-wide lock, so two runs never share one test database, and
+#      clears whatever a killed earlier run left behind;
 #   2. installs the plugin's own composer dependencies inside the container —
 #      vendor/ is gitignored, so a fresh checkout or worktree has none, and the
 #      entrypoint execs vendor/bin/phpunit from the mounted tree;
@@ -35,12 +36,22 @@ fi
 cd "$(dirname "$0")/.."
 
 PROJECT="miguel-woocommerce-phpunit"
-COMPOSE=(docker compose -f docker-compose.test.yml -p "$PROJECT")
+# --env-file /dev/null: compose would otherwise read a .env from the checkout,
+# and a branch's .env could choose which WordPress/WooCommerce versions get
+# installed into the SHARED cache volumes for every later run.
+COMPOSE=(docker compose --env-file /dev/null -f docker-compose.test.yml -p "$PROJECT")
 
-exec 9>"${TMPDIR:-/tmp}/${PROJECT}.lock"
+# A fixed path, never $TMPDIR: two runs that saw different TMPDIRs would take
+# different locks, share one database anyway, and the first run's `down` would
+# kill the other mid-suite.
+exec 9>"/tmp/${PROJECT}.lock"
 flock 9
 
 cleanup() { "${COMPOSE[@]}" down --remove-orphans >/dev/null 2>&1 || true; }
+# Clear anything a KILLed earlier run left behind (a SIGKILL skips its trap,
+# and its containers keep running) -- otherwise this run would reuse that
+# run's database while its orphaned phpunit is still using it.
+cleanup
 trap cleanup EXIT
 trap 'exit 143' TERM INT
 
