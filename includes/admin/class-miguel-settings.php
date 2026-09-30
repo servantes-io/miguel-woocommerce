@@ -253,6 +253,14 @@ class Miguel_Settings extends WC_Settings_Page {
 			echo '<tr><td colspan="4">' . esc_html__( 'No products found in the e-shop or in Miguel.', 'miguel' ) . '</td></tr>';
 		}
 
+		// The cells' only markup; their text is escaped where it is built.
+		$cell_html = array(
+			'a'      => array( 'href' => array() ),
+			'br'     => array(),
+			'code'   => array(),
+			'strong' => array(),
+		);
+
 		foreach ( $rows as $row ) {
 			$status = esc_html( $labels[ $row['status'] ] );
 			if ( $row['is_duplicate'] ) {
@@ -272,9 +280,9 @@ class Miguel_Settings extends WC_Settings_Page {
 
 			echo '<tr>';
 			echo '<td><code>' . esc_html( $row['code'] ) . '</code></td>';
-			echo '<td>' . $status . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
-			echo '<td>' . implode( '<br />', $shop_products ) . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in get_product_link().
-			echo '<td>' . $miguel_product . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
+			echo '<td>' . wp_kses( $status, $cell_html ) . '</td>';
+			echo '<td>' . wp_kses( implode( '<br />', $shop_products ), $cell_html ) . '</td>';
+			echo '<td>' . wp_kses( $miguel_product, $cell_html ) . '</td>';
 			echo '</tr>';
 		}
 
