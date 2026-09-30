@@ -166,7 +166,9 @@ class Test_Miguel_Settings extends Miguel_Test_Case {
 		$this->assertStringContainsString( 'PAIRED-1', $html );
 		$this->assertStringContainsString( __( 'Paired', 'miguel' ), $html );
 		$this->assertStringContainsString( 'Shop &lt;b&gt;Book&lt;/b&gt;', $html );
-		$this->assertStringContainsString( esc_url( get_edit_post_link( $product->get_id(), 'raw' ) ), $html );
+		// wp_kses spells the href's ampersand &#038; before WordPress 7.0 and &amp; from it; both are the same link.
+		$this->assertSame( 1, preg_match( '/<a href="([^"]*)">/', $html, $href ), 'the shop product is a link' );
+		$this->assertSame( get_edit_post_link( $product->get_id(), 'raw' ), html_entity_decode( $href[1] ) );
 		$this->assertStringContainsString( 'Miguel Book (eBook)', $html );
 		$this->assertStringContainsString( 'paired-1', $html, "Miguel's spelling of a code differing in case is shown" );
 		$this->assertTrue( $GLOBALS['hide_save_button'] );
