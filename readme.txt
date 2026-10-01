@@ -129,10 +129,14 @@ The interactive wizard allows you to set the screen size for which the resulting
 * Raised the minimum supported versions to WooCommerce 7.9, WordPress 6.5 and PHP 8.1
 * Orders are marked paid on shops whose payment gateway keeps orders in its own status. Judging that by status instead made the shop report a failure while the payment had in fact completed, and Miguel then retried it every minute, re-sending the gateway's payment mail each time
 * A shop that declines to complete a payment says so in its reply instead of reporting an error, so Miguel records it and stops retrying
+* Added the "Statuses that remove the order from Miguel" setting (WooCommerce → Settings → Miguel), defaulting to Refunded, Cancelled and Failed as before
+* Fixed orders that had been removed from Miguel coming back on the next sync, which gave the customer access again
 * Added automatic order status change when Miguel finishes an order: choose a target status for orders holding only Miguel books and another for orders that also hold other products, in WooCommerce → Settings → Miguel. Both default to "Do not change status", so nothing changes until an admin opts in
 * Added `POST /orders/{id}/finished`, the callback Miguel calls when an order settles
 * Orders created from the Miguel app can carry a private note, visible to the shop only, saying which app they were placed in
 * Orders created by Miguel show "Miguel" as their payment method instead of "Other". The new Miguel payment gateway is never offered at checkout
+* Orders from Miguel holding only digital formats no longer need a shipping address or shipping lines, and show no placeholder shipping
+* Fixed the plugin's translations staying in English when another plugin loads payment gateways early
 * A partial refund takes the refunded products out of the order in Miguel, so the customer loses access to what they were refunded for. Compensation short of a whole unit's price keeps the product in the order Miguel holds. Deleting a partial refund puts the product back on the next sync; deleting a full refund does not, since WooCommerce leaves the order in the "refunded" status. Applies to refunds made before this version too, the next time such an order syncs
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
