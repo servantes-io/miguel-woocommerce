@@ -11,6 +11,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Miguel_Settings extends WC_Settings_Page {
 
 	/**
+	 * Section of the Miguel tab holding the product pairing table.
+	 */
+	const PRODUCT_PAIRING_SECTION = 'product-pairing';
+
+	/**
 	 * Hook manager instance
 	 *
 	 * @var Miguel_Hook_Manager_Interface
@@ -164,10 +169,27 @@ class Miguel_Settings extends WC_Settings_Page {
 	}
 
 	/**
+	 * Sections of the Miguel tab: the settings, and the product pairing table.
+	 *
+	 * @return array
+	 */
+	protected function get_own_sections() {
+		return array(
+			''                            => __( 'Settings', 'miguel' ),
+			self::PRODUCT_PAIRING_SECTION => __( 'Product pairing', 'miguel' ),
+		);
+	}
+
+	/**
 	 * Display settings.
 	 */
 	public function output() {
 		global $current_section;
+
+		if ( self::PRODUCT_PAIRING_SECTION === $current_section ) {
+			$this->output_product_pairing();
+			return;
+		}
 
 		$settings = $this->get_settings( $current_section );
 		WC_Admin_Settings::output_fields( $settings );
@@ -179,9 +201,111 @@ class Miguel_Settings extends WC_Settings_Page {
 	public function save() {
 		global $current_section;
 
+		// The pairing section only reads: it has no fields to save and must not reconnect.
+		if ( self::PRODUCT_PAIRING_SECTION === $current_section ) {
+			return;
+		}
+
 		$settings = $this->get_settings( $current_section );
 		WC_Admin_Settings::save_fields( $settings );
 		$this->connect_to_miguel_api();
+	}
+
+	/**
+	 * Display the product pairing table: every code a shop product exposes, and every
+	 * Miguel product, each marked as paired or present on one side only.
+	 */
+	private function output_product_pairing() {
+		// Nothing on this section is saved; a save button would only invite a reconnect.
+		$GLOBALS['hide_save_button'] = true;
+
+		echo '<h2>' . esc_html__( 'Product pairing', 'miguel' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Compares the Miguel codes of your products (by the same rules as orders from Miguel are paired) with the products in Miguel. Letter case does not matter. Nothing is changed in your e-shop or in Miguel.', 'miguel' ) . '</p>';
+
+		$rows = ( new Miguel_Product_Pairing() )->get_rows();
+		if ( is_wp_error( $rows ) ) {
+			echo '<div class="notice notice-error inline"><p>' . esc_html( $rows->get_error_message() ) . '</p></div>';
+			return;
+		}
+
+		$labels = array(
+			Miguel_Product_Pairing::STATUS_PAIRED      => __( 'Paired', 'miguel' ),
+			Miguel_Product_Pairing::STATUS_ESHOP_ONLY  => __( 'Only in e-shop', 'miguel' ),
+			Miguel_Product_Pairing::STATUS_MIGUEL_ONLY => __( 'Only in Miguel', 'miguel' ),
+		);
+
+		$counts = array_count_values( array_column( $rows, 'status' ) );
+		$totals = array();
+		foreach ( $labels as $status => $label ) {
+			$totals[] = $label . ': ' . ( $counts[ $status ] ?? 0 );
+		}
+		echo '<p>' . esc_html( implode( ' · ', $totals ) ) . '</p>';
+
+		echo '<table class="wp-list-table widefat fixed striped">';
+		echo '<thead><tr>';
+		echo '<th scope="col">' . esc_html__( 'Code', 'miguel' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Status', 'miguel' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Product in e-shop', 'miguel' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Product in Miguel', 'miguel' ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		if ( empty( $rows ) ) {
+			echo '<tr><td colspan="4">' . esc_html__( 'No products found in the e-shop or in Miguel.', 'miguel' ) . '</td></tr>';
+		}
+
+		// The cells' only markup; their text is escaped where it is built.
+		$cell_html = array(
+			'a'      => array( 'href' => array() ),
+			'br'     => array(),
+			'code'   => array(),
+			'strong' => array(),
+		);
+
+		foreach ( $rows as $row ) {
+			$status = esc_html( $labels[ $row['status'] ] );
+			if ( $row['is_duplicate'] ) {
+				$status .= '<br /><strong>' . esc_html__( 'Duplicate code: matches several products in the e-shop', 'miguel' ) . '</strong>';
+			}
+
+			$shop_products = array();
+			foreach ( $row['product_ids'] as $product_id ) {
+				$shop_products[] = $this->get_product_link( $product_id );
+			}
+
+			$miguel_product = esc_html( (string) $row['miguel_name'] );
+			if ( null !== $row['miguel_code'] && $row['miguel_code'] !== $row['code'] ) {
+				// Paired regardless of case, but spelled differently in Miguel.
+				$miguel_product .= '<br /><code>' . esc_html( $row['miguel_code'] ) . '</code>';
+			}
+
+			echo '<tr>';
+			echo '<td><code>' . esc_html( $row['code'] ) . '</code></td>';
+			echo '<td>' . wp_kses( $status, $cell_html ) . '</td>';
+			echo '<td>' . wp_kses( implode( '<br />', $shop_products ), $cell_html ) . '</td>';
+			echo '<td>' . wp_kses( $miguel_product, $cell_html ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+	}
+
+	/**
+	 * Escaped name of a shop product, linked to its edit screen (a variation's parent) when the user may edit it.
+	 *
+	 * @param int $product_id Product ID.
+	 * @return string HTML.
+	 */
+	private function get_product_link( $product_id ) {
+		$product = wc_get_product( $product_id );
+		if ( ! $product ) {
+			return esc_html( '#' . $product_id );
+		}
+
+		$edit_id = $product->get_parent_id() ? $product->get_parent_id() : $product->get_id();
+		$link    = get_edit_post_link( $edit_id, 'raw' );
+		$name    = esc_html( $product->get_name() );
+
+		return $link ? '<a href="' . esc_url( $link ) . '">' . $name . '</a>' : $name;
 	}
 
 	/**

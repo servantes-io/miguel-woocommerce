@@ -18,6 +18,13 @@ class Miguel_Product_Code_Resolver {
 	private ?array $product_code_details_map = null;
 
 	/**
+	 * Normalized code to its key in the details map.
+	 *
+	 * @var array|null
+	 */
+	private ?array $product_code_index = null;
+
+	/**
 	 * Product code source.
 	 *
 	 * @var Miguel_Product_Code_Source
@@ -31,6 +38,20 @@ class Miguel_Product_Code_Resolver {
 	 */
 	public function __construct( $code_source = null ) {
 		$this->code_source = $code_source instanceof Miguel_Product_Code_Source ? $code_source : new Miguel_Product_Code_Source();
+	}
+
+	/**
+	 * The form in which two product codes are compared. Miguel treats codes that differ
+	 * only in letter case as the same code, so the map does too. Without mbstring only
+	 * ASCII letters are folded.
+	 *
+	 * @param string $product_code Product code.
+	 * @return string
+	 */
+	public static function normalize_code( $product_code ) {
+		$product_code = (string) $product_code;
+
+		return function_exists( 'mb_strtolower' ) ? mb_strtolower( $product_code, 'UTF-8' ) : strtolower( $product_code );
 	}
 
 	/**
@@ -56,6 +77,11 @@ class Miguel_Product_Code_Resolver {
 	public function get_product_code_details_map() {
 		if ( null === $this->product_code_details_map ) {
 			$this->product_code_details_map = $this->collect_product_code_details_map();
+
+			$this->product_code_index = array();
+			foreach ( array_keys( $this->product_code_details_map ) as $product_code ) {
+				$this->product_code_index[ self::normalize_code( $product_code ) ] = $product_code;
+			}
 
 			Miguel::debug_log(
 				'Collected product code details map',
@@ -87,7 +113,8 @@ class Miguel_Product_Code_Resolver {
 		}
 
 		$product_code_details_map = $this->get_product_code_details_map();
-		if ( ! isset( $product_code_details_map[ $product_code ] ) ) {
+		$normalized_code          = self::normalize_code( $product_code );
+		if ( ! isset( $this->product_code_index[ $normalized_code ] ) ) {
 			return new WP_Error(
 				'product_code.not_found',
 				// translators: %s: product code string.
@@ -100,7 +127,7 @@ class Miguel_Product_Code_Resolver {
 			);
 		}
 
-		$details = $product_code_details_map[ $product_code ];
+		$details = $product_code_details_map[ $this->product_code_index[ $normalized_code ] ];
 		if ( ! $details['is_unique'] ) {
 			Miguel::debug_log(
 				'Product code matched multiple products',
@@ -153,6 +180,8 @@ class Miguel_Product_Code_Resolver {
 		);
 
 		$product_code_entries = array();
+		// Normalized code => the spelling it is listed under (the first one seen).
+		$listed_codes = array();
 
 		foreach ( $query->posts as $product_id ) {
 			$product = wc_get_product( $product_id );
@@ -163,9 +192,12 @@ class Miguel_Product_Code_Resolver {
 			$product_codes = $this->get_product_codes_from_product( $product );
 
 			foreach ( $product_codes as $product_code ) {
-				if ( ! isset( $product_code_entries[ $product_code ] ) ) {
+				$normalized_code = self::normalize_code( $product_code );
+				if ( ! isset( $listed_codes[ $normalized_code ] ) ) {
+					$listed_codes[ $normalized_code ]      = $product_code;
 					$product_code_entries[ $product_code ] = array();
 				}
+				$product_code = $listed_codes[ $normalized_code ];
 
 				if ( in_array( $product_id, $product_code_entries[ $product_code ], true ) ) {
 					continue;

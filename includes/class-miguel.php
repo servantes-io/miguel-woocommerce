@@ -88,6 +88,7 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-orders.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/trait-miguel-rest-auth.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-product-code-resolver.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-product-pairing.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-products-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-product-code-map-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-create-api.php';

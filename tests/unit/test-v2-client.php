@@ -120,4 +120,85 @@ class Miguel_Test_V2_Client extends WP_UnitTestCase {
 		$req = Miguel_Helper_HTTP::get_last_request();
 		$this->assertSame( 'https://miguel.servantes.cz/v2/eshop/woocommerce/connect', $req['url'] );
 	}
+
+	/**
+	 * One page of GET v2/product-variants as Miguel returns it.
+	 *
+	 * @param array    $codes     Variant codes on the page.
+	 * @param int|null $next_page meta.nextPage.
+	 * @return array Mocked response.
+	 */
+	private function variants_page( $codes, $next_page ) {
+		$data = array();
+		foreach ( $codes as $code ) {
+			$data[] = array(
+				'code'    => $code,
+				'name'    => 'eBook',
+				'product' => array( 'title' => 'Title ' . $code ),
+			);
+		}
+
+		return array(
+			'body'     => wp_json_encode(
+				array(
+					'data' => $data,
+					'meta' => array( 'nextPage' => $next_page ),
+				)
+			),
+			'response' => array( 'code' => 200 ),
+		);
+	}
+
+	public function test_get_all_product_variants_walks_every_page(): void {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array(
+				'page=1&' => $this->variants_page( array( 'a', 'b' ), 2 ),
+				'page=2&' => $this->variants_page( array( 'c' ), null ),
+			)
+		);
+
+		$result = $this->sut->get_all_product_variants();
+
+		$this->assertSame( array( 'a', 'b', 'c' ), array_column( $result, 'code' ) );
+
+		$requests = Miguel_Helper_HTTP::get_requests();
+		$this->assertCount( 2, $requests );
+		$this->assertSame( 'https://miguel.servantes.cz/v2/product-variants?page=1&limit=200', $requests[0]['url'] );
+		$this->assertSame( 'https://miguel.servantes.cz/v2/product-variants?page=2&limit=200', $requests[1]['url'] );
+		$this->assertSame( 'GET', $requests[1]['method'] );
+		$this->assertSame( 'Bearer ' . $this->token, $requests[1]['headers']['Authorization'] );
+	}
+
+	/**
+	 * The list is read while an admin page renders, so a slow Miguel must fail within the
+	 * web server's own limit (commonly 60 s) and show the page's error, not a gateway timeout.
+	 */
+	public function test_get_all_product_variants_uses_a_short_timeout(): void {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array( 'page=1&' => $this->variants_page( array( 'a' ), null ) )
+		);
+
+		$this->sut->get_all_product_variants();
+
+		$this->assertLessThanOrEqual( 30, Miguel_Helper_HTTP::get_last_request()['timeout'] );
+	}
+
+	public function test_get_all_product_variants_returns_error_on_401(): void {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array( 'GET' => array( 'body' => '', 'response' => array( 'code' => 401, 'message' => 'Unauthorized' ) ) )
+		);
+
+		$result = $this->sut->get_all_product_variants();
+
+		$this->assertTrue( is_wp_error( $result ) );
+		$this->assertSame( 'miguel.http_401', $result->get_error_code() );
+	}
+
+	public function test_get_all_product_variants_rejects_a_body_without_data(): void {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array( 'GET' => array( 'body' => '{"success": true}', 'response' => array( 'code' => 200 ) ) )
+		);
+
+		$this->assertTrue( is_wp_error( $this->sut->get_all_product_variants() ) );
+	}
 }

@@ -118,6 +118,73 @@ class Test_Miguel_Product_Code_Resolver extends Miguel_Test_Case {
 	}
 
 	/**
+	 * Miguel compares product codes without regard to letter case, so the map does too:
+	 * a lookup in another case finds the product.
+	 */
+	public function test_lookup_ignores_letter_case() {
+		$product = $this->create_product_with_miguel_code( 'ABC-1' );
+
+		$res = ( new Miguel_Product_Code_Resolver() )->resolve_product_code( 'abc-1' );
+
+		$this->assertIsArray( $res );
+		$this->assertSame( $product->get_id(), $res['product_id'] );
+		$this->assertTrue( $res['is_unique'] );
+	}
+
+	/**
+	 * Two products whose codes differ only in case are one duplicate code, keyed by the
+	 * spelling of the lower product ID, and ordering it is ambiguous rather than a pick.
+	 */
+	public function test_codes_differing_only_in_case_are_one_duplicate_code() {
+		$upper = $this->create_product_with_miguel_code( 'ABC-1' );
+		$lower = $this->create_product_with_miguel_code( 'abc-1' );
+
+		$resolver    = new Miguel_Product_Code_Resolver();
+		$details_map = $resolver->get_product_code_details_map();
+
+		$this->assertArrayHasKey( 'ABC-1', $details_map );
+		$this->assertArrayNotHasKey( 'abc-1', $details_map );
+		$this->assertFalse( $details_map['ABC-1']['is_unique'] );
+		$this->assertSame( 2, $details_map['ABC-1']['match_count'] );
+		$this->assertSame( array( $upper->get_id(), $lower->get_id() ), $details_map['ABC-1']['product_ids'] );
+
+		foreach ( array( 'ABC-1', 'abc-1', 'Abc-1' ) as $code ) {
+			$res = $resolver->resolve_product_code( $code );
+			$this->assertInstanceOf( WP_Error::class, $res, $code );
+			$this->assertSame( 'product_code.ambiguous', $res->get_error_code(), $code );
+		}
+	}
+
+	/**
+	 * A numeric code becomes an integer array key in PHP; it must still be found.
+	 */
+	public function test_numeric_code_resolves() {
+		$product = $this->create_product_with_miguel_code( '12345' );
+
+		$res = ( new Miguel_Product_Code_Resolver() )->resolve_product_code( '12345' );
+
+		$this->assertIsArray( $res );
+		$this->assertSame( $product->get_id(), $res['product_id'] );
+	}
+
+	/**
+	 * A downloadable product whose Miguel code is set through the `_miguel_code` meta.
+	 * (SKUs cannot differ only in case: WooCommerce's unique-SKU check is case-insensitive.)
+	 *
+	 * @param string $code Miguel code.
+	 * @return WC_Product
+	 */
+	private function create_product_with_miguel_code( $code ) {
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_virtual( true );
+		$product->set_downloadable( true );
+		$product->update_meta_data( '_miguel_code', $code );
+		$product->save();
+
+		return $product;
+	}
+
+	/**
 	 * Test that debug logging is disabled by default.
 	 */
 	public function test_debug_log_is_disabled_by_default() {

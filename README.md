@@ -57,6 +57,7 @@ Authentication uses `Authorization: Bearer <token>` with the token configured in
 - Each line item must include `product_id` or `product_code`.
 - If both `product_id` and `product_code` are sent, they must resolve to the same product.
 - `product_code` can be resolved from `[miguel ...]`, `[wosa ...]`, `[audio ...]`, or from product SKU when no supported shortcode is present.
+- `product_code` is matched without regard to letter case, as Miguel matches it; products whose codes differ only in case share one ambiguous code.
 
 ### Allowed Values and Enums
 

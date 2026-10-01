@@ -138,5 +138,7 @@ The interactive wizard allows you to set the screen size for which the resulting
 * Orders from Miguel holding only digital formats no longer need a shipping address or shipping lines, and show no placeholder shipping
 * Fixed the plugin's translations staying in English when another plugin loads payment gateways early
 * A partial refund takes the refunded products out of the order in Miguel, so the customer loses access to what they were refunded for. Compensation short of a whole unit's price keeps the product in the order Miguel holds. Deleting a partial refund puts the product back on the next sync; deleting a full refund does not, since WooCommerce leaves the order in the "refunded" status. Applies to refunds made before this version too, the next time such an order syncs
+* Added a "Product pairing" table (WooCommerce → Settings → Miguel → Product pairing) showing which of your products pair with products in Miguel, which exist only in the e-shop and which only in Miguel. It changes nothing
+* Product codes are compared without regard to letter case, as Miguel compares them, so an order from Miguel for `abc-1` finds the product whose code is `ABC-1`
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
