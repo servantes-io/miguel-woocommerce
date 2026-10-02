@@ -31,17 +31,17 @@ class Miguel_File {
 	protected array $atts;
 
 	/**
-	 * Download id
+	 * Download id. WooCommerce identifies a product's downloads by string keys (UUIDs), not numbers.
 	 *
-	 * @var int
+	 * @var string
 	 */
-	protected int $download_id;
+	protected string $download_id;
 
 	/**
 	 * Constructor
 	 *
-	 * @param int $product_id Product ID.
-	 * @param int $download_id Download ID.
+	 * @param int    $product_id Product ID.
+	 * @param string $download_id Download ID.
 	 *
 	 * @throws Exception If invalid product or any other issue.
 	 */
@@ -105,10 +105,10 @@ class Miguel_File {
 	/**
 	 * Get download id
 	 *
-	 * @return int
+	 * @return string
 	 */
 	public function get_download_id() {
-		return absint( $this->download_id );
+		return $this->download_id;
 	}
 
 	/**

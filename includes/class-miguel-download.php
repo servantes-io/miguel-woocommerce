@@ -106,7 +106,7 @@ class Miguel_Download {
 	 * @param string $order_key
 	 * @param int    $product_id
 	 * @param int    $user_id
-	 * @param int    $download_id
+	 * @param string $download_id
 	 * @param int    $order_id
 	 */
 	public function download( $email, $order_key, $product_id, $user_id, $download_id, $order_id ) {

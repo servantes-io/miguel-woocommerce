@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.1
+
+* Fixed e-book downloads: 1.10.0 declared the download ID as a number, but WooCommerce identifies a product's downloads by string IDs (UUIDs), so every download of a Miguel or Wosa file stopped with a PHP fatal error (`TypeError` on `Miguel_File::$download_id`) before reaching Miguel
+
 ## 1.10.0
 
 Released 2026-10-01
