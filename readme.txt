@@ -3,7 +3,7 @@ Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 6.5
 Tested up to: 6.8
-Stable tag: 1.10.0
+Stable tag: 1.10.1
 Requires PHP: 8.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -138,5 +138,9 @@ The interactive wizard allows you to set the screen size for which the resulting
 * Orders from Miguel holding only digital formats no longer need a shipping address or shipping lines, and show no placeholder shipping
 * Fixed the plugin's translations staying in English when another plugin loads payment gateways early
 * A partial refund takes the refunded products out of the order in Miguel, so the customer loses access to what they were refunded for. Compensation short of a whole unit's price keeps the product in the order Miguel holds. Deleting a partial refund puts the product back on the next sync; deleting a full refund does not, since WooCommerce leaves the order in the "refunded" status. Applies to refunds made before this version too, the next time such an order syncs
+
+= 1.10.1 =
+
+* Fixed e-book downloads, which all failed with an error in 1.10.0
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
