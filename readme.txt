@@ -2,13 +2,13 @@
 Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 6.5
-Tested up to: 6.8
+Tested up to: 7.1
 Stable tag: 1.10.1
 Requires PHP: 8.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
 WC requires at least: 7.9
-WC tested up to: 10.0
+WC tested up to: 11.2
 
 Sell watermarked e-books and audiobooks directly from your WooCommerce e-shop.
 
@@ -147,5 +147,6 @@ The interactive wizard allows you to set the screen size for which the resulting
 
 * The plugin reports the errors it catches, such as a failed connection to Miguel or a failed e-book download, to Miguel for Servantes' error tracking. Reports are sent in the background and carry no customer data
 * Fixed e-book downloads from paid orders with no payment date recorded, such as older or free orders, which stopped with "Invalid request."
+* Tested up to WordPress 7.1 and WooCommerce 11.2
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
