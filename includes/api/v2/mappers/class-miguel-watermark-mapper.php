@@ -19,8 +19,8 @@ class Miguel_Watermark_Mapper {
 	 * @return Miguel_V2_Watermarked_File_Request|null Null when the order is not paid.
 	 */
 	public function map( $order, $item, $file ) {
-		$paid_date = $order->get_date_paid();
-		if ( ! $paid_date ) {
+		$purchase_date = Miguel_Order_Utils::get_purchase_date_for_order( $order );
+		if ( ! $purchase_date ) {
 			return null;
 		}
 
@@ -37,7 +37,7 @@ class Miguel_Watermark_Mapper {
 		return new Miguel_V2_Watermarked_File_Request(
 			$file->get_format(),
 			$user,
-			$paid_date->format( DateTime::ATOM ),
+			$purchase_date,
 			strval( $order->get_id() ),
 			$order->get_currency(),
 			$order->get_item_total( $item, false, false )

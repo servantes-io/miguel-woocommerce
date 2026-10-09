@@ -178,6 +178,46 @@ class Test_Miguel_Orders_Api extends Miguel_Test_Case {
 		$this->assertSame( strval( $order->get_id() ), $data['id'] );
 	}
 
+	public function test_get_order_purchase_date_of_paid_order_without_date_paid() {
+		$order = Miguel_Helper_Order::create_order();
+		$order->set_date_created( '2020-03-14 10:00:00' );
+		$order->set_date_paid( null );
+		$order->save();
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders/' . $order->get_id() );
+		$request->set_param( 'id', $order->get_id() );
+
+		$data = $api->get_order( $request )->get_data();
+
+		$this->assertTrue( $data['paid'] );
+		$this->assertSame( $order->get_date_created()->format( DateTime::ATOM ), $data['purchase_date'] );
+	}
+
+	public function test_get_orders_purchase_date_of_paid_order_without_date_paid() {
+		$order = Miguel_Helper_Order::create_order();
+		$order->set_date_created( '2020-03-14 10:00:00' );
+		$order->set_date_paid( null );
+		$order->save();
+
+		$api     = new Miguel_Orders_Api( new Miguel_Hook_Manager() );
+		$request = new WP_REST_Request( 'GET', '/miguel/v1/orders' );
+		$request->set_param( 'updated_since', '2000-01-01 00:00:00' );
+
+		$data = $api->get_orders( $request )->get_data();
+
+		$found = null;
+		foreach ( $data['orders'] as $o ) {
+			if ( $o['id'] === strval( $order->get_id() ) ) {
+				$found = $o;
+				break;
+			}
+		}
+
+		$this->assertNotNull( $found, 'Order not found in response' );
+		$this->assertSame( $order->get_date_created()->format( DateTime::ATOM ), $found['purchase_date'] );
+	}
+
 	public function test_get_order_line_items_include_all_products_with_miguel_code() {
 		$created  = Miguel_Helper_Order::create_order_downloadable();
 		$order_id = $created['order_id'];

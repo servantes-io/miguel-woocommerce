@@ -3,6 +3,7 @@
 ## 1.11.0
 
 * The plugin reports the errors it catches to Miguel (`POST /v2/eshop/errors`), which forwards them to Servantes' error tracking: a failed call to Miguel (unreachable, API key rejected, an HTTP error, an unreadable or incomplete answer) and a failed e-book download (`DOWNLOAD_FILE_INVALID`, `DOWNLOAD_ORDER_NOT_FOUND`, `DOWNLOAD_ORDER_NOT_PAID`, `DOWNLOAD_FAILED`). Reports wait in the `miguel_error_reports` option (at most 50, the oldest dropped) and are sent by WP-Cron, hourly and soon after the next successful call to Miguel, never during a customer's request. They carry ids only, never a customer's e-mail, name or address
+* Fixed e-book downloads from paid orders that have no payment date recorded, typically older or free orders: the download stopped with "Invalid request." because the watermark needs a purchase date and the plugin took it only from the payment date. A paid order without one now uses its completion date, or its creation date when it has none. The same date fills `purchase_date` in `GET /orders` and `GET /orders/{id}` and the purchase date sent to Miguel with the order, which were empty for these orders. An unpaid order still has no purchase date
 
 ## 1.10.1
 

@@ -105,6 +105,40 @@ class Test_Miguel_Order_Utils extends Miguel_Test_Case {
 		$this->assertStringContainsString( '2023-01-15', $result );
 	}
 
+	public function test_get_purchase_date_for_paid_order_without_date_paid_falls_back_to_date_created() {
+		$order = Miguel_Helper_Order::create_order();
+		$order->set_date_created( '2020-03-14 10:00:00' );
+		$order->set_date_paid( null );
+		$order->save();
+
+		$this->assertSame(
+			$order->get_date_created()->format( DateTime::ATOM ),
+			Miguel_Order_Utils::get_purchase_date_for_order( $order )
+		);
+	}
+
+	public function test_get_purchase_date_for_paid_order_without_date_paid_prefers_date_completed() {
+		$order = Miguel_Helper_Order::create_order();
+		$order->set_date_created( '2020-03-14 10:00:00' );
+		$order->set_date_completed( '2020-03-15 12:00:00' );
+		$order->set_date_paid( null );
+		$order->save();
+
+		$this->assertSame(
+			$order->get_date_completed()->format( DateTime::ATOM ),
+			Miguel_Order_Utils::get_purchase_date_for_order( $order )
+		);
+	}
+
+	public function test_get_purchase_date_for_unpaid_order_is_null() {
+		$order = Miguel_Helper_Order::create_order();
+		$order->set_status( 'pending' );
+		$order->set_date_paid( null );
+		$order->save();
+
+		$this->assertNull( Miguel_Order_Utils::get_purchase_date_for_order( $order ) );
+	}
+
 	/**
 	 * Test complete user data array
 	 */
