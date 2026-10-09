@@ -109,6 +109,7 @@ class Miguel_Test_Download_V2 extends Miguel_Test_Case {
 
 	public function test_download_from_unpaid_order_is_reported(): void {
 		$order = Miguel_Helper_Order::create_order();
+		$order->set_status( 'pending' );
 		$order->set_date_paid( null );
 		$order->save();
 		$item     = array_values( $order->get_items() )[0];

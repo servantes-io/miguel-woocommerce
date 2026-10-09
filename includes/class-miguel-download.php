@@ -174,7 +174,7 @@ class Miguel_Download {
 		if ( null === $request ) {
 			Miguel_Error_Reporter::report(
 				'DOWNLOAD_ORDER_NOT_PAID',
-				'The order of the download has no payment date',
+				'The order of the download is not paid',
 				array( 'context' => array( 'orderId' => (string) $order->get_id() ) )
 			);
 			call_user_func( $this->error_handler, esc_html__( 'Invalid request.', 'miguel' ) );

@@ -146,5 +146,6 @@ The interactive wizard allows you to set the screen size for which the resulting
 = 1.11.0 =
 
 * The plugin reports the errors it catches, such as a failed connection to Miguel or a failed e-book download, to Miguel for Servantes' error tracking. Reports are sent in the background and carry no customer data
+* Fixed e-book downloads from paid orders with no payment date recorded, such as older or free orders, which stopped with "Invalid request."
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
