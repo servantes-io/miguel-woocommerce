@@ -12,10 +12,12 @@ class Miguel_Test_V2_Client extends WP_UnitTestCase {
 	public function setUp(): void {
 		parent::setUp();
 		$this->sut = new Miguel_V2_Client( 'https://miguel.servantes.cz', $this->token );
+		delete_option( Miguel_Error_Reporter::BUFFER_OPTION );
 	}
 
 	public function tearDown(): void {
 		Miguel_Helper_HTTP::clear();
+		wp_clear_scheduled_hook( Miguel_Error_Reporter::FLUSH_SOON_HOOK );
 		parent::tearDown();
 	}
 
@@ -119,5 +121,127 @@ class Miguel_Test_V2_Client extends WP_UnitTestCase {
 
 		$req = Miguel_Helper_HTTP::get_last_request();
 		$this->assertSame( 'https://miguel.servantes.cz/v2/eshop/woocommerce/connect', $req['url'] );
+	}
+
+	private function reports() {
+		return array_column( Miguel_Error_Reporter::get_buffer(), 'report' );
+	}
+
+	private function order_dto() {
+		$user = new Miguel_V2_Watermark_User( 'a@b.cz', 'cs_CZ' );
+		return new Miguel_V2_Order_Create( '17', $user, null, 'CZK', array(), 'disable', '17', null, null );
+	}
+
+	public function test_network_failure_is_reported_as_unreachable(): void {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array( 'POST' => new WP_Error( 'http_request_failed', 'cURL error 6: Could not resolve host' ) )
+		);
+
+		$this->assertTrue( is_wp_error( $this->sut->create_order( $this->order_dto() ) ) );
+
+		$reports = $this->reports();
+		$this->assertCount( 1, $reports );
+		$this->assertSame( 'MIGUEL_UNREACHABLE', $reports[0]['code'] );
+		$this->assertSame( 'cURL error 6: Could not resolve host', $reports[0]['message'] );
+		$this->assertSame( 'POST /v2/orders', $reports[0]['operation'] );
+		$this->assertSame( array( 'orderId' => '17' ), $reports[0]['context'] );
+		$this->assertArrayNotHasKey( 'httpStatus', $reports[0] );
+	}
+
+	public function test_rejected_key_is_reported_as_auth_rejected(): void {
+		foreach ( array( 401, 403 ) as $status ) {
+			delete_option( Miguel_Error_Reporter::BUFFER_OPTION );
+			Miguel_Helper_HTTP::mock_api_responses(
+				array( 'POST' => array( 'body' => '{"title":"Unauthorized"}', 'response' => array( 'code' => $status ) ) )
+			);
+
+			$req_dto = new Miguel_V2_Connect_Request( '8.0.0', '1.6.3', 'https://shop.cz/', '/' );
+			$this->assertTrue( is_wp_error( $this->sut->connect( $req_dto ) ) );
+
+			$reports = $this->reports();
+			$this->assertCount( 1, $reports );
+			$this->assertSame( 'MIGUEL_AUTH_REJECTED', $reports[0]['code'] );
+			$this->assertSame( $status, $reports[0]['httpStatus'] );
+			$this->assertSame( 'POST /v2/eshop/woocommerce/connect', $reports[0]['operation'] );
+			$this->assertSame( '{"title":"Unauthorized"}', $reports[0]['responseExcerpt'] );
+		}
+	}
+
+	public function test_other_error_status_is_reported_as_http_error(): void {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array( 'DELETE' => array( 'body' => '{"title":"Boom"}', 'response' => array( 'code' => 500 ) ) )
+		);
+
+		$this->assertTrue( is_wp_error( $this->sut->delete_order( '123' ) ) );
+
+		$reports = $this->reports();
+		$this->assertCount( 1, $reports );
+		$this->assertSame( 'MIGUEL_HTTP_ERROR', $reports[0]['code'] );
+		$this->assertSame( 500, $reports[0]['httpStatus'] );
+		$this->assertSame( 'DELETE /v2/orders/123', $reports[0]['operation'] );
+		$this->assertSame( array( 'orderId' => '123' ), $reports[0]['context'] );
+	}
+
+	public function test_delete_404_is_not_reported(): void {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array( 'DELETE' => array( 'body' => '', 'response' => array( 'code' => 404 ) ) )
+		);
+
+		$this->sut->delete_order( '123' );
+
+		$this->assertCount( 0, $this->reports() );
+	}
+
+	public function test_unparsable_watermark_response_is_reported(): void {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array( 'POST' => array( 'body' => '<html>proxy error</html>', 'response' => array( 'code' => 200 ) ) )
+		);
+
+		$this->assertTrue( is_wp_error( $this->sut->get_watermarked_file( 'book-1', $this->watermark_request() ) ) );
+
+		$reports = $this->reports();
+		$this->assertCount( 1, $reports );
+		$this->assertSame( 'MIGUEL_RESPONSE_UNPARSABLE', $reports[0]['code'] );
+		$this->assertSame( 200, $reports[0]['httpStatus'] );
+		$this->assertSame( 'POST /v2/product-variants/book-1/watermarked-file', $reports[0]['operation'] );
+		$this->assertSame( '<html>proxy error</html>', $reports[0]['responseExcerpt'] );
+	}
+
+	public function test_watermark_response_without_download_url_is_reported_as_invalid(): void {
+		foreach ( array( '{"task":null}', '{"downloadUrl":42}', '"text"' ) as $body ) {
+			delete_option( Miguel_Error_Reporter::BUFFER_OPTION );
+			Miguel_Helper_HTTP::mock_api_responses(
+				array( 'POST' => array( 'body' => $body, 'response' => array( 'code' => 200 ) ) )
+			);
+
+			$this->sut->get_watermarked_file( 'book-1', $this->watermark_request() );
+
+			$reports = $this->reports();
+			$this->assertCount( 1, $reports, $body );
+			$this->assertSame( 'MIGUEL_RESPONSE_INVALID', $reports[0]['code'], $body );
+		}
+	}
+
+	public function test_missing_configuration_is_not_reported(): void {
+		$sut = new Miguel_V2_Client( 'https://miguel.servantes.cz', '' );
+
+		$this->assertTrue( is_wp_error( $sut->create_order( $this->order_dto() ) ) );
+
+		$this->assertCount( 0, $this->reports() );
+	}
+
+	public function test_successful_call_schedules_a_flush_of_buffered_reports(): void {
+		Miguel_Helper_HTTP::mock_api_responses(
+			array( 'POST' => array( 'body' => '{}', 'response' => array( 'code' => 201 ) ) )
+		);
+
+		$this->sut->create_order( $this->order_dto() );
+		$this->assertFalse( wp_next_scheduled( Miguel_Error_Reporter::FLUSH_SOON_HOOK ) );
+
+		Miguel_Error_Reporter::report( 'TEST_CODE', 'm' );
+		$this->sut->create_order( $this->order_dto() );
+
+		$this->assertNotFalse( wp_next_scheduled( Miguel_Error_Reporter::FLUSH_SOON_HOOK ) );
+		$this->assertCount( 1, $this->reports() );
 	}
 }

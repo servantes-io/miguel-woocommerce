@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.0
+
+* The plugin reports the errors it catches to Miguel (`POST /v2/eshop/errors`), which forwards them to Servantes' error tracking: a failed call to Miguel (unreachable, API key rejected, an HTTP error, an unreadable or incomplete answer) and a failed e-book download (`DOWNLOAD_FILE_INVALID`, `DOWNLOAD_ORDER_NOT_FOUND`, `DOWNLOAD_ORDER_NOT_PAID`, `DOWNLOAD_FAILED`). Reports wait in the `miguel_error_reports` option (at most 50, the oldest dropped) and are sent by WP-Cron, hourly and soon after the next successful call to Miguel, never during a customer's request. They carry ids only, never a customer's e-mail, name or address
+
 ## 1.10.1
 
 * Fixed e-book downloads: 1.10.0 declared the download ID as a number, but WooCommerce identifies a product's downloads by string IDs (UUIDs), so every download of a Miguel or Wosa file stopped with a PHP fatal error (`TypeError` on `Miguel_File::$download_id`) before reaching Miguel
