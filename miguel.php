@@ -5,7 +5,7 @@
  * Description: Sell your e-books and audiobooks directly on your e-shop.
  * Requires at least: 6.5
  * Requires PHP: 8.1
- * Tested up to: 7.0
+ * Tested up to: 7.1
  * Text Domain: miguel
  * Domain Path: /languages
  * Author: Servantes, s.r.o.
@@ -14,7 +14,7 @@
  * License: GPLv3
  *
  * WC requires at least: 7.9
- * WC tested up to: 10.0
+ * WC tested up to: 11.2
  *
  * @package Miguel
  */

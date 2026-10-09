@@ -3,6 +3,7 @@
 ## 1.10.2
 
 * Fixed e-book downloads from paid orders that have no payment date recorded, typically older or free orders: the download stopped with "Invalid request." because the watermark needs a purchase date and the plugin took it only from the payment date. A paid order without one now uses its completion date, or its creation date when it has none. The same date fills `purchase_date` in `GET /orders` and `GET /orders/{id}` and the purchase date sent to Miguel with the order, which were empty for these orders. An unpaid order still has no purchase date
+* Tested up to WordPress 7.1 and WooCommerce 11.2
 
 ## 1.10.1
 
