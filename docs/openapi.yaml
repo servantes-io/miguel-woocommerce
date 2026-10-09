@@ -233,7 +233,10 @@ components:
           type: string
           format: date-time
           nullable: true
-          description: Date the order was placed (ISO 8601).
+          description: >-
+            Date the order was paid (ISO 8601). A paid order with no recorded payment date
+            reports its completion date, or its creation date when it has none. Null when the
+            order is not paid.
         update_date:
           type: string
           format: date-time

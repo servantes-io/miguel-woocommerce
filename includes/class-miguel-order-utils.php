@@ -70,10 +70,19 @@ class Miguel_Order_Utils {
 
 	/**
 	 * Get purchase date for order
+	 *
+	 * date_paid can be empty on an order that is paid — older orders, free orders and orders
+	 * moved to a paid status by hand do not always have it — so a paid order falls back to
+	 * the completion date, then the creation date. An unpaid order has no purchase date.
+	 *
 	 * @return string|null
 	 */
 	public static function get_purchase_date_for_order( $order ) {
 		$paid_date = $order->get_date_paid();
+		if ( ! $paid_date && $order->is_paid() ) {
+			$paid_date = $order->get_date_completed() ? $order->get_date_completed() : $order->get_date_created();
+		}
+
 		if ( $paid_date ) {
 			return $paid_date->format( DateTime::ATOM );
 		}
