@@ -10,7 +10,7 @@
  * Domain Path: /languages
  * Author: Servantes, s.r.o.
  * Author URI: https://servantes.io
- * Version: 1.10.1
+ * Version: 1.10.2
  * License: GPLv3
  *
  * WC requires at least: 7.9

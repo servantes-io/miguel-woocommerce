@@ -4,7 +4,7 @@ Sell watermarked e-books and audiobooks directly from WooCommerce e-shop via [Mi
 
 - **Requires at least:** WooCommerce 7.9
 - **Tested up to:** WooCommerce 11.2
-- **Version:** 1.10.1
+- **Version:** 1.10.2
 
 ## Setup
 
