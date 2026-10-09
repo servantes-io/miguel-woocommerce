@@ -48,8 +48,8 @@ sed_inplace "s/ \* Version: $CURRENT_VERSION/ * Version: $NEW_VERSION/" "$REPO_R
 # readme.txt — Stable tag
 sed_inplace "s/^Stable tag: $CURRENT_VERSION$/Stable tag: $NEW_VERSION/" "$REPO_ROOT/readme.txt"
 
-# includes/class-miguel.php — $version property
-sed_inplace "s/\(public \\\$version = '\)$CURRENT_VERSION\(';.*\)/\1$NEW_VERSION\2/" "$REPO_ROOT/includes/class-miguel.php"
+# includes/class-miguel.php — $version property, typed (public string $version) or not
+sed_inplace "s/\(public [a-z]* *\\\$version = '\)$CURRENT_VERSION\(';.*\)/\1$NEW_VERSION\2/" "$REPO_ROOT/includes/class-miguel.php"
 
 # README.md — Version badge line
 sed_inplace "s/^- \*\*Version:\*\* $CURRENT_VERSION$/- **Version:** $NEW_VERSION/" "$REPO_ROOT/README.md"
