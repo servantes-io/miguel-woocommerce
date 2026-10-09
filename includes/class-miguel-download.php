@@ -117,12 +117,28 @@ class Miguel_Download {
 			}
 
 			if ( ! $file->is_valid() ) {
+				Miguel_Error_Reporter::report(
+					'DOWNLOAD_FILE_INVALID',
+					'The Miguel download link has no id or format',
+					array(
+						'context' => array(
+							'orderId'    => (string) $order_id,
+							'productId'  => (string) $product_id,
+							'downloadId' => (string) $download_id,
+						),
+					)
+				);
 				call_user_func( $this->error_handler, esc_html__( 'Invalid shortcode params.', 'miguel' ) );
 				return;
 			}
 
 			$order = wc_get_order( $order_id );
 			if ( ! $order ) {
+				Miguel_Error_Reporter::report(
+					'DOWNLOAD_ORDER_NOT_FOUND',
+					'The order of the download was not found',
+					array( 'context' => array( 'orderId' => (string) $order_id ) )
+				);
 				call_user_func( $this->error_handler, esc_html__( 'Invalid order.', 'miguel' ) );
 				return;
 			}
@@ -131,6 +147,16 @@ class Miguel_Download {
 
 			$this->serve( $file, $order, $item );
 		} catch ( Exception $e ) {
+			Miguel_Error_Reporter::report(
+				'DOWNLOAD_FAILED',
+				$e->getMessage(),
+				array(
+					'context' => array(
+						'orderId'   => (string) $order_id,
+						'productId' => (string) $product_id,
+					),
+				)
+			);
 			call_user_func( $this->error_handler, esc_html( $e->getMessage() ) );
 		}
 	}
@@ -146,6 +172,11 @@ class Miguel_Download {
 	public function serve( $file, $order, $item ) {
 		$request = $this->mapper->map( $order, $item, $file );
 		if ( null === $request ) {
+			Miguel_Error_Reporter::report(
+				'DOWNLOAD_ORDER_NOT_PAID',
+				'The order of the download has no payment date',
+				array( 'context' => array( 'orderId' => (string) $order->get_id() ) )
+			);
 			call_user_func( $this->error_handler, esc_html__( 'Invalid request.', 'miguel' ) );
 			return;
 		}

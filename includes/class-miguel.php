@@ -79,6 +79,7 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/mappers/class-miguel-order-mapper.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/api/v2/class-miguel-v2-client.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-api.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-error-reporter.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-file.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-install.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-utils.php';
@@ -197,6 +198,7 @@ class Miguel {
 	 */
 	public function init_hooks() {
 		register_activation_hook( MIGUEL_PLUGIN_FILE, array( 'Miguel_Install', 'install' ) );
+		register_deactivation_hook( MIGUEL_PLUGIN_FILE, array( 'Miguel_Error_Reporter', 'deactivate' ) );
 		$this->hook_manager->add_action( 'init', array( $this, 'init' ) );
 
 		// Add links to plugins page.
@@ -229,6 +231,11 @@ class Miguel {
 			$this->container->get( 'order_finished_api' )->register_hooks();
 			$this->container->get( 'delivery_methods_api' )->register_hooks();
 			$this->container->get( 'orders_api' )->register_hooks();
+
+			// Error reports are sent from WP-Cron only: hourly, and soon after a successful Miguel call.
+			$this->hook_manager->add_action( Miguel_Error_Reporter::CRON_HOOK, array( 'Miguel_Error_Reporter', 'flush' ) );
+			$this->hook_manager->add_action( Miguel_Error_Reporter::FLUSH_SOON_HOOK, array( 'Miguel_Error_Reporter', 'flush' ) );
+			$this->hook_manager->add_action( 'init', array( 'Miguel_Error_Reporter', 'schedule_periodic_flush' ) );
 
 			// Initialize admin services only in admin context
 			if ( is_admin() ) {
