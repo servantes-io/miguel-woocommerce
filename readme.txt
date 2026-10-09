@@ -143,10 +143,13 @@ The interactive wizard allows you to set the screen size for which the resulting
 
 * Fixed e-book downloads, which all failed with an error in 1.10.0
 
+= 1.10.2 =
+
+* Fixed e-book downloads from paid orders with no payment date recorded, such as older or free orders, which stopped with "Invalid request."
+* Tested up to WordPress 7.1 and WooCommerce 11.2
+
 = 1.11.0 =
 
 * The plugin reports the errors it catches, such as a failed connection to Miguel or a failed e-book download, to Miguel for Servantes' error tracking. Reports are sent in the background and carry no customer data
-* Fixed e-book downloads from paid orders with no payment date recorded, such as older or free orders, which stopped with "Invalid request."
-* Tested up to WordPress 7.1 and WooCommerce 11.2
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
