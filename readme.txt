@@ -143,4 +143,8 @@ The interactive wizard allows you to set the screen size for which the resulting
 
 * Fixed e-book downloads, which all failed with an error in 1.10.0
 
+= 1.10.2 =
+
+* Fixed e-book downloads from paid orders with no payment date recorded, such as older or free orders, which stopped with "Invalid request."
+
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.2
+
+* Fixed e-book downloads from paid orders that have no payment date recorded, typically older or free orders: the download stopped with "Invalid request." because the watermark needs a purchase date and the plugin took it only from the payment date. A paid order without one now uses its completion date, or its creation date when it has none. The same date fills `purchase_date` in `GET /orders` and `GET /orders/{id}` and the purchase date sent to Miguel with the order, which were empty for these orders. An unpaid order still has no purchase date
+
 ## 1.10.1
 
 * Fixed e-book downloads: 1.10.0 declared the download ID as a number, but WooCommerce identifies a product's downloads by string IDs (UUIDs), so every download of a Miguel or Wosa file stopped with a PHP fatal error (`TypeError` on `Miguel_File::$download_id`) before reaching Miguel

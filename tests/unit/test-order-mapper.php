@@ -43,6 +43,24 @@ class Miguel_Test_Order_Mapper extends Miguel_Test_Case {
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 	}
 
+	public function test_purchased_at_of_paid_order_without_date_paid_falls_back_to_date_created(): void {
+		$product = Miguel_Helper_Product::create_downloadable_product();
+
+		$order = Miguel_Helper_Order::create_order();
+		$order->add_product( $product, 1 );
+		$order->set_status( 'processing' );
+		$order->set_date_created( '2020-03-14 10:00:00' );
+		$order->set_date_paid( null );
+		$order->save();
+
+		$mapper = new Miguel_Order_Mapper();
+		$arr    = $mapper->map( $order )->to_array();
+
+		$this->assertSame( $order->get_date_created()->format( DateTime::ATOM ), $arr['purchasedAt'] );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
 	public function test_send_email_flag_controls_send_email_value(): void {
 		$product = Miguel_Helper_Product::create_downloadable_product();
 
