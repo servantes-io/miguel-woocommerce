@@ -137,3 +137,15 @@ msgstr "The payment method name shown on orders from the Miguel app."
 #: includes/class-miguel-payment-gateway.php
 msgid "Description"
 msgstr "Description"
+
+#: includes/class-miguel-coupon-validate-api.php
+msgid "Coupon code is required."
+msgstr "Coupon code is required."
+
+#: includes/class-miguel-coupon-validate-api.php
+msgid "Coupon line_items must be a non-empty array of objects with product_code, a positive integer quantity and a non-negative price."
+msgstr "Coupon line_items must be a non-empty array of objects with product_code, a positive integer quantity and a non-negative price."
+
+#: includes/class-miguel-order-create-api.php
+msgid "Order coupon_lines must be an array of objects, each with a coupon code."
+msgstr "Order coupon_lines must be an array of objects, each with a coupon code."

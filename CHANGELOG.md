@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.0
+
+* Added `POST /coupons/validate`, which tells Miguel whether a WooCommerce discount coupon applies to the cart a customer has in the app: Miguel sends the code, the customer's e-mail and the cart lines with their prices, and the shop judges the coupon with WooCommerce's own checks (existence, expiry, usage limits, allowed e-mails, minimum and maximum spend, product and category rules). A valid coupon answers its type, amount, item limit and the product codes it applies to; a refused one answers WooCommerce's error code and message. Nothing is saved
+* `POST /orders` accepts `coupon_lines: [{code}]`. The coupon is recorded on the order with a discount of 0 and the lines keep the prices Miguel sent, which already include the discount, so WooCommerce never applies the coupon a second time, whatever other plugins the shop runs. WooCommerce counts the coupon's use as it does for a web order. Before, WooCommerce would have applied the coupon to Miguel's prices again
+
 ## 1.11.0
 
 * An order Miguel creates with a pickup point (the `_miguel_pickup_point` order meta: carrier, id, name, address) now reaches the shop's carrier plugin, so Shipmall exports it with its branch: Zásilkovna (wc-zasilkovna) gets `_wc_zasilkovna_point_id` and `_wc_zasilkovna_point_name`, written to wp_postmeta too since that plugin reads only there, plus Shipmall's `ftx_shm_packeta_id` and `ftx_shm_packeta_name`; Balíkovna (toret-ceska-posta) `tcp_pickup_id` with its `b` prefix and the related name and address keys; GLS (wpify-woo-gls) `_gls_id` and `_gls_data`. They are written while the order is created, before its status changes. Without the matching active plugin the order keeps only the neutral entry and the WooCommerce log (source `miguel`) gets a warning with the order number and the carrier
