@@ -3,7 +3,7 @@ Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 1.11.0
+Stable tag: 1.12.0
 Requires PHP: 8.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -155,5 +155,9 @@ The interactive wizard allows you to set the screen size for which the resulting
 = 1.11.0 =
 
 * The plugin reports the errors it catches, such as a failed connection to Miguel or a failed e-book download, to Miguel for Servantes' error tracking. Reports are sent in the background and carry no customer data
+
+= 1.12.0 =
+
+* Discount coupons work in the Miguel app: the app checks a coupon code against the shop's WooCommerce coupons, and orders placed with a coupon show it in the shop with the discounted prices the customer paid
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

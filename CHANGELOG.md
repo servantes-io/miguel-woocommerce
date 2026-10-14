@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.0
+
+* Added `POST /coupons/validate`, which tells Miguel whether a WooCommerce discount coupon applies to the cart a customer has in the app: Miguel sends the code, the customer's e-mail and the cart lines with their prices, and the shop judges the coupon with WooCommerce's own checks (existence, expiry, usage limits, allowed e-mails, minimum and maximum spend, product and category rules). A valid coupon answers its type, amount, item limit and the product codes it applies to; a refused one answers WooCommerce's error code and message. Nothing is saved
+* `POST /orders` accepts `coupon_lines: [{code}]`. The coupon is recorded on the order with a discount of 0 and the lines keep the prices Miguel sent, which already include the discount, so WooCommerce never applies the coupon a second time, whatever other plugins the shop runs. WooCommerce counts the coupon's use as it does for a web order. Before, WooCommerce would have applied the coupon to Miguel's prices again
+
 ## 1.11.0
 
 * The plugin reports the errors it catches to Miguel (`POST /v2/eshop/errors`), which forwards them to Servantes' error tracking: a failed call to Miguel (unreachable, API key rejected, an HTTP error, an unreadable or incomplete answer) and a failed e-book download (`DOWNLOAD_FILE_INVALID`, `DOWNLOAD_ORDER_NOT_FOUND` when the order is gone and so is its download permission, `DOWNLOAD_ORDER_NOT_PAID`, `DOWNLOAD_FAILED`). Reports wait in the `miguel_error_reports` option (at most 50, the oldest dropped) and are sent by WP-Cron, hourly and soon after the next successful call to Miguel, never during a customer's request. They carry ids only, never a customer's e-mail, name or address
