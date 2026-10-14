@@ -1971,4 +1971,167 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 
 		Miguel_Helper_Order::delete_order( $first->get_data()['id'] );
 	}
+
+	/**
+	 * A one-piece e-book order as Miguel sends it once a coupon priced it: no status, not
+	 * marked paid, line subtotal and total already discounted (319 regular → 255).
+	 *
+	 * @param int   $product_id   Product ID.
+	 * @param array $coupon_lines Value of coupon_lines; null leaves the key out.
+	 * @return array
+	 */
+	private function get_coupon_order_payload( $product_id, $coupon_lines ) {
+		$payload = $this->get_digital_order_payload( $product_id, 'smp21-' . wp_generate_uuid4() );
+
+		$payload['line_items'][0]['subtotal'] = '255.00';
+		$payload['line_items'][0]['total']    = '255.00';
+
+		if ( null !== $coupon_lines ) {
+			$payload['coupon_lines'] = $coupon_lines;
+		}
+
+		return $payload;
+	}
+
+	/**
+	 * A 50 % coupon, so a recalculation by WooCommerce would show in every total.
+	 *
+	 * @param string $code Coupon code.
+	 * @return WC_Coupon
+	 */
+	private function create_half_price_coupon( $code ) {
+		$coupon = new WC_Coupon();
+		$coupon->set_code( $code );
+		$coupon->set_discount_type( 'percent' );
+		$coupon->set_amount( 50 );
+		$coupon->save();
+
+		return $coupon;
+	}
+
+	/**
+	 * The coupon is on the order with a discount of 0 and every total is Miguel's.
+	 */
+	public function test_create_order_with_coupon_lines_attaches_coupon_without_recalculating() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+		$this->create_half_price_coupon( 'MELVIL20' );
+
+		$response = $this->post_order( $this->get_coupon_order_payload( $ebook->get_id(), array( array( 'code' => 'MELVIL20' ) ) ) );
+
+		$this->assertSame( 201, $response->get_status() );
+		$order = wc_get_order( $response->get_data()['id'] );
+
+		$this->assertSame( array( wc_format_coupon_code( 'MELVIL20' ) ), $order->get_coupon_codes() );
+		$coupon_item = current( $order->get_items( 'coupon' ) );
+		$this->assertEquals( 0, (float) $coupon_item->get_discount() );
+		$this->assertEquals( 0, (float) $coupon_item->get_discount_tax() );
+
+		$line = current( $order->get_items() );
+		$this->assertEquals( 255.0, (float) $line->get_subtotal() );
+		$this->assertEquals( 255.0, (float) $line->get_total() );
+		$this->assertEquals( 0, (float) $order->get_discount_total() );
+		$this->assertEquals( 255.0, (float) $order->get_total() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * WooCommerce's own status hook counts the coupon's use once the order is paid, and only once.
+	 */
+	public function test_create_order_with_coupon_lines_counts_coupon_usage() {
+		$ebook  = Miguel_Helper_Product::create_downloadable_product();
+		$coupon = $this->create_half_price_coupon( 'MELVIL20' );
+		$this->assertSame( 0, $coupon->get_usage_count() );
+
+		$response = $this->post_order( $this->get_coupon_order_payload( $ebook->get_id(), array( array( 'code' => 'MELVIL20' ) ) ) );
+		$order    = wc_get_order( $response->get_data()['id'] );
+		$order->payment_complete();
+		$order->update_status( 'completed' );
+
+		$this->assertSame( 1, ( new WC_Coupon( 'MELVIL20' ) )->get_usage_count() );
+		$this->assertEquals( 255.0, (float) wc_get_order( $order->get_id() )->get_total() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * An order created paid counts the coupon too: there the status hook first runs inside
+	 * WooCommerce's controller, so the coupon must already be on the order by then.
+	 */
+	public function test_create_order_paid_with_coupon_lines_counts_coupon_usage_once() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+		$this->create_half_price_coupon( 'MELVIL20' );
+		$payload             = $this->get_coupon_order_payload( $ebook->get_id(), array( array( 'code' => 'MELVIL20' ) ) );
+		$payload['set_paid'] = true;
+
+		$response = $this->post_order( $payload );
+		$this->assertSame( 1, ( new WC_Coupon( 'MELVIL20' ) )->get_usage_count() );
+
+		$order = wc_get_order( $response->get_data()['id'] );
+		$order->update_status( 'completed' );
+		$this->assertSame( 1, ( new WC_Coupon( 'MELVIL20' ) )->get_usage_count() );
+		$this->assertEquals( 255.0, (float) $order->get_total() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * An order without coupon_lines carries no coupon, as before.
+	 */
+	public function test_create_order_without_coupon_lines_has_no_coupon() {
+		$ebook = Miguel_Helper_Product::create_downloadable_product();
+
+		$response = $this->post_order( $this->get_coupon_order_payload( $ebook->get_id(), null ) );
+
+		$this->assertSame( 201, $response->get_status() );
+		$order = wc_get_order( $response->get_data()['id'] );
+		$this->assertSame( array(), $order->get_coupon_codes() );
+		$this->assertEquals( 255.0, (float) $order->get_total() );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+	}
+
+	/**
+	 * A malformed coupon_lines is refused before any order exists.
+	 *
+	 * @dataProvider malformed_coupon_lines
+	 *
+	 * @param mixed $coupon_lines Malformed coupon_lines value.
+	 */
+	public function test_create_order_refuses_malformed_coupon_lines( $coupon_lines ) {
+		$ebook         = Miguel_Helper_Product::create_downloadable_product();
+		$orders_before = wc_get_orders(
+			array(
+				'limit'  => -1,
+				'return' => 'ids',
+			)
+		);
+
+		$response = $this->post_order( $this->get_coupon_order_payload( $ebook->get_id(), $coupon_lines ) );
+
+		$this->assertWPError( $response );
+		$this->assertSame( 'order.coupon_lines_invalid', $response->get_error_code() );
+		$this->assertSame( 409, $response->get_error_data()['status'] );
+		$this->assertSame(
+			$orders_before,
+			wc_get_orders(
+				array(
+					'limit'  => -1,
+					'return' => 'ids',
+				)
+			)
+		);
+	}
+
+	/**
+	 * @return array
+	 */
+	public function malformed_coupon_lines() {
+		return array(
+			'not a list'      => array( 'MELVIL20' ),
+			'line not object' => array( array( 'MELVIL20' ) ),
+			'no code'         => array( array( array( 'discount' => '0' ) ) ),
+			'blank code'      => array( array( array( 'code' => '  ' ) ) ),
+		);
+	}
 }

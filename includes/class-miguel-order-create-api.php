@@ -97,6 +97,11 @@ class Miguel_Order_Create_Api {
 			return $top_level_validation;
 		}
 
+		$coupon_codes = $this->get_coupon_codes_from_payload( $payload );
+		if ( is_wp_error( $coupon_codes ) ) {
+			return $coupon_codes;
+		}
+
 		$order_note = $this->get_order_note_from_payload( $payload );
 
 		$idempotency_key = $this->get_idempotency_key( $request, $payload );
@@ -202,7 +207,7 @@ class Miguel_Order_Create_Api {
 				)
 			);
 
-			$response = $this->create_order_via_wc_controller( $payload );
+			$response = $this->create_order_via_wc_controller( $payload, $coupon_codes );
 			if ( is_wp_error( $response ) ) {
 				Miguel::debug_log(
 					'WooCommerce order controller returned error',
@@ -296,10 +301,18 @@ class Miguel_Order_Create_Api {
 	/**
 	 * Create order using official WooCommerce REST Orders controller.
 	 *
-	 * @param array $payload Request body.
+	 * Coupons do not go through the controller's coupon_lines: it applies them with
+	 * WC_Order::apply_coupon(), which discounts lines Miguel has already priced. They are added
+	 * to the order before its first save instead, with a discount of 0, so the line totals stay
+	 * as Miguel sent them and WooCommerce's status hook (wc_update_coupon_usage_counts) counts
+	 * their use. A coupon added after the controller would never be counted: that hook records
+	 * the order as counted the first time it runs, coupons or not.
+	 *
+	 * @param array    $payload Request body, without coupon_lines.
+	 * @param string[] $coupon_codes Coupon codes to put on the order.
 	 * @return WP_REST_Response|WP_Error
 	 */
-	private function create_order_via_wc_controller( $payload ) {
+	private function create_order_via_wc_controller( $payload, $coupon_codes = array() ) {
 		if ( ! class_exists( 'WC_REST_Orders_Controller' ) ) {
 			return new WP_Error(
 				'order.rest_unavailable',
@@ -315,7 +328,32 @@ class Miguel_Order_Create_Api {
 			$wc_request->set_json_params( $payload );
 		}
 
-		return $controller->create_item( $wc_request );
+		if ( empty( $coupon_codes ) ) {
+			return $controller->create_item( $wc_request );
+		}
+
+		$add_coupons = function ( $order ) use ( $coupon_codes ) {
+			if ( ! $order instanceof WC_Order ) {
+				return $order;
+			}
+
+			foreach ( $coupon_codes as $coupon_code ) {
+				$item = new WC_Order_Item_Coupon();
+				$item->set_code( $coupon_code );
+				$item->set_discount( 0 );
+				$item->set_discount_tax( 0 );
+				$order->add_item( $item );
+			}
+
+			return $order;
+		};
+
+		add_filter( 'woocommerce_rest_pre_insert_shop_order_object', $add_coupons );
+		try {
+			return $controller->create_item( $wc_request );
+		} finally {
+			remove_filter( 'woocommerce_rest_pre_insert_shop_order_object', $add_coupons );
+		}
 	}
 
 	/**
@@ -560,7 +598,7 @@ class Miguel_Order_Create_Api {
 	 * @return array|WP_Error
 	 */
 	private function prepare_payload_for_wc_order( $payload ) {
-		unset( $payload['send_emails'], $payload['send_email'], $payload['email_template'], $payload['order_note'] );
+		unset( $payload['send_emails'], $payload['send_email'], $payload['email_template'], $payload['order_note'], $payload['coupon_lines'] );
 		$payload = $this->prepare_customer_id_for_wc_order( $payload );
 		$payload = $this->prepare_payment_method_title_for_wc_order( $payload );
 
@@ -1065,6 +1103,44 @@ class Miguel_Order_Create_Api {
 		}
 
 		return true;
+	}
+
+	/**
+	 * The coupon codes in the payload's coupon_lines, each once.
+	 *
+	 * The codes are not validated against the shop: Miguel validates a coupon through
+	 * POST /coupons/validate before it places the order, and an order the customer has already
+	 * paid for is not refused over its coupon.
+	 *
+	 * @param array $payload Request payload.
+	 * @return string[]|WP_Error
+	 */
+	private function get_coupon_codes_from_payload( $payload ) {
+		if ( ! isset( $payload['coupon_lines'] ) ) {
+			return array();
+		}
+
+		$invalid = $this->build_order_payload_error(
+			'order.coupon_lines_invalid',
+			esc_html__( 'Order coupon_lines must be an array of objects, each with a coupon code.', 'miguel' ),
+			array( 'field' => 'coupon_lines' )
+		);
+
+		if ( ! is_array( $payload['coupon_lines'] ) ) {
+			return $invalid;
+		}
+
+		$coupon_codes = array();
+		foreach ( $payload['coupon_lines'] as $coupon_line ) {
+			$code = is_array( $coupon_line ) && isset( $coupon_line['code'] ) && is_string( $coupon_line['code'] ) ? wc_format_coupon_code( wc_clean( $coupon_line['code'] ) ) : '';
+			if ( '' === $code ) {
+				return $invalid;
+			}
+
+			$coupon_codes[] = $code;
+		}
+
+		return array_values( array_unique( $coupon_codes ) );
 	}
 
 	/**
