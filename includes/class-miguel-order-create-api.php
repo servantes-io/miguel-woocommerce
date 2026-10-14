@@ -212,6 +212,7 @@ class Miguel_Order_Create_Api {
 
 			$order = wc_get_order( $order_id );
 			if ( $order ) {
+				$this->apply_miguel_inclusive_prices( $order, $payload );
 				$order->update_meta_data( '_miguel_idempotency_key', $idempotency_key );
 				$order->save_meta_data();
 				$this->add_miguel_order_note( $order, $order_note );
@@ -275,6 +276,154 @@ class Miguel_Order_Create_Api {
 		}
 
 		return $controller->create_item( $wc_request );
+	}
+
+	/**
+	 * Miguel sends the customer-facing gross price. WooCommerce's REST controller
+	 * treats an explicitly supplied line total as tax-exclusive, so its normal
+	 * calculation would otherwise add the shop's VAT on top of that amount.
+	 *
+	 * Split explicit Miguel totals using the target shop's tax rules instead. The
+	 * order then retains Miguel's grand total while WooCommerce stores its native
+	 * net prices, tax rows, and tax amounts.
+	 *
+	 * @param WC_Order $order Newly-created WooCommerce order.
+	 * @param array    $payload Prepared Miguel request payload.
+	 * @return void
+	 */
+	private function apply_miguel_inclusive_prices( $order, $payload ) {
+		if ( ! wc_tax_enabled() || empty( $payload['line_items'] ) || ! is_array( $payload['line_items'] ) ) {
+			return;
+		}
+
+		$location   = $order->get_taxable_location();
+		$order_items = array_values( $order->get_items( 'line_item' ) );
+		$changed     = false;
+
+		foreach ( $payload['line_items'] as $index => $payload_item ) {
+			if ( ! isset( $order_items[ $index ] ) || ! $this->has_explicit_miguel_total( $payload_item ) ) {
+				continue;
+			}
+
+			$this->apply_inclusive_total_to_item(
+				$order_items[ $index ],
+				$payload_item,
+				$location,
+				$order_items[ $index ]->get_tax_class()
+			);
+			$changed = true;
+		}
+
+		if ( ! empty( $payload['shipping_lines'] ) && is_array( $payload['shipping_lines'] ) ) {
+			$shipping_items     = array_values( $order->get_items( 'shipping' ) );
+			$shipping_tax_class = $this->get_shipping_tax_class( $order );
+
+			if ( false !== $shipping_tax_class ) {
+				foreach ( $payload['shipping_lines'] as $index => $payload_shipping ) {
+					if ( ! isset( $shipping_items[ $index ] ) || ! $this->has_explicit_miguel_total( $payload_shipping ) ) {
+						continue;
+					}
+
+					$this->apply_inclusive_total_to_shipping_item(
+						$shipping_items[ $index ],
+						(float) $payload_shipping['total'],
+						$location,
+						$shipping_tax_class
+					);
+					$changed = true;
+				}
+			}
+		}
+
+		if ( ! $changed ) {
+			return;
+		}
+
+		$order->set_prices_include_tax( true );
+		$order->update_taxes();
+		$order->calculate_totals( false );
+	}
+
+	/**
+	 * Whether a payload item carries a concrete total whose source is Miguel.
+	 *
+	 * @param mixed $payload_item One line or shipping item from the payload.
+	 * @return bool
+	 */
+	private function has_explicit_miguel_total( $payload_item ) {
+		return is_array( $payload_item )
+			&& array_key_exists( 'total', $payload_item )
+			&& is_numeric( $payload_item['total'] );
+	}
+
+	/**
+	 * Convert a gross Miguel item total into WooCommerce's native net amount and
+	 * tax map, using the tax class and location selected by the target shop.
+	 *
+	 * @param WC_Order_Item $order_item WooCommerce line item.
+	 * @param array         $payload_item Corresponding Miguel payload item.
+	 * @param array         $location WooCommerce taxable location.
+	 * @param string        $tax_class WooCommerce tax class.
+	 * @return void
+	 */
+	private function apply_inclusive_total_to_item( $order_item, $payload_item, $location, $tax_class ) {
+		$tax_rates = WC_Tax::find_rates( array_merge( $location, array( 'tax_class' => $tax_class ) ) );
+
+		$gross_total = (float) $payload_item['total'];
+		$total_taxes = WC_Tax::calc_inclusive_tax( $gross_total, $tax_rates );
+		$order_item->set_total( $gross_total - array_sum( $total_taxes ) );
+
+		$gross_subtotal = array_key_exists( 'subtotal', $payload_item ) && is_numeric( $payload_item['subtotal'] )
+			? (float) $payload_item['subtotal']
+			: $gross_total;
+		$subtotal_taxes = WC_Tax::calc_inclusive_tax( $gross_subtotal, $tax_rates );
+		$order_item->set_subtotal( $gross_subtotal - array_sum( $subtotal_taxes ) );
+		$order_item->set_taxes(
+			array(
+				'total'    => $total_taxes,
+				'subtotal' => $subtotal_taxes,
+			)
+		);
+	}
+
+	/**
+	 * Apply a gross shipping price from Miguel using WooCommerce's selected
+	 * shipping tax class.
+	 *
+	 * @param WC_Order_Item_Shipping $shipping_item WooCommerce shipping item.
+	 * @param float                  $gross_total Miguel customer-facing shipping price.
+	 * @param array                  $location WooCommerce taxable location.
+	 * @param string                 $tax_class WooCommerce shipping tax class.
+	 * @return void
+	 */
+	private function apply_inclusive_total_to_shipping_item( $shipping_item, $gross_total, $location, $tax_class ) {
+		$tax_rates = WC_Tax::find_rates( array_merge( $location, array( 'tax_class' => $tax_class ) ) );
+		$taxes     = WC_Tax::calc_inclusive_tax( $gross_total, $tax_rates );
+
+		$shipping_item->set_total( $gross_total - array_sum( $taxes ) );
+		$shipping_item->set_taxes( array( 'total' => $taxes ) );
+	}
+
+	/**
+	 * Read the shipping class with the same inheritance rules WooCommerce uses
+	 * while calculating an order's own shipping taxes.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return string|false
+	 */
+	private function get_shipping_tax_class( $order ) {
+		$shipping_tax_class = get_option( 'woocommerce_shipping_tax_class' );
+
+		if ( 'inherit' !== $shipping_tax_class ) {
+			return $shipping_tax_class;
+		}
+
+		$classes = array_intersect(
+			array_merge( array( '' ), WC_Tax::get_tax_class_slugs() ),
+			$order->get_items_tax_classes()
+		);
+
+		return count( $classes ) ? current( $classes ) : false;
 	}
 
 	/**

@@ -2,6 +2,10 @@
 
 ## 1.11.0
 
+* Fixed outbound order creation from Miguel so repeated requests with the same idempotency key replay the original result, while reusing the key with a different payload is rejected instead of creating or changing another order
+* Fixed outbound order totals: prices received from Miguel are treated as customer-facing prices including tax and WooCommerce calculates the tax-exclusive values and tax rows using the shop's configured product and shipping tax rules, keeping the order total aligned with Miguel
+* Added unit coverage for outbound order idempotency, payload conflicts, inclusive product prices and inclusive shipping prices
+* Updated the local Docker Compose setup to use persistent named WordPress/MySQL volumes and the host gateway/opcache configuration needed for reliable local plugin development and tests
 * The plugin reports the errors it catches to Miguel (`POST /v2/eshop/errors`), which forwards them to Servantes' error tracking: a failed call to Miguel (unreachable, API key rejected, an HTTP error, an unreadable or incomplete answer) and a failed e-book download (`DOWNLOAD_FILE_INVALID`, `DOWNLOAD_ORDER_NOT_FOUND` when the order is gone and so is its download permission, `DOWNLOAD_ORDER_NOT_PAID`, `DOWNLOAD_FAILED`). Reports wait in the `miguel_error_reports` option (at most 50, the oldest dropped) and are sent by WP-Cron, hourly and soon after the next successful call to Miguel, never during a customer's request. They carry ids only, never a customer's e-mail, name or address
 
 ## 1.10.3
