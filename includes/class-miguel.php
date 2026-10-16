@@ -15,7 +15,7 @@ class Miguel {
 	 *
 	 * @var string
 	 */
-	public string $version = '1.10.2';
+	public string $version = '1.10.3';
 
 	/**
 	 * Instance
