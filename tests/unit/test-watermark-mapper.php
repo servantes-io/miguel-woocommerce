@@ -31,6 +31,44 @@ class Miguel_Test_Watermark_Mapper extends Miguel_Test_Case {
 		Miguel_Helper_Order::delete_order( $order->get_id() );
 	}
 
+	public function test_maps_permission_of_a_deleted_order(): void {
+		$user_id    = self::factory()->user->create( array( 'locale' => 'cs_CZ' ) );
+		$permission = new WC_Customer_Download();
+		$permission->set_order_id( 4242 );
+		$permission->set_user_id( $user_id );
+		$permission->set_user_email( 'buyer@example.com' );
+		$permission->set_access_granted( '2019-05-01' );
+
+		$file = $this->getMockBuilder( Miguel_File::class )
+			->disableOriginalConstructor()
+			->getMock();
+		$file->method( 'get_format' )->willReturn( 'mobi' );
+
+		$mapper = new Miguel_Watermark_Mapper();
+		$arr    = $mapper->map_permission( $permission, $file )->to_array();
+
+		$this->assertSame( 'mobi', $arr['target'] );
+		$this->assertSame(
+			array(
+				'id'       => strval( $user_id ),
+				'name'     => null,
+				'address'  => null,
+				'email'    => 'buyer@example.com',
+				'language' => 'cs_CZ',
+			),
+			$arr['userInfo']
+		);
+		$this->assertSame( $permission->get_access_granted()->format( DateTime::ATOM ), $arr['purchaseDate'] );
+		$this->assertSame(
+			array(
+				'code'         => '4242',
+				'currencyCode' => get_woocommerce_currency(),
+				'soldPrice'    => 0.0,
+			),
+			$arr['orderInfo']
+		);
+	}
+
 	public function test_returns_null_when_not_paid(): void {
 		$order = Miguel_Helper_Order::create_order();
 		$order->set_status( 'pending' );
