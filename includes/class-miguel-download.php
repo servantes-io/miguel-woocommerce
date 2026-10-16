@@ -123,6 +123,14 @@ class Miguel_Download {
 
 			$order = wc_get_order( $order_id );
 			if ( ! $order ) {
+				// WooCommerce keeps serving the download permissions of an order deleted without its hooks.
+				$permission = $this->get_permission( $email, $order_key, $product_id, $download_id );
+				$request    = $permission ? $this->mapper->map_permission( $permission, $file ) : null;
+				if ( $request ) {
+					$this->serve_file( $file, $request );
+					return;
+				}
+
 				call_user_func( $this->error_handler, esc_html__( 'Invalid order.', 'miguel' ) );
 				return;
 			}
@@ -182,6 +190,34 @@ class Miguel_Download {
 	 */
 	public function get_hook_manager() {
 		return $this->hook_manager;
+	}
+
+	/**
+	 * Get the download permission WooCommerce is serving, looked up the way WooCommerce looks it up
+	 *
+	 * @param string $email
+	 * @param string $order_key
+	 * @param int    $product_id
+	 * @param string $download_id
+	 *
+	 * @return WC_Customer_Download|null
+	 */
+	protected function get_permission( $email, $order_key, $product_id, $download_id ) {
+		if ( empty( $order_key ) || empty( $download_id ) ) {
+			return null;
+		}
+
+		$permissions = WC_Data_Store::load( 'customer-download' )->get_downloads(
+			array(
+				'user_email'  => $email,
+				'order_key'   => $order_key,
+				'product_id'  => $product_id,
+				'download_id' => $download_id,
+				'limit'       => 1,
+			)
+		);
+
+		return $permissions ? current( $permissions ) : null;
 	}
 
 	/**

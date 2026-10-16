@@ -3,7 +3,7 @@ Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 1.10.2
+Stable tag: 1.10.3
 Requires PHP: 8.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -147,5 +147,9 @@ The interactive wizard allows you to set the screen size for which the resulting
 
 * Fixed e-book downloads from paid orders with no payment date recorded, such as older or free orders, which stopped with "Invalid request."
 * Tested up to WordPress 7.1 and WooCommerce 11.2
+
+= 1.10.3 =
+
+* Fixed e-book downloads from orders that no longer exist (typically old orders deleted outside WooCommerce), which stopped with "Invalid order." while WooCommerce still offered the download link
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
