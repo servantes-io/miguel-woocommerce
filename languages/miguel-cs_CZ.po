@@ -379,3 +379,15 @@ msgstr "Název způsobu platby zobrazený u objednávek z aplikace Miguel."
 #: includes/class-miguel-payment-gateway.php
 msgid "Description"
 msgstr "Popis"
+
+#: includes/class-miguel-coupon-validate-api.php
+msgid "Coupon code is required."
+msgstr "Kód kupónu je povinný."
+
+#: includes/class-miguel-coupon-validate-api.php
+msgid "Coupon line_items must be a non-empty array of objects with product_code, a positive integer quantity and a non-negative price."
+msgstr "Položky (line_items) musí být neprázdné pole objektů s kódem produktu (product_code), kladným celým množstvím (quantity) a nezápornou cenou (price)."
+
+#: includes/class-miguel-order-create-api.php
+msgid "Order coupon_lines must be an array of objects, each with a coupon code."
+msgstr "Kupóny objednávky (coupon_lines) musí být pole objektů, každý s kódem kupónu."
