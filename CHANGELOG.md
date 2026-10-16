@@ -2,8 +2,13 @@
 
 ## 1.11.0
 
-* The plugin reports the errors it catches to Miguel (`POST /v2/eshop/errors`), which forwards them to Servantes' error tracking: a failed call to Miguel (unreachable, API key rejected, an HTTP error, an unreadable or incomplete answer) and a failed e-book download (`DOWNLOAD_FILE_INVALID`, `DOWNLOAD_ORDER_NOT_FOUND`, `DOWNLOAD_ORDER_NOT_PAID`, `DOWNLOAD_FAILED`). Reports wait in the `miguel_error_reports` option (at most 50, the oldest dropped) and are sent by WP-Cron, hourly and soon after the next successful call to Miguel, never during a customer's request. They carry ids only, never a customer's e-mail, name or address
-* Fixed e-book downloads from orders that no longer exist, typically old orders deleted outside WooCommerce (directly in the database or by a clean-up plugin): WooCommerce keeps such an order's download permissions and still offers the link, but the download stopped with "Invalid order." because the watermark was built from the order. It is now built from the download permission instead — the customer's e-mail and account, access granted date as the purchase date, the deleted order's ID as the order code — with no name or address, and a sold price of 0 in the shop's currency, since the price paid is gone with the order. `DOWNLOAD_ORDER_NOT_FOUND` is reported only when there is no such permission either
+* The plugin reports the errors it catches to Miguel (`POST /v2/eshop/errors`), which forwards them to Servantes' error tracking: a failed call to Miguel (unreachable, API key rejected, an HTTP error, an unreadable or incomplete answer) and a failed e-book download (`DOWNLOAD_FILE_INVALID`, `DOWNLOAD_ORDER_NOT_FOUND` when the order is gone and so is its download permission, `DOWNLOAD_ORDER_NOT_PAID`, `DOWNLOAD_FAILED`). Reports wait in the `miguel_error_reports` option (at most 50, the oldest dropped) and are sent by WP-Cron, hourly and soon after the next successful call to Miguel, never during a customer's request. They carry ids only, never a customer's e-mail, name or address
+
+## 1.10.3
+
+Released 2026-10-16
+
+* Fixed e-book downloads from orders that no longer exist, typically old orders deleted outside WooCommerce (directly in the database or by a clean-up plugin): WooCommerce keeps such an order's download permissions and still offers the link, but the download stopped with "Invalid order." because the watermark was built from the order. It is now built from the download permission instead — the customer's e-mail and account, access granted date as the purchase date, the deleted order's ID as the order code — with no name or address, and a sold price of 0 in the shop's currency, since the price paid is gone with the order
 
 ## 1.10.2
 
