@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.3
+
+* Fixed e-book downloads from orders that no longer exist, typically old orders deleted outside WooCommerce (directly in the database or by a clean-up plugin): WooCommerce keeps such an order's download permissions and still offers the link, but the download stopped with "Invalid order." because the watermark was built from the order. It is now built from the download permission instead — the customer's e-mail and account, access granted date as the purchase date, the deleted order's ID as the order code — with no name or address, and a sold price of 0 in the shop's currency, since the price paid is gone with the order
+
 ## 1.10.2
 
 * Fixed e-book downloads from paid orders that have no payment date recorded, typically older or free orders: the download stopped with "Invalid request." because the watermark needs a purchase date and the plugin took it only from the payment date. A paid order without one now uses its completion date, or its creation date when it has none. The same date fills `purchase_date` in `GET /orders` and `GET /orders/{id}` and the purchase date sent to Miguel with the order, which were empty for these orders. An unpaid order still has no purchase date
