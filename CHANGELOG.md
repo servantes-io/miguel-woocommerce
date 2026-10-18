@@ -2,6 +2,7 @@
 
 ## 1.11.0
 
+* An order Miguel creates with a pickup point (the `_miguel_pickup_point` order meta: carrier, id, name, address) now reaches the shop's carrier plugin, so Shipmall exports it with its branch: Zásilkovna (wc-zasilkovna) gets `_wc_zasilkovna_point_id` and `_wc_zasilkovna_point_name`, written to wp_postmeta too since that plugin reads only there, plus Shipmall's `ftx_shm_packeta_id` and `ftx_shm_packeta_name`; Balíkovna (toret-ceska-posta) `tcp_pickup_id` with its `b` prefix and the related name and address keys; GLS (wpify-woo-gls) `_gls_id` and `_gls_data`. They are written while the order is created, before its status changes. Without the matching active plugin the order keeps only the neutral entry and the WooCommerce log (source `miguel`) gets a warning with the order number and the carrier
 * The plugin reports the errors it catches to Miguel (`POST /v2/eshop/errors`), which forwards them to Servantes' error tracking: a failed call to Miguel (unreachable, API key rejected, an HTTP error, an unreadable or incomplete answer) and a failed e-book download (`DOWNLOAD_FILE_INVALID`, `DOWNLOAD_ORDER_NOT_FOUND` when the order is gone and so is its download permission, `DOWNLOAD_ORDER_NOT_PAID`, `DOWNLOAD_FAILED`). Reports wait in the `miguel_error_reports` option (at most 50, the oldest dropped) and are sent by WP-Cron, hourly and soon after the next successful call to Miguel, never during a customer's request. They carry ids only, never a customer's e-mail, name or address
 
 ## 1.10.3

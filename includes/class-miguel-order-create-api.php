@@ -167,6 +167,31 @@ class Miguel_Order_Create_Api {
 				return $payload;
 			}
 
+			// The carrier plugin's meta goes in with the order itself: Shipmall exports the order
+			// on a status change that happens while WooCommerce creates it.
+			$pickup_point = Miguel_Pickup_Point::from_payload( $payload );
+			if ( $pickup_point ) {
+				foreach ( $pickup_point->order_meta() as $key => $value ) {
+					$payload['meta_data'][] = array(
+						'key' => $key,
+						'value' => $value,
+					);
+				}
+
+				$pickup_post_meta = $pickup_point->post_meta();
+				if ( ! empty( $pickup_post_meta ) ) {
+					// Fires in the data store's create(), before the order's status transition. The first
+					// order created is this one; any other a hook creates during the save is not.
+					$write_pickup_post_meta = function ( $new_order_id ) use ( $pickup_post_meta, &$write_pickup_post_meta ) {
+						remove_action( 'woocommerce_new_order', $write_pickup_post_meta );
+						foreach ( $pickup_post_meta as $key => $value ) {
+							update_post_meta( $new_order_id, $key, $value );
+						}
+					};
+					add_action( 'woocommerce_new_order', $write_pickup_post_meta );
+				}
+			}
+
 			Miguel::debug_log(
 				'Prepared WooCommerce order payload',
 				array(
@@ -215,6 +240,18 @@ class Miguel_Order_Create_Api {
 				$order->update_meta_data( '_miguel_idempotency_key', $idempotency_key );
 				$order->save_meta_data();
 				$this->add_miguel_order_note( $order, $order_note );
+
+				if ( $pickup_point && empty( $pickup_point->order_meta() ) ) {
+					Miguel::log(
+						sprintf(
+							'Order %1$s: pickup point of carrier "%2$s" was not passed to a carrier plugin (no matching active plugin, or the point has no id); it stays only in %3$s.',
+							$order->get_order_number(),
+							$pickup_point->carrier(),
+							Miguel_Pickup_Point::META_KEY
+						),
+						'warning'
+					);
+				}
 			}
 
 			$emails_queued = false;
@@ -247,6 +284,9 @@ class Miguel_Order_Create_Api {
 
 			return new WP_REST_Response( $data, 201 );
 		} finally {
+			if ( isset( $write_pickup_post_meta ) ) {
+				remove_action( 'woocommerce_new_order', $write_pickup_post_meta );
+			}
 			remove_filter( 'miguel_suppress_order_sync', '__return_true' );
 			delete_option( $lock_option );
 		}

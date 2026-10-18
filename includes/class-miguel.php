@@ -91,6 +91,7 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-product-code-resolver.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-products-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-product-code-map-api.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-pickup-point.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-create-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-status-writer.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-status-update-api.php';
