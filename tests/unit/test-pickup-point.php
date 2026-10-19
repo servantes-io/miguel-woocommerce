@@ -341,12 +341,43 @@ class Test_Miguel_Pickup_Point extends Miguel_Test_Case {
 		$payload = $this->pickup_order_payload( 'smp23-replay', $this->point( 'packeta', '12345' ) );
 
 		$first  = $this->post_order( $payload );
+		$before = $this->meta_counts( $first );
 		$second = $this->post_order( $payload );
 
 		$this->assertSame( $first->get_id(), $second->get_id() );
-		$this->assertCount( 1, $second->get_meta( 'ftx_shm_packeta_id', false ) );
-		$this->assertCount( 1, $second->get_meta( '_miguel_pickup_point', false ) );
-		$this->assertCount( 1, get_post_meta( $second->get_id(), '_wc_zasilkovna_point_id', false ) );
+		if ( $this->create_writes_each_key_once() ) {
+			$this->assertSame( array_fill_keys( array_keys( $before ), 1 ), $before );
+		} else {
+			$this->assertNotContains( 0, $before, print_r( $before, true ) );
+		}
+		$this->assertSame( $before, $this->meta_counts( $second ) );
+	}
+
+	/**
+	 * Whether WooCommerce writes each meta entry of a new order once.
+	 *
+	 * @return bool
+	 */
+	protected function create_writes_each_key_once() {
+		return true;
+	}
+
+	/**
+	 * How many entries an order holds of each key the replay test watches, read from the
+	 * database: with HPOS on, wc_get_order() serves the order from a cache a meta write
+	 * leaves as it was.
+	 *
+	 * @param WC_Order $order Order.
+	 * @return array Key => count.
+	 */
+	private function meta_counts( $order ) {
+		$order_meta = wp_list_pluck( $order->get_data_store()->read_meta( $order ), 'meta_key' );
+
+		return array(
+			'ftx_shm_packeta_id'      => count( array_keys( $order_meta, 'ftx_shm_packeta_id', true ) ),
+			'_miguel_pickup_point'    => count( array_keys( $order_meta, '_miguel_pickup_point', true ) ),
+			'_wc_zasilkovna_point_id' => count( get_post_meta( $order->get_id(), '_wc_zasilkovna_point_id', false ) ),
+		);
 	}
 
 	public function test_order_created_by_another_plugin_during_the_request_gets_no_post_meta() {
@@ -426,5 +457,16 @@ class Test_Miguel_Pickup_Point_Hpos_Sync extends Test_Miguel_Pickup_Point {
 		add_filter( 'wc_allow_changing_orders_storage_while_sync_is_pending', '__return_true' );
 		$this->clean_up_cot_setup();
 		parent::tearDown();
+	}
+
+	/**
+	 * WooCommerce 7.9 backfills the post record inside save_meta_data() and so writes every
+	 * meta entry after the first twice when it creates an order; 8.9.3 is the oldest version
+	 * the CI matrix shows writing each once.
+	 *
+	 * @return bool
+	 */
+	protected function create_writes_each_key_once() {
+		return version_compare( WC_VERSION, '8.9.3', '>=' );
 	}
 }
