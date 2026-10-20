@@ -1403,6 +1403,132 @@ class Test_Miguel_Order_Create_Api extends Miguel_Test_Case {
 	}
 
 	/**
+	 * Miguel sends customer-facing (VAT-inclusive) amounts. A taxable order must
+	 * retain that grand total while WooCommerce splits it into net price and VAT.
+	 *
+	 * This fails if the create endpoint forwards the gross amount as WooCommerce's
+	 * tax-exclusive line total without applying the target shop's tax rates.
+	 */
+	public function test_create_order_splits_miguel_gross_price_using_the_shop_tax_rate() {
+		update_option( 'woocommerce_calc_taxes', 'yes' );
+		$tax_rate_id = WC_Tax::_insert_tax_rate(
+			array(
+				'tax_rate_country'  => 'CZ',
+				'tax_rate'          => '21.0000',
+				'tax_rate_name'     => 'DPH',
+				'tax_rate_priority' => 1,
+				'tax_rate_shipping' => 1,
+			)
+		);
+
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_tax_status( 'taxable' );
+		$product->save();
+
+		$request = $this->build_order_request(
+			$product->get_id(),
+			array(
+				'idempotency_key' => 'gross-tax-' . wp_generate_uuid4(),
+				'billing'         => array(
+					'first_name' => 'Test',
+					'last_name'  => 'User',
+					'email'      => 'buyer@example.com',
+					'address_1'  => 'Testovací 1',
+					'city'       => 'Praha',
+					'postcode'   => '11000',
+					'country'    => 'CZ',
+				),
+				'shipping'        => array(
+					'first_name' => 'Test',
+					'last_name'  => 'User',
+					'address_1'  => 'Testovací 1',
+					'city'       => 'Praha',
+					'postcode'   => '11000',
+					'country'    => 'CZ',
+				),
+				'shipping_lines'  => array(
+					array(
+						'method_id'    => 'flat_rate',
+						'method_title' => 'Flat rate',
+						'total'        => '99.00',
+					),
+				),
+				'line_items'      => array(
+					array(
+						'product_id' => $product->get_id(),
+						'quantity'   => 1,
+						'subtotal'   => '354.00',
+						'total'      => '354.00',
+					),
+				),
+			)
+		);
+
+		$response = ( new Miguel_Order_Create_Api( new Miguel_Hook_Manager() ) )->create_order( $request );
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+
+		$order = wc_get_order( $response->get_data()['id'] );
+		$this->assertTrue( $order->get_prices_include_tax() );
+		$this->assertSame( 453.0, (float) $order->get_total() );
+		$this->assertSame( 78.62, (float) $order->get_total_tax() );
+		$this->assertSame( 292.56, round( (float) array_values( $order->get_items() )[0]->get_total(), 2 ) );
+		$this->assertSame( 81.82, round( (float) array_values( $order->get_shipping_methods() )[0]->get_total(), 2 ) );
+
+		Miguel_Helper_Order::delete_order( $order->get_id() );
+		WC_Tax::_delete_tax_rate( $tax_rate_id );
+	}
+
+	/**
+	 * With taxes disabled, the endpoint must keep Miguel's explicit customer
+	 * price unchanged rather than inventing a tax split from a stale rate.
+	 */
+	public function test_create_order_keeps_miguel_gross_price_when_shop_taxes_are_disabled() {
+		$previous_tax_setting = get_option( 'woocommerce_calc_taxes' );
+		update_option( 'woocommerce_calc_taxes', 'no' );
+
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_tax_status( 'taxable' );
+		$product->save();
+
+		try {
+			$request = $this->build_order_request(
+				$product->get_id(),
+				array(
+					'idempotency_key' => 'tax-disabled-' . wp_generate_uuid4(),
+					'shipping_lines'  => array(
+						array(
+							'method_id'    => 'flat_rate',
+							'method_title' => 'Flat rate',
+							'total'        => '99.00',
+						),
+					),
+					'line_items'      => array(
+						array(
+							'product_id' => $product->get_id(),
+							'quantity'   => 1,
+							'subtotal'   => '354.00',
+							'total'      => '354.00',
+						),
+					),
+				)
+			);
+
+			$response = ( new Miguel_Order_Create_Api( new Miguel_Hook_Manager() ) )->create_order( $request );
+			$this->assertInstanceOf( WP_REST_Response::class, $response );
+
+			$order = wc_get_order( $response->get_data()['id'] );
+			$this->assertSame( 453.0, (float) $order->get_total() );
+			$this->assertSame( 0.0, (float) $order->get_total_tax() );
+			$this->assertSame( 354.0, (float) array_values( $order->get_items() )[0]->get_total() );
+			$this->assertSame( 99.0, (float) array_values( $order->get_shipping_methods() )[0]->get_total() );
+
+			Miguel_Helper_Order::delete_order( $order->get_id() );
+		} finally {
+			update_option( 'woocommerce_calc_taxes', $previous_tax_setting );
+		}
+	}
+
+	/**
 	 * All notes of an order, keyed by their text.
 	 *
 	 * @param int $order_id WooCommerce order ID.
