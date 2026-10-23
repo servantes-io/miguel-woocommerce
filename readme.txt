@@ -155,5 +155,8 @@ The interactive wizard allows you to set the screen size for which the resulting
 = 1.11.0 =
 
 * The plugin reports the errors it catches, such as a failed connection to Miguel or a failed e-book download, to Miguel for Servantes' error tracking. Reports are sent in the background and carry no customer data
+* Orders Miguel creates with a pickup point pass it to the shop's carrier plugin (Zásilkovna, Balíkovna, GLS), so Shipmall exports the order with its branch
+* Fixed repeated order requests from Miguel: a retried request returns the order it already created instead of creating another one
+* Fixed the totals of orders created by Miguel: its prices are taken as including tax, so the order total matches Miguel
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
