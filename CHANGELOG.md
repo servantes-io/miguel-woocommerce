@@ -2,6 +2,8 @@
 
 ## 1.11.0
 
+Released 2026-10-23
+
 * An order Miguel creates with a pickup point (the `_miguel_pickup_point` order meta: carrier, id, name, address) now reaches the shop's carrier plugin, so Shipmall exports it with its branch: Zásilkovna (wc-zasilkovna) gets `_wc_zasilkovna_point_id` and `_wc_zasilkovna_point_name`, written to wp_postmeta too since that plugin reads only there, plus Shipmall's `ftx_shm_packeta_id` and `ftx_shm_packeta_name`; Balíkovna (toret-ceska-posta) `tcp_pickup_id` with its `b` prefix and the related name and address keys; GLS (wpify-woo-gls) `_gls_id` and `_gls_data`. They are written while the order is created, before its status changes. Without the matching active plugin the order keeps only the neutral entry and the WooCommerce log (source `miguel`) gets a warning with the order number and the carrier
 * Fixed outbound order creation from Miguel so repeated requests with the same idempotency key replay the original result, while reusing the key with a different payload is rejected instead of creating or changing another order
 * Fixed outbound order totals: prices received from Miguel are treated as customer-facing prices including tax and WooCommerce calculates the tax-exclusive values and tax rows using the shop's configured product and shipping tax rules, keeping the order total aligned with Miguel
