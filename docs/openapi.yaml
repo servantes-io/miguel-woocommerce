@@ -653,6 +653,25 @@ components:
             Any other type is rejected with 409 `order.order_note_invalid`. Part of
             the idempotency payload: a replay adds no second note.
           example: "Objednávka vytvořena v aplikaci Melvil."
+        coupon_lines:
+          type: array
+          description: >
+            Coupons to record on the order, as Miguel validated them with
+            `POST /coupons/validate`. Each coupon is attached with a discount of 0 and the
+            line items keep exactly the `subtotal` and `total` Miguel sent: the discount is
+            already in those prices, so WooCommerce does not apply the coupon again, whatever
+            other plugins the shop runs. The coupon's usage is counted by WooCommerce's own
+            order status hook, as for a web order. The codes are not checked against the shop
+            here: an order the customer has paid for is not refused over its coupon. A value
+            that is not an array of objects each holding a non-blank `code` is rejected with
+            409 `order.coupon_lines_invalid` before anything is created.
+          items:
+            type: object
+            required: [code]
+            properties:
+              code:
+                type: string
+                example: MELVIL20
 
     CreateOrderResponse:
       type: object
@@ -678,6 +697,90 @@ components:
         email_template:
           type: string
           nullable: true
+
+    CouponValidateRequest:
+      type: object
+      required: [code, line_items]
+      properties:
+        code:
+          type: string
+          example: MELVIL20
+        email:
+          type: string
+          format: email
+          description: >
+            The customer's e-mail. Checked against the coupon's allowed e-mails, and used to
+            find the shop user whose per-customer usage limit applies.
+          example: jan@example.com
+        line_items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [product_code, quantity, price]
+            properties:
+              product_code:
+                type: string
+                description: A Miguel product code, resolved as in `POST /orders`.
+                example: ABC123
+              quantity:
+                type: integer
+                minimum: 1
+              price:
+                type: number
+                minimum: 0
+                description: >
+                  The unit price before the coupon, as the cart shows it. Minimum and
+                  maximum spend are checked against the sum of price × quantity.
+                example: 271
+
+    CouponValidateResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: The coupon's code as the shop stores it.
+          example: MELVIL20
+        discount_type:
+          type: string
+          description: WooCommerce discount type, e.g. `percent`, `fixed_product`, `fixed_cart`.
+          example: percent
+        amount:
+          type: number
+          description: Percentage for `percent`, otherwise an amount in the shop currency.
+          example: 20
+        limit_usage_to_x_items:
+          type: integer
+          nullable: true
+          description: The most items the coupon applies to; null when unlimited.
+        eligible_product_codes:
+          type: array
+          description: >
+            The sent product codes whose product passes the coupon's product and category
+            include and exclude lists and `exclude_sale_items`, in request order. For a
+            cart coupon (`fixed_cart`) the same rules are applied per line; note that
+            WooCommerce's own checkout spreads a `fixed_cart` amount over every line of a
+            cart the coupon is valid for, and uses the include list only to decide validity.
+          items:
+            type: string
+
+    CouponError:
+      type: object
+      properties:
+        error_code:
+          type: integer
+          description: >
+            WooCommerce's coupon error (`WC_Coupon::E_WC_COUPON_*`), passed through:
+            100 refused by a filter, 102 not valid for this e-mail, 105 does not exist,
+            106 usage limit reached, for the coupon or for this customer (WooCommerce may
+            answer 116 or 115 for the same), 107 expired, 108 minimum spend not met, 109 not applicable to the products, 110 not valid for sale items,
+            112 maximum spend exceeded, 113 excluded products, 114 excluded categories,
+            0 refused by another plugin without a code (see `message`).
+          example: 107
+        message:
+          type: string
+          description: WooCommerce's message for the error, as plain text.
+          example: Coupon "MELVIL20" has expired.
 
     UpdateOrderStatusRequest:
       type: object
@@ -737,6 +840,75 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Zone'
+        "401":
+          description: Missing bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /coupons/validate:
+    post:
+      summary: Validate a coupon against a cart
+      operationId: validateCoupon
+      description: >
+        Tells whether a WooCommerce coupon applies to the cart Miguel holds and, when it does,
+        which lines it applies to. The cart is judged as an unsaved order — the billing e-mail,
+        the shop user with that e-mail, each line priced as sent — by WooCommerce's own coupon
+        checks (`WC_Discounts::is_coupon_valid`: existence, expiry, usage and per-customer
+        limits, allowed e-mails, minimum and maximum spend, product and category rules), plus
+        the two checks the web checkout makes on the customer outside them: the coupon's
+        allowed e-mails against the e-mail sent, and a guest's per-customer usage limit by
+        that e-mail. Nothing is saved and no usage is counted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponValidateRequest'
+            example:
+              code: MELVIL20
+              email: jan@example.com
+              line_items:
+                - product_code: ABC123
+                  quantity: 1
+                  price: 271
+      responses:
+        "200":
+          description: The coupon applies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponValidateResponse'
+        "422":
+          description: WooCommerce refused the coupon for this cart.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponError'
+        "400":
+          description: >
+            Malformed request: `coupon.code_required` (no code), `coupon.line_items_invalid`
+            (line_items missing or empty, a line without a product code, a quantity that is not a
+            positive integer, a price missing, negative or not a number).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "409":
+          description: >
+            A product code is unknown (`product_code.not_found`) or matches several products
+            (`product_code.ambiguous`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         "401":
           description: Missing bearer token.
           content:
