@@ -324,6 +324,100 @@ class Test_Miguel_Coupon_Preview_Api extends Miguel_Test_Case {
 		$this->assertNull( $data['totals']['after']['shipping'] );
 	}
 
+	/**
+	 * A request for one BOOK-A and two BOOK-B.
+	 *
+	 * @param string $code Coupon code.
+	 * @return array
+	 */
+	private function two_line_body( $code ) {
+		return $this->body( $code, array( 'line_items' => array( $this->line( 'BOOK-A' ), $this->line( 'BOOK-B', 2 ) ) ) );
+	}
+
+	/**
+	 * A product category.
+	 *
+	 * @param string $name Category name.
+	 * @return int Term ID.
+	 */
+	private function create_category( $name ) {
+		return (int) wp_insert_term( $name, 'product_cat' )['term_id'];
+	}
+
+	public function test_category_rules_leave_other_lines_undiscounted() {
+		$fiction = $this->create_category( 'Fiction' );
+		$poetry  = $this->create_category( 'Poetry' );
+		foreach ( array(
+			'BOOK-A' => $fiction,
+			'BOOK-B' => $poetry,
+		) as $sku => $category ) {
+			$product = $this->create_product( $sku );
+			$product->set_category_ids( array( $category ) );
+			$product->save();
+		}
+		$this->create_coupon( 'fiction', array( 'product_categories' => array( $fiction ) ) );
+		$this->create_coupon( 'noverse', array( 'excluded_product_categories' => array( $poetry ) ) );
+
+		foreach ( array( 'fiction', 'noverse' ) as $code ) {
+			$data = $this->data( $this->preview( $this->two_line_body( $code ) ) );
+
+			$this->assertTrue( $data['applied'], $code );
+			$this->assertTrue( $data['lines'][0]['discounted'], $code );
+			$this->assertEquals( 255.2, $data['lines'][0]['after']['total'], $code );
+			$this->assertFalse( $data['lines'][1]['discounted'], $code );
+			$this->assertEquals( 0, $data['lines'][1]['discount'], $code );
+			$this->assertEquals( 638, $data['lines'][1]['after']['total'], $code );
+		}
+	}
+
+	public function test_sale_items_excluded_by_the_coupon_are_not_discounted() {
+		$this->create_product( 'BOOK-A' );
+		$sale = $this->create_product( 'BOOK-B' );
+		$sale->set_sale_price( '299' );
+		$sale->save();
+		$this->create_coupon( 'nosale', array( 'exclude_sale_items' => true ) );
+
+		$data = $this->data( $this->preview( $this->two_line_body( 'nosale' ) ) );
+
+		$this->assertTrue( $data['applied'] );
+		$this->assertTrue( $data['lines'][0]['discounted'] );
+		$this->assertFalse( $data['lines'][1]['discounted'] );
+		$this->assertEquals( 598, $data['lines'][1]['after']['total'] );
+	}
+
+	public function test_line_the_coupon_drops_is_a_removed_line() {
+		$this->create_product( 'BOOK-A' );
+		$dropped = $this->create_product( 'BOOK-B' )->get_id();
+		$this->create_coupon( 'c20' );
+		add_action(
+			'woocommerce_applied_coupon',
+			function () use ( $dropped ) {
+				foreach ( WC()->cart->get_cart() as $key => $item ) {
+					if ( $dropped === $item['product_id'] ) {
+						WC()->cart->remove_cart_item( $key );
+					}
+				}
+			}
+		);
+
+		$data = $this->data( $this->preview( $this->two_line_body( 'c20' ) ) );
+
+		$this->assertTrue( $data['applied'] );
+		$this->assertSame( 2, $data['lines'][1]['quantity'] );
+		$this->assertEquals( 638, $data['lines'][1]['before']['total'] );
+		$this->assertSame( 0, $data['lines'][1]['in_cart_quantity'] );
+		$this->assertEquals( 0, $data['lines'][1]['after']['total'] );
+		$this->assertSame(
+			array(
+				array(
+					'product_code' => 'BOOK-B',
+					'quantity'     => 2,
+				),
+			),
+			$data['removed_lines']
+		);
+	}
+
 	public function test_line_not_in_cart_is_reported() {
 		$product = $this->create_product( 'BOOK-A' );
 		$product->set_stock_status( 'outofstock' );
