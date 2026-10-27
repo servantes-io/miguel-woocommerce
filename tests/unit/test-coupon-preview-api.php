@@ -1,0 +1,350 @@
+<?php
+/**
+ * Tests for POST /miguel/v1/coupons/preview.
+ *
+ * @package Miguel\Tests
+ */
+class Test_Miguel_Coupon_Preview_Api extends Miguel_Test_Case {
+
+	/**
+	 * A product whose Miguel code is its bare SKU (no printed-book suffix is configured).
+	 *
+	 * @param string $sku   Unique SKU, which is also the product code.
+	 * @param string $price Regular price.
+	 * @return WC_Product
+	 */
+	private function create_product( $sku, $price = '319' ) {
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_sku( $sku );
+		$product->set_regular_price( $price );
+		$product->save();
+
+		return $product;
+	}
+
+	/**
+	 * A published coupon.
+	 *
+	 * @param string $code  Coupon code.
+	 * @param array  $props WC_Coupon props to set, e.g. array( 'discount_type' => 'percent' ).
+	 * @return WC_Coupon
+	 */
+	private function create_coupon( $code, $props = array() ) {
+		$coupon = new WC_Coupon();
+		$coupon->set_code( $code );
+		$coupon->set_props(
+			array_merge(
+				array(
+					'discount_type' => 'percent',
+					'amount'        => 20,
+				),
+				$props
+			)
+		);
+		$coupon->save();
+
+		return $coupon;
+	}
+
+	/**
+	 * One line of the request.
+	 *
+	 * @param string $product_code Product code.
+	 * @param int    $quantity     Quantity.
+	 * @return array
+	 */
+	private function line( $product_code, $quantity = 1 ) {
+		return array(
+			'product_code' => $product_code,
+			'quantity'     => $quantity,
+		);
+	}
+
+	/**
+	 * A request for one line of BOOK-A.
+	 *
+	 * @param string $code Coupon code.
+	 * @param array  $more Extra request keys.
+	 * @return array
+	 */
+	private function body( $code, $more = array() ) {
+		return array_merge(
+			array(
+				'code'       => $code,
+				'email'      => 'buyer@example.com',
+				'line_items' => array( $this->line( 'BOOK-A' ) ),
+			),
+			$more
+		);
+	}
+
+	/**
+	 * POST a body to the route's callback.
+	 *
+	 * @param array $body  Request body.
+	 * @param mixed $probe Probe double, or null for the real one.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	private function preview( array $body, $probe = null ) {
+		$request = new WP_REST_Request( 'POST', '/miguel/v1/coupons/preview' );
+		$request->add_header( 'content-type', 'application/json' );
+		$request->set_body( wp_json_encode( $body ) );
+
+		return ( new Miguel_Coupon_Preview_Api( new Miguel_Hook_Manager(), null, $probe ) )->preview_coupon( $request );
+	}
+
+	/**
+	 * The data of a 200 response.
+	 *
+	 * @param mixed $response Route response.
+	 * @return array
+	 */
+	private function data( $response ) {
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+
+		return $response->get_data();
+	}
+
+	public function test_registers_rest_api_init_hook() {
+		$hook_manager = $this->createMock( Miguel_Hook_Manager_Interface::class );
+		$hook_manager->expects( $this->once() )
+			->method( 'add_action' )
+			->with(
+				'rest_api_init',
+				$this->isType( 'array' )
+			);
+
+		$api = new Miguel_Coupon_Preview_Api( $hook_manager );
+		$api->register_hooks();
+	}
+
+	public function test_route_is_registered_and_validate_is_gone() {
+		$api = new Miguel_Coupon_Preview_Api( new Miguel_Hook_Manager() );
+		add_action( 'rest_api_init', array( $api, 'register_routes' ) );
+
+		$routes = rest_get_server()->get_routes();
+		$this->assertArrayHasKey( '/miguel/v1/coupons/preview', $routes );
+		$this->assertArrayNotHasKey( '/miguel/v1/coupons/validate', $routes );
+
+		$route = $routes['/miguel/v1/coupons/preview'][0];
+		$this->assertArrayHasKey( 'POST', $route['methods'] );
+		$this->assertSame( array( $api, 'validate_api_access' ), $route['permission_callback'] );
+	}
+
+	public function test_route_refuses_a_request_without_the_api_key() {
+		$api = new Miguel_Coupon_Preview_Api( new Miguel_Hook_Manager() );
+		add_action( 'rest_api_init', array( $api, 'register_routes' ) );
+
+		$response = rest_get_server()->dispatch( new WP_REST_Request( 'POST', '/miguel/v1/coupons/preview' ) );
+
+		$this->assertSame( 401, $response->get_status() );
+	}
+
+	public function test_applied_percent_coupon_response_shape() {
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'c20' );
+
+		$data = $this->data( $this->preview( $this->body( 'c20' ) ) );
+
+		$this->assertSame( 'c20', $data['code'] );
+		$this->assertTrue( $data['applied'] );
+		$this->assertNull( $data['error_code'] );
+		$this->assertSame( 'percent', $data['coupon']['discount_type'] );
+		$this->assertEquals( 319, $data['lines'][0]['before']['total'] );
+		$this->assertEquals( 255.2, $data['lines'][0]['after']['total'] );
+		$this->assertEquals( 63.8, $data['lines'][0]['discount'] );
+		$this->assertTrue( $data['lines'][0]['discounted'] );
+		$this->assertSame( 'BOOK-A', $data['lines'][0]['product_code'] );
+		$this->assertSame( 1, $data['lines'][0]['quantity'] );
+		$this->assertSame( 1, $data['lines'][0]['in_cart_quantity'] );
+		$this->assertSame( array(), $data['added_lines'] );
+		$this->assertSame( array(), $data['removed_lines'] );
+		$this->assertNull( $data['gift_choices'] );
+		$this->assertEquals( 255.2, $data['totals']['after']['total'] );
+		$this->assertEquals( 319, $data['totals']['before']['total'] );
+		$this->assertSame( array(), $data['other_coupons'] );
+		$this->assertSame( array(), $data['unchecked'] );
+		$this->assertSame( get_woocommerce_currency(), $data['currency'] );
+	}
+
+	public function test_refused_coupon_is_200_with_the_cart() {
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'old', array( 'date_expires' => time() - DAY_IN_SECONDS ) );
+
+		$data = $this->data( $this->preview( $this->body( 'old' ) ) );
+
+		$this->assertFalse( $data['applied'] );
+		$this->assertSame( WC_Coupon::E_WC_COUPON_EXPIRED, $data['error_code'] );
+		$this->assertNotSame( '', $data['message'] );
+		$this->assertSame( $data['lines'][0]['before'], $data['lines'][0]['after'] );
+		$this->assertFalse( $data['lines'][0]['discounted'] );
+	}
+
+	public function test_unknown_coupon_has_null_coupon() {
+		$this->create_product( 'BOOK-A' );
+
+		$data = $this->data( $this->preview( $this->body( 'nosuchcode' ) ) );
+
+		$this->assertFalse( $data['applied'] );
+		$this->assertNull( $data['coupon'] );
+		$this->assertSame( WC_Coupon::E_WC_COUPON_NOT_EXIST, $data['error_code'] );
+	}
+
+	public function test_code_is_normalised() {
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'c20' );
+
+		$data = $this->data( $this->preview( $this->body( ' C20 ' ) ) );
+
+		$this->assertTrue( $data['applied'] );
+		$this->assertSame( 'c20', $data['coupon']['code'] );
+	}
+
+	public function test_free_shipping_flag() {
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'ship', array( 'free_shipping' => true ) );
+
+		$data = $this->data( $this->preview( $this->body( 'ship' ) ) );
+
+		$this->assertTrue( $data['coupon']['free_shipping'] );
+		$this->assertNull( $data['totals']['after']['shipping'] );
+	}
+
+	public function test_line_not_in_cart_is_reported() {
+		$product = $this->create_product( 'BOOK-A' );
+		$product->set_stock_status( 'outofstock' );
+		$product->save();
+		$this->create_coupon( 'c20' );
+
+		$data = $this->data( $this->preview( $this->body( 'c20' ) ) );
+
+		$this->assertSame( 0, $data['lines'][0]['in_cart_quantity'] );
+	}
+
+	public function test_malformed_shipping_method_is_400() {
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'c20' );
+
+		$response = $this->preview( $this->body( 'c20', array( 'shipping_method' => 'flat_rate' ) ) );
+
+		$this->assertWPError( $response );
+		$this->assertSame( 'coupon.shipping_method_invalid', $response->get_error_code() );
+		$this->assertSame( 400, $response->get_error_data()['status'] );
+	}
+
+	public function test_probe_failure_is_500_and_restores() {
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'c20' );
+		$cart_before = WC()->cart;
+		$probe       = new class() extends Miguel_Coupon_Cart_Probe {
+			/**
+			 * Always fails.
+			 *
+			 * @param array $lines       Lines.
+			 * @param mixed $coupon_code Code.
+			 * @param array $customer    Customer.
+			 * @throws Error Always.
+			 */
+			public static function price( array $lines, $coupon_code, array $customer ) {
+				throw new Error( 'boom' );
+			}
+		};
+
+		$response = $this->preview( $this->body( 'c20' ), $probe );
+
+		$this->assertWPError( $response );
+		$this->assertSame( 'coupon.preview_failed', $response->get_error_code() );
+		$this->assertSame( 500, $response->get_error_data()['status'] );
+		$this->assertSame( $cart_before, WC()->cart );
+	}
+
+	public function test_nothing_persists() {
+		global $wpdb;
+		$this->create_product( 'BOOK-A' );
+		$coupon        = $this->create_coupon( 'c20' );
+		$orders_before = wc_get_orders(
+			array(
+				'limit'  => -1,
+				'return' => 'ids',
+			)
+		);
+		$sessions      = "SELECT COUNT(*) FROM {$wpdb->prefix}woocommerce_sessions";
+		$sessions_pre  = (int) $wpdb->get_var( $sessions ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		$data = $this->data( $this->preview( $this->body( 'c20' ) ) );
+
+		$this->assertTrue( $data['applied'] );
+		$this->assertSame(
+			$orders_before,
+			wc_get_orders(
+				array(
+					'limit'  => -1,
+					'return' => 'ids',
+				)
+			)
+		);
+		$this->assertSame( 0, ( new WC_Coupon( $coupon->get_id() ) )->get_usage_count() );
+		$this->assertSame( $sessions_pre, (int) $wpdb->get_var( $sessions ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+	}
+
+	public function test_missing_code_is_a_bad_request() {
+		$response = $this->preview(
+			array(
+				'email'      => 'buyer@example.com',
+				'line_items' => array( $this->line( 'BOOK-A' ) ),
+			)
+		);
+
+		$this->assertWPError( $response );
+		$this->assertSame( 'coupon.code_required', $response->get_error_code() );
+		$this->assertSame( 400, $response->get_error_data()['status'] );
+	}
+
+	/**
+	 * @dataProvider malformed_line_items
+	 *
+	 * @param mixed $line_items Malformed line_items value.
+	 */
+	public function test_malformed_line_items_are_a_bad_request( $line_items ) {
+		$response = $this->preview(
+			array(
+				'code'       => 'c20',
+				'email'      => 'buyer@example.com',
+				'line_items' => $line_items,
+			)
+		);
+
+		$this->assertWPError( $response );
+		$this->assertSame( 'coupon.line_items_invalid', $response->get_error_code() );
+		$this->assertSame( 400, $response->get_error_data()['status'] );
+	}
+
+	/**
+	 * @return array
+	 */
+	public function malformed_line_items() {
+		$valid = $this->line( 'BOOK-A' );
+
+		$no_code = $valid;
+		unset( $no_code['product_code'] );
+
+		return array(
+			'empty'           => array( array() ),
+			'not a list'      => array( 'BOOK-A' ),
+			'line not object' => array( array( 'BOOK-A' ) ),
+			'no product code' => array( array( $no_code ) ),
+			'zero quantity'   => array( array( array_merge( $valid, array( 'quantity' => 0 ) ) ) ),
+		);
+	}
+
+	public function test_unknown_product_code_answers_the_resolver_error() {
+		$this->create_coupon( 'c20' );
+
+		$response = $this->preview( $this->body( 'c20' ) );
+
+		$this->assertWPError( $response );
+		$this->assertSame( 'product_code.not_found', $response->get_error_code() );
+		$this->assertSame( 409, $response->get_error_data()['status'] );
+	}
+}

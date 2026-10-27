@@ -1108,8 +1108,8 @@ class Miguel_Order_Create_Api {
 	/**
 	 * The coupon codes in the payload's coupon_lines, each once.
 	 *
-	 * The codes are not validated against the shop: Miguel validates a coupon through
-	 * POST /coupons/validate before it places the order, and an order the customer has already
+	 * The codes are not validated against the shop: Miguel previews a coupon through
+	 * POST /coupons/preview before it places the order, and an order the customer has already
 	 * paid for is not refused over its coupon.
 	 *
 	 * @param array $payload Request payload.

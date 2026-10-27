@@ -138,13 +138,25 @@ msgstr "The payment method name shown on orders from the Miguel app."
 msgid "Description"
 msgstr "Description"
 
-#: includes/class-miguel-coupon-validate-api.php
+#: includes/class-miguel-coupon-preview-api.php
 msgid "Coupon code is required."
 msgstr "Coupon code is required."
 
-#: includes/class-miguel-coupon-validate-api.php
-msgid "Coupon line_items must be a non-empty array of objects with product_code, a positive integer quantity and a non-negative price."
-msgstr "Coupon line_items must be a non-empty array of objects with product_code, a positive integer quantity and a non-negative price."
+#: includes/class-miguel-coupon-preview-api.php
+msgid "Coupon line_items must be a non-empty array of objects with product_code and a positive integer quantity."
+msgstr "Coupon line_items must be a non-empty array of objects with product_code and a positive integer quantity."
+
+#: includes/class-miguel-coupon-preview-api.php
+msgid "Coupon shipping_method must be a shipping rate id such as flat_rate:3."
+msgstr "Coupon shipping_method must be a shipping rate id such as flat_rate:3."
+
+#: includes/class-miguel-coupon-preview-api.php
+msgid "The shop could not price the cart."
+msgstr "The shop could not price the cart."
+
+#: includes/class-miguel-coupon-preview-api.php
+msgid "The coupon was removed from the cart."
+msgstr "The coupon was removed from the cart."
 
 #: includes/class-miguel-order-create-api.php
 msgid "Order coupon_lines must be an array of objects, each with a coupon code."

@@ -161,6 +161,6 @@ The interactive wizard allows you to set the screen size for which the resulting
 
 = 1.12.0 =
 
-* Discount coupons work in the Miguel app: the app checks a coupon code against the shop's WooCommerce coupons, and orders placed with a coupon show it in the shop with the discounted prices the customer paid
+* Discount coupons work in the Miguel app: the app asks the shop what a coupon code does to the cart, with the prices WooCommerce and its coupon plugins give, and orders placed with a coupon show it in the shop with the discounted prices the customer paid
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

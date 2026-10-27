@@ -98,7 +98,7 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-order-finished-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-delivery-methods-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-orders-api.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-coupon-validate-api.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-coupon-preview-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-memory-session.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-isolated-cart.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-coupon-cart-probe.php';
@@ -185,8 +185,8 @@ class Miguel {
 			);
 		} );
 
-		$this->container->register( 'coupon_validate_api', function ( $container ) {
-			return new Miguel_Coupon_Validate_Api(
+		$this->container->register( 'coupon_preview_api', function ( $container ) {
+			return new Miguel_Coupon_Preview_Api(
 				$container->get( 'hook_manager' )
 			);
 		} );
@@ -242,7 +242,7 @@ class Miguel {
 			$this->container->get( 'order_finished_api' )->register_hooks();
 			$this->container->get( 'delivery_methods_api' )->register_hooks();
 			$this->container->get( 'orders_api' )->register_hooks();
-			$this->container->get( 'coupon_validate_api' )->register_hooks();
+			$this->container->get( 'coupon_preview_api' )->register_hooks();
 
 			// Error reports are sent from WP-Cron only: hourly, and soon after a successful Miguel call.
 			$this->hook_manager->add_action( Miguel_Error_Reporter::CRON_HOOK, array( 'Miguel_Error_Reporter', 'flush' ) );
