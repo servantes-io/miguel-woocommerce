@@ -200,4 +200,157 @@ class Test_Miguel_Isolated_Cart extends Miguel_Test_Case {
 
 		$this->assertSame( $before, $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
+
+	/**
+	 * Callback ids of the given hooks by priority, in order.
+	 *
+	 * @param string[] $names Hook names.
+	 * @return array
+	 */
+	private function hook_layout( $names ) {
+		global $wp_filter;
+
+		$layout = array();
+		foreach ( $names as $name ) {
+			$hook = $wp_filter[ $name ];
+			foreach ( $hook->callbacks as $priority => $entries ) {
+				$layout[ $name ][ $priority ] = array_keys( $entries );
+			}
+		}
+
+		return $layout;
+	}
+
+	/**
+	 * Hook names that have a callback which is a method of the object.
+	 *
+	 * @param object $object Object.
+	 * @return string[]
+	 */
+	private function hooks_bound_to( $object ) {
+		global $wp_filter;
+
+		$names = array();
+		foreach ( $wp_filter as $name => $hook ) {
+			foreach ( $hook->callbacks as $entries ) {
+				foreach ( $entries as $entry ) {
+					if ( is_array( $entry['function'] ) && $entry['function'][0] === $object ) {
+						$names[ $name ] = $name;
+					}
+				}
+			}
+		}
+
+		return array_values( $names );
+	}
+
+	/**
+	 * The WC_Cart_Session of a cart.
+	 *
+	 * @param WC_Cart $cart Cart.
+	 * @return WC_Cart_Session
+	 */
+	private function cart_session( $cart ) {
+		$property = new ReflectionProperty( WC_Cart::class, 'session' );
+		$property->setAccessible( true );
+
+		return $property->getValue( $cart );
+	}
+
+	public function test_persistent_cart_meta_is_not_written() {
+		$user_id = self::factory()->user->create();
+		$key     = '_woocommerce_persistent_cart_' . get_current_blog_id();
+		$before  = get_user_meta( $user_id, $key, true );
+
+		Miguel_Isolated_Cart::run(
+			$this->customer( array( 'user_id' => $user_id ) ),
+			function ( $cart ) {
+				$cart->add_to_cart( WC_Helper_Product::create_simple_product()->get_id() );
+			}
+		);
+
+		$this->assertSame( $before, get_user_meta( $user_id, $key, true ) );
+	}
+
+	public function test_throwaway_cart_leaves_no_hooks_and_original_hooks_are_restored() {
+		$original      = WC()->cart;
+		$names         = array_merge( $this->hooks_bound_to( $original ), $this->hooks_bound_to( $this->cart_session( $original ) ) );
+		$layout_before = $this->hook_layout( $names );
+		$product_id    = WC_Helper_Product::create_simple_product()->get_id();
+		$throwaway     = null;
+
+		Miguel_Isolated_Cart::run(
+			$this->customer(),
+			function ( $cart ) use ( &$throwaway, $product_id ) {
+				$throwaway = $cart;
+				$cart->add_to_cart( $product_id );
+			}
+		);
+
+		$this->assertSame( array(), $this->hooks_bound_to( $throwaway ) );
+		$this->assertSame( array(), $this->hooks_bound_to( $this->cart_session( $throwaway ) ) );
+		$this->assertNotSame( array(), $this->hooks_bound_to( $original ) );
+		$this->assertSame( $layout_before, $this->hook_layout( $names ) );
+	}
+
+	public function test_original_cart_does_not_react_during_the_call() {
+		$original_cart = WC()->cart;
+		$contents      = $original_cart->get_cart_contents();
+		$totals        = $original_cart->get_totals();
+		$inside        = null;
+
+		Miguel_Isolated_Cart::run(
+			$this->customer(),
+			function ( $cart ) use ( $original_cart, &$inside ) {
+				$cart->add_to_cart( WC_Helper_Product::create_simple_product()->get_id() );
+				$inside = array(
+					$this->hooks_bound_to( $original_cart ),
+					$this->hooks_bound_to( $this->cart_session( $original_cart ) ),
+				);
+			}
+		);
+
+		$this->assertSame( array( array(), array() ), $inside );
+		$this->assertSame( $contents, $original_cart->get_cart_contents() );
+		$this->assertSame( $totals, $original_cart->get_totals() );
+	}
+
+	public function test_throwaway_cart_keeps_set_session_but_not_cookie_callbacks_during_the_call() {
+		$inside = null;
+
+		Miguel_Isolated_Cart::run(
+			$this->customer(),
+			function ( $cart ) use ( &$inside ) {
+				$inside = $this->hooks_bound_to( $this->cart_session( $cart ) );
+			}
+		);
+
+		$this->assertContains( 'woocommerce_after_calculate_totals', $inside );
+		$this->assertNotContains( 'woocommerce_add_to_cart', $inside );
+		$this->assertNotContains( 'shutdown', $inside );
+		$this->assertNotContains( 'wp', $inside );
+	}
+
+	public function test_billing_address_and_empty_addresses() {
+		$run = Miguel_Isolated_Cart::run(
+			$this->customer(
+				array(
+					'billing'  => array(
+						'country'  => 'SK',
+						'state'    => '',
+						'city'     => 'Bratislava',
+						'postcode' => '81101',
+					),
+					'shipping' => array(),
+				)
+			),
+			function () {
+				$c = WC()->customer;
+				return array( $c->get_billing_country(), $c->get_billing_city(), $c->get_billing_postcode(), $c->get_shipping_country() );
+			}
+		);
+
+		$default = new WC_Customer( 0 );
+		$this->assertSame( array( 'SK', 'Bratislava', '81101', $default->get_shipping_country() ), $run['result'] );
+	}
 }
