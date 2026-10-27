@@ -133,17 +133,27 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 	}
 
 	/**
+	 * POST a body to the route's callback.
+	 *
+	 * @param array $body Request body.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	private function request( array $body ) {
+		$request = new WP_REST_Request( 'POST', '/miguel/v1/coupons/preview' );
+		$request->add_header( 'content-type', 'application/json' );
+		$request->set_body( wp_json_encode( $body ) );
+
+		return ( new Miguel_Coupon_Preview_Api( new Miguel_Hook_Manager() ) )->preview_coupon( $request );
+	}
+
+	/**
 	 * The data of the route's 200 response.
 	 *
 	 * @param array $body Request body.
 	 * @return array
 	 */
 	private function preview( array $body ) {
-		$request = new WP_REST_Request( 'POST', '/miguel/v1/coupons/preview' );
-		$request->add_header( 'content-type', 'application/json' );
-		$request->set_body( wp_json_encode( $body ) );
-
-		$response = ( new Miguel_Coupon_Preview_Api( new Miguel_Hook_Manager() ) )->preview_coupon( $request );
+		$response = $this->request( $body );
 
 		$this->assertInstanceOf( WP_REST_Response::class, $response );
 		$this->assertSame( 200, $response->get_status() );
@@ -268,6 +278,30 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 		);
 	}
 
+	public function test_refused_selectable_gift_has_no_choices() {
+		Miguel_Mock_Sc_Gift::install();
+		$this->create_product( 'BOOK-A' );
+		$gift = $this->create_product( 'BOOK-G1', '99' );
+		$this->create_coupon(
+			'oldpick',
+			array( 'date_expires' => time() - DAY_IN_SECONDS ),
+			array(
+				'wc_sc_no_of_selectable_product' => 'yes',
+				'wc_sc_add_product_details'      => array(
+					array(
+						'product_id' => $gift->get_id(),
+						'quantity'   => 1,
+					),
+				),
+			)
+		);
+
+		$data = $this->preview( $this->body( 'oldpick' ) );
+
+		$this->assertFalse( $data['applied'] );
+		$this->assertNull( $data['gift_choices'] );
+	}
+
 	public function test_location_rule_without_address_is_unchecked_not_refused() {
 		WC_SC_Coupons_By_Location::install();
 		$this->create_product( 'BOOK-A' );
@@ -291,34 +325,57 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 		$this->assertSame( array(), $data['unchecked'] );
 	}
 
-	public function test_location_filter_is_restored() {
+	/**
+	 * The callbacks of woocommerce_coupon_is_valid at priority 11, in order.
+	 *
+	 * @return array
+	 */
+	private function priority_11_validators() {
+		global $wp_filter;
+
+		return $wp_filter['woocommerce_coupon_is_valid']->callbacks[11];
+	}
+
+	/**
+	 * The location validator between two other validators at its priority, as with Smart Coupons'
+	 * payment and shipping method validators.
+	 */
+	private function install_location_between_neighbours() {
+		add_filter( 'woocommerce_coupon_is_valid', array( Miguel_Mock_Sc_Payment_Method::class, 'validate' ), 11, 3 );
 		WC_SC_Coupons_By_Location::install();
+		add_filter( 'woocommerce_coupon_is_valid', '__return_true', 11 );
+	}
+
+	public function test_location_validator_keeps_its_place() {
+		$this->install_location_between_neighbours();
 		$this->create_product( 'BOOK-A' );
 		$this->create_cz_billing_coupon( 'cz' );
+		$validators = $this->priority_11_validators();
+		$this->assertCount( 3, $validators );
 
 		$data = $this->preview( $this->body( 'cz' ) );
 
+		$this->assertTrue( $data['applied'] );
 		$this->assertSame( array( 'location' ), $data['unchecked'] );
+		$this->assertSame( $validators, $this->priority_11_validators() );
 		$this->assertSame( 11, has_filter( 'woocommerce_coupon_is_valid', array( WC_SC_Coupons_By_Location::get_instance(), 'validate' ) ) );
 	}
 
-	public function test_location_filter_is_restored_when_pricing_fails() {
-		WC_SC_Coupons_By_Location::install();
+	public function test_location_validator_keeps_its_place_when_pricing_fails() {
+		$this->install_location_between_neighbours();
 		$this->create_product( 'BOOK-A' );
 		$this->create_cz_billing_coupon( 'cz' );
-		$fail = function () {
+		$validators = $this->priority_11_validators();
+		$fail       = function () {
 			throw new Error( 'boom' );
 		};
 		add_action( 'woocommerce_before_calculate_totals', $fail );
 
-		$request = new WP_REST_Request( 'POST', '/miguel/v1/coupons/preview' );
-		$request->add_header( 'content-type', 'application/json' );
-		$request->set_body( wp_json_encode( $this->body( 'cz' ) ) );
-		$response = ( new Miguel_Coupon_Preview_Api( new Miguel_Hook_Manager() ) )->preview_coupon( $request );
+		$response = $this->request( $this->body( 'cz' ) );
 		remove_action( 'woocommerce_before_calculate_totals', $fail );
 
 		$this->assertWPError( $response );
-		$this->assertSame( 11, has_filter( 'woocommerce_coupon_is_valid', array( WC_SC_Coupons_By_Location::get_instance(), 'validate' ) ) );
+		$this->assertSame( $validators, $this->priority_11_validators() );
 	}
 
 	public function test_shipping_method_rule_without_method_is_unchecked() {

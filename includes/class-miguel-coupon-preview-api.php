@@ -127,10 +127,7 @@ class Miguel_Coupon_Preview_Api {
 		$unchecked = $this->unchecked_restrictions( $coupon, $customer );
 
 		// A location rule cannot be judged without the address: price as if it passed.
-		$location_validator = in_array( 'location', $unchecked, true ) ? $this->get_location_validator() : null;
-		if ( $location_validator ) {
-			remove_filter( 'woocommerce_coupon_is_valid', $location_validator, 11 );
-		}
+		$silenced = in_array( 'location', $unchecked, true ) ? $this->silence_location_validator() : null;
 
 		try {
 			$before = $this->probe->price( $lines, null, $customer );
@@ -144,8 +141,8 @@ class Miguel_Coupon_Preview_Api {
 				array( 'status' => 500 )
 			);
 		} finally {
-			if ( $location_validator ) {
-				add_filter( 'woocommerce_coupon_is_valid', $location_validator, 11, 3 );
+			if ( $silenced ) {
+				$this->restore_location_validator( $silenced );
 			}
 		}
 
@@ -153,18 +150,55 @@ class Miguel_Coupon_Preview_Api {
 	}
 
 	/**
-	 * Smart Coupons' location validator, when it is hooked where Smart Coupons hooks it.
+	 * Make Smart Coupons' location validator pass every coupon until restore_location_validator().
 	 *
-	 * @return callable|null
+	 * The validator's entry stays where it is among the other priority-11 validators (Smart Coupons
+	 * hooks several there, and their order decides which refusal message wins); only the callable
+	 * in it is swapped for a pass-through.
+	 *
+	 * @return array|null What restore_location_validator() needs, or null when the validator is
+	 *                    not hooked where Smart Coupons hooks it.
 	 */
-	private function get_location_validator() {
-		if ( ! class_exists( 'WC_SC_Coupons_By_Location' ) || ! is_callable( array( 'WC_SC_Coupons_By_Location', 'get_instance' ) ) ) {
+	private function silence_location_validator() {
+		global $wp_filter;
+
+		if ( ! class_exists( 'WC_SC_Coupons_By_Location' ) || ! is_callable( array( 'WC_SC_Coupons_By_Location', 'get_instance' ) ) || ! isset( $wp_filter['woocommerce_coupon_is_valid'] ) ) {
 			return null;
 		}
 
 		$validator = array( WC_SC_Coupons_By_Location::get_instance(), 'validate' );
+		$hook      = $wp_filter['woocommerce_coupon_is_valid'];
+		foreach ( $hook->callbacks[11] ?? array() as $id => $entry ) {
+			if ( $entry['function'] === $validator ) {
+				$pass_through = static function ( $valid ) {
+					return $valid;
+				};
 
-		return 11 === has_filter( 'woocommerce_coupon_is_valid', $validator ) ? $validator : null;
+				$hook->callbacks[11][ $id ]['function'] = $pass_through;
+
+				return array(
+					'hook'         => $hook,
+					'id'           => $id,
+					'validator'    => $validator,
+					'pass_through' => $pass_through,
+				);
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Put the location validator back into its entry.
+	 *
+	 * @param array $silenced Result of silence_location_validator().
+	 */
+	private function restore_location_validator( array $silenced ) {
+		$callbacks = $silenced['hook']->callbacks;
+		$id        = $silenced['id'];
+		if ( isset( $callbacks[11][ $id ] ) && $callbacks[11][ $id ]['function'] === $silenced['pass_through'] ) {
+			$silenced['hook']->callbacks[11][ $id ]['function'] = $silenced['validator'];
+		}
 	}
 
 	/**
@@ -227,7 +261,7 @@ class Miguel_Coupon_Preview_Api {
 			'lines'         => $lines,
 			'added_lines'   => $this->get_added_lines( $before, $after, $product_codes ),
 			'removed_lines' => $removed_lines,
-			'gift_choices'  => $this->get_gift_choices( $coupon, $product_codes ),
+			'gift_choices'  => $applied ? $this->get_gift_choices( $coupon, $product_codes ) : null,
 			'totals'        => array(
 				'before' => $before['totals'],
 				'after'  => $after['totals'],
@@ -310,8 +344,8 @@ class Miguel_Coupon_Preview_Api {
 	}
 
 	/**
-	 * The gift products a Smart Coupons coupon lets the customer choose one of (in a dialog on the
-	 * web, so a REST cart adds none of them), or null for any other coupon.
+	 * The gift products an applied Smart Coupons coupon lets the customer choose one of (in a
+	 * dialog on the web, so a REST cart adds none of them), or null for any other coupon.
 	 *
 	 * @param WC_Coupon $coupon        The coupon.
 	 * @param array     $product_codes Result of get_product_codes_by_id().

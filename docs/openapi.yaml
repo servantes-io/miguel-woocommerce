@@ -921,9 +921,11 @@ components:
           type: object
           nullable: true
           description: >
-            The gift products a Smart Coupons coupon lets the customer choose one of (Smart
-            Coupons' "users can choose only one"; the web shop asks in a dialog, so the preview
-            adds none of them to `added_lines`); null for any other coupon.
+            The gift products an applied Smart Coupons coupon lets the customer choose from; null
+            for any other coupon and whenever `applied` is false. Smart Coupons' only setting
+            here is "users can choose only one", so the customer always picks exactly one product
+            and no count is reported. The web shop asks in a dialog, so the preview adds none of
+            them to `added_lines`.
           properties:
             products:
               type: array
@@ -967,7 +969,9 @@ components:
             Restrictions the cart could not judge for lack of input, so an applied coupon is
             conditional: `location` when the coupon is restricted by billing or shipping address
             and that address was not sent (the coupon is priced as if the rule passed),
-            `shipping_method` when it is restricted by shipping method and none was sent.
+            `shipping_method` when it is restricted by shipping method and none was sent. Any
+            non-empty `billing` or `shipping` object counts as sent: a partial address is judged
+            by the shop as it is.
           items:
             type: string
             enum: [location, shipping_method]
