@@ -12,8 +12,9 @@
 
 /**
  * Smart Coupons' "add products" action (WC_SC_Coupon_Actions): a coupon with gift products adds
- * them to WC()->cart when it is applied, each as its own line marked with the coupon code, unless
- * the customer has to pick them; and every add-to-cart resets an item list kept in the session.
+ * them to WC()->cart when it is applied, each as its own line marked with the coupon code and
+ * priced at the gift's own discount, unless the customer has to pick them; and every add-to-cart
+ * resets an item list kept in the session.
  */
 class Miguel_Mock_Sc_Gift {
 
@@ -22,6 +23,7 @@ class Miguel_Mock_Sc_Gift {
 	 */
 	public static function install() {
 		add_action( 'woocommerce_applied_coupon', array( __CLASS__, 'coupon_action' ) );
+		add_filter( 'woocommerce_add_cart_item', array( __CLASS__, 'price_gift' ), 15 );
 		add_action( 'woocommerce_add_to_cart', array( __CLASS__, 'reset_session' ), 99 );
 	}
 
@@ -30,6 +32,7 @@ class Miguel_Mock_Sc_Gift {
 	 */
 	public static function uninstall() {
 		remove_action( 'woocommerce_applied_coupon', array( __CLASS__, 'coupon_action' ) );
+		remove_filter( 'woocommerce_add_cart_item', array( __CLASS__, 'price_gift' ), 15 );
 		remove_action( 'woocommerce_add_to_cart', array( __CLASS__, 'reset_session' ), 99 );
 	}
 
@@ -45,18 +48,46 @@ class Miguel_Mock_Sc_Gift {
 			return;
 		}
 
-		$added = false;
+		$names = array();
 		foreach ( $actions as $action ) {
 			if ( empty( $action['product_id'] ) ) {
 				continue;
 			}
-			$key   = WC()->cart->add_to_cart( absint( $action['product_id'] ), absint( $action['quantity'] ), 0, array(), array( 'wc_sc_product_source' => $coupon_code ) );
-			$added = $added || ! empty( $key );
+			$key = WC()->cart->add_to_cart( absint( $action['product_id'] ), absint( $action['quantity'] ), 0, array(), array( 'wc_sc_product_source' => $coupon_code ) );
+			if ( ! empty( $key ) ) {
+				$names[] = wc_get_product( absint( $action['product_id'] ) )->get_name();
+			}
 		}
 
-		if ( $added ) {
-			wc_add_notice( 'Gift added', 'success' );
+		if ( $names ) {
+			wc_add_notice( sprintf( '%s has been added to your cart!', implode( ', ', $names ) ), 'success' );
 		}
+	}
+
+	/**
+	 * Price a gift line at its discount: `percent` of the price or a `flat` amount off, never below 0.
+	 *
+	 * @param array $cart_item Cart item being added.
+	 * @return array
+	 */
+	public static function price_gift( $cart_item ) {
+		if ( empty( $cart_item['wc_sc_product_source'] ) ) {
+			return $cart_item;
+		}
+
+		$coupon = new WC_Coupon( $cart_item['wc_sc_product_source'] );
+		foreach ( (array) $coupon->get_meta( 'wc_sc_add_product_details' ) as $action ) {
+			if ( empty( $action['product_id'] ) || absint( $action['product_id'] ) !== (int) $cart_item['product_id'] || ! isset( $action['discount_amount'] ) || '' === $action['discount_amount'] ) {
+				continue;
+			}
+
+			$price    = (float) $cart_item['data']->get_price();
+			$discount = 'flat' === ( $action['discount_type'] ?? 'percent' ) ? (float) $action['discount_amount'] : $price * (float) $action['discount_amount'] / 100;
+			$cart_item['data']->set_price( $price - min( $price, $discount ) );
+			break;
+		}
+
+		return $cart_item;
 	}
 
 	/**
@@ -148,14 +179,10 @@ if ( ! class_exists( 'WC_SC_Coupons_By_Location', false ) ) {
 
 /**
  * Smart Coupons' payment method restriction (WC_SC_Coupons_By_Payment_Method): the validator reads
- * the session's chosen payment method and throws (code 0) when it is not one of the coupon's.
+ * the session's chosen payment method and throws (code 0) when it is not one of the coupon's, with
+ * a message in HTML that names the code and the allowed gateways' titles.
  */
 class Miguel_Mock_Sc_Payment_Method {
-
-	/**
-	 * The refusal message.
-	 */
-	const MESSAGE = 'This coupon is not valid for the selected payment method.';
 
 	/**
 	 * Add the validator at Smart Coupons' priority.
@@ -188,7 +215,21 @@ class Miguel_Mock_Sc_Payment_Method {
 
 		$chosen = WC()->session->__isset( 'chosen_payment_method' ) ? WC()->session->get( 'chosen_payment_method' ) : '';
 		if ( '' === (string) $chosen || ! in_array( (string) $chosen, $method_ids, true ) ) {
-			throw new Exception( self::MESSAGE );
+			$gateways = WC()->payment_gateways()->payment_gateways();
+			$titles   = array();
+			foreach ( $method_ids as $method_id ) {
+				$titles[] = isset( $gateways[ $method_id ] ) ? $gateways[ $method_id ]->get_title() : $method_id;
+			}
+
+			throw new Exception(
+				sprintf(
+					'Coupon code %1$s is valid only for %2$s: %3$s. You can change payment method from the %4$s page.',
+					'<code>' . esc_html( $coupon->get_code() ) . '</code>',
+					1 === count( $titles ) ? 'payment method' : 'payment methods',
+					'<strong>"' . esc_html( implode( '", "', $titles ) ) . '"</strong>',
+					'<a href="' . esc_url( wc_get_checkout_url() ) . '"><strong>Checkout</strong></a>'
+				)
+			);
 		}
 
 		return $valid;
@@ -230,8 +271,8 @@ class Miguel_Mock_Sc_Revalidate {
 
 /**
  * Smart Coupons' store credit applied after tax (WC_Smart_Coupons): coupon type `smart_coupon`,
- * no line discount, the credit taken off the cart total and added to the discount total on
- * woocommerce_after_calculate_totals, with what was used kept on the cart object.
+ * no line discount, the credit taken off the cart total and the items total and added to the
+ * discount total on woocommerce_after_calculate_totals, with what was used kept on the cart object.
  */
 class Miguel_Mock_Sc_Store_Credit {
 
@@ -308,13 +349,17 @@ class Miguel_Mock_Sc_Store_Credit {
 		}
 
 		$cart->set_discount_total( (float) $cart->get_discount_total() + array_sum( $used ) );
+		$cart->set_cart_contents_total( max( 0, (float) $cart->get_cart_contents_total() - array_sum( $used ) ) );
 		$cart->set_total( $left );
 	}
 }
 
 /**
- * Smart Coupons' auto-apply (WC_SC_Auto_Apply_Coupon): coupon `auto5` is applied to WC()->cart on
- * every add-to-cart when it is not on it yet.
+ * Smart Coupons' auto-apply (WC_SC_Auto_Apply_Coupon) with store credit applied after tax: coupon
+ * `auto5` is applied to WC()->cart, which is then calculated again, whenever the cart has an items
+ * total: on add-to-cart (where a first line has none yet, as WooCommerce calculates it later in the
+ * same action) and after every calculation with a total (WC_Smart_Coupons fires its
+ * `smart_coupons_before_calculate_totals` there).
  */
 class Miguel_Mock_Sc_Auto_Apply {
 
@@ -324,33 +369,65 @@ class Miguel_Mock_Sc_Auto_Apply {
 	const CODE = 'auto5';
 
 	/**
-	 * Add the hook.
+	 * Whether an auto-apply is running (the real plugin's guard against re-entry).
+	 *
+	 * @var bool
+	 */
+	private static $applying = false;
+
+	/**
+	 * Add the hooks.
 	 */
 	public static function install() {
 		add_action( 'woocommerce_add_to_cart', array( __CLASS__, 'auto_apply_coupons' ) );
+		add_action( 'woocommerce_after_calculate_totals', array( __CLASS__, 'after_calculate_totals' ), 9999 );
 	}
 
 	/**
-	 * Remove the hook.
+	 * Remove the hooks.
 	 */
 	public static function uninstall() {
 		remove_action( 'woocommerce_add_to_cart', array( __CLASS__, 'auto_apply_coupons' ) );
+		remove_action( 'woocommerce_after_calculate_totals', array( __CLASS__, 'after_calculate_totals' ), 9999 );
 	}
 
 	/**
-	 * Apply the coupon.
+	 * Auto-apply after a calculation that has a total.
+	 *
+	 * @param WC_Cart $cart The cart.
+	 */
+	public static function after_calculate_totals( $cart ) {
+		if ( ! empty( $cart->get_total( 'edit' ) ) ) {
+			self::auto_apply_coupons();
+		}
+	}
+
+	/**
+	 * Apply the coupon to a cart that has an items total.
 	 */
 	public static function auto_apply_coupons() {
-		if ( ! WC()->cart->has_discount( self::CODE ) ) {
-			WC()->cart->apply_coupon( self::CODE );
+		$cart = WC()->cart;
+		if ( self::$applying || $cart->is_empty() || (float) $cart->get_cart_contents_total() <= 0 || $cart->has_discount( self::CODE ) ) {
+			return;
+		}
+
+		self::$applying = true;
+		try {
+			$cart->apply_coupon( self::CODE );
+			$cart->calculate_totals();
+		} finally {
+			self::$applying = false;
 		}
 	}
 }
 
 /**
- * Melvil's pricing (WcMelvilCart / WcMelvilPrices): the coupon's discount goes into the line prices
- * on woocommerce_before_calculate_totals (priority 20, on the cart it is handed) and WooCommerce's
- * own discount for the coupon is forced to 0. Here: 20 % off every line while `c20` is applied.
+ * Melvil's pricing (WcMelvilCart / WcMelvilPrices) for a printed book: on
+ * woocommerce_before_calculate_totals (priority 20, on the cart it is handed) every line is priced
+ * at the shop's 15 % off its regular price, or, while a percent coupon is applied, at the coupon's
+ * percentage off the regular price instead (the two never add up), rounded to whole units; and
+ * WooCommerce's own discount for any coupon is forced to 0 (WcMelvilCart::disable_coupon_on_bundles
+ * returns 0 for every item, after melvil_coupon_get_discount_amount at the same priority).
  */
 class Miguel_Mock_Melvil_Pricing {
 
@@ -376,9 +453,18 @@ class Miguel_Mock_Melvil_Pricing {
 	 * @param WC_Cart $cart The cart being calculated.
 	 */
 	public static function before_calculate_totals( $cart ) {
-		$factor = in_array( 'c20', $cart->get_applied_coupons(), true ) ? 0.8 : 1.0;
+		$percent_off = 15.0;
+		foreach ( $cart->get_applied_coupons() as $code ) {
+			$coupon = new WC_Coupon( $code );
+			if ( $coupon->is_type( 'percent' ) ) {
+				$percent_off = (float) $coupon->get_amount();
+				break;
+			}
+		}
+
 		foreach ( $cart->get_cart() as $item ) {
-			$item['data']->set_price( (float) $item['data']->get_regular_price() * $factor );
+			$regular = (float) $item['data']->get_regular_price();
+			$item['data']->set_price( round( $regular - $regular * $percent_off / 100 ) );
 		}
 	}
 

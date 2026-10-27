@@ -188,7 +188,8 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 		$this->assertSame( $gift->get_id(), $data['added_lines'][0]['product_id'] );
 		$this->assertSame( 1, $data['added_lines'][0]['quantity'] );
 		$this->assertSame( 'smart_coupons_action', $data['added_lines'][0]['source'] );
-		$this->assertContains( 'Gift added', $data['notices'] );
+		$this->assertEquals( 0, $data['added_lines'][0]['total'] );
+		$this->assertContains( $gift->get_name() . ' has been added to your cart!', $data['notices'] );
 		$this->assertNull( $data['gift_choices'] );
 	}
 
@@ -403,7 +404,7 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 
 		$this->assertFalse( $data['applied'] );
 		$this->assertSame( 0, $data['error_code'] );
-		$this->assertSame( Miguel_Mock_Sc_Payment_Method::MESSAGE, $data['message'] );
+		$this->assertSame( 'Coupon code bankonly is valid only for payment method: "Direct bank transfer". You can change payment method from the Checkout page.', $data['message'] );
 	}
 
 	public function test_coupon_removed_during_totals_is_not_applied() {
@@ -438,6 +439,7 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 			$this->assertTrue( $data['applied'] );
 			$this->assertEquals( 319, $data['totals']['before']['total'] );
 			$this->assertEquals( 219, $data['totals']['after']['total'] );
+			$this->assertEquals( 219, $data['totals']['after']['items'] );
 			$this->assertEquals( 100, $data['totals']['after']['discount'] );
 			$this->assertEquals( 319, $data['lines'][0]['after']['total'] );
 			$this->assertFalse( $data['lines'][0]['discounted'] );
@@ -474,11 +476,14 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 
 		$data = $this->preview( $this->body( 'c20' ) );
 
+		// 319 less the shop's 15 % is 271; the coupon's 20 % off 319 replaces it: 255, not 271 less 20 %.
 		$this->assertTrue( $data['applied'] );
-		$this->assertEquals( 319, $data['lines'][0]['before']['total'] );
-		$this->assertEquals( 255.2, $data['lines'][0]['after']['total'] );
+		$this->assertEquals( 271, $data['lines'][0]['before']['total'] );
+		$this->assertEquals( 255, $data['lines'][0]['after']['total'] );
+		$this->assertEquals( 16, $data['lines'][0]['discount'] );
 		$this->assertTrue( $data['lines'][0]['discounted'] );
 		$this->assertEquals( 0, $data['totals']['after']['discount'] );
-		$this->assertEquals( 255.2, $data['totals']['after']['total'] );
+		$this->assertEquals( 271, $data['totals']['before']['total'] );
+		$this->assertEquals( 255, $data['totals']['after']['total'] );
 	}
 }
