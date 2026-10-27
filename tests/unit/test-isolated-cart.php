@@ -293,6 +293,31 @@ class Test_Miguel_Isolated_Cart extends Miguel_Test_Case {
 		$this->assertSame( $layout_before, $this->hook_layout( $names ) );
 	}
 
+	public function test_original_cart_callbacks_fire_after_the_call() {
+		$original = WC()->cart;
+		$fired    = 0;
+		$count    = function ( $cart ) use ( $original, &$fired ) {
+			if ( $cart === $original ) {
+				++$fired;
+			}
+		};
+		add_action( 'woocommerce_before_calculate_totals', $count );
+
+		Miguel_Isolated_Cart::run(
+			$this->customer(),
+			function ( $cart ) {
+				$cart->add_to_cart( WC_Helper_Product::create_simple_product()->get_id() );
+			}
+		);
+
+		// WC_Cart hooks calculate_totals alone at priority 20 of woocommerce_add_to_cart, so
+		// detaching empties that bucket; adding to the real cart must still recalculate it.
+		$original->add_to_cart( WC_Helper_Product::create_simple_product()->get_id() );
+		remove_action( 'woocommerce_before_calculate_totals', $count );
+
+		$this->assertSame( 1, $fired );
+	}
+
 	public function test_original_cart_does_not_react_during_the_call() {
 		$original_cart = WC()->cart;
 		$contents      = $original_cart->get_cart_contents();

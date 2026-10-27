@@ -142,6 +142,10 @@ class Miguel_Isolated_Cart {
 	/**
 	 * Put detached callbacks back at their old position in their priority bucket.
 	 *
+	 * Each callback goes back through WP_Hook::add_filter(), which keeps the hook's own list of
+	 * priorities (what do_action() iterates) and any running iteration in step; only the order
+	 * inside a bucket is then set by hand, which leaves the priorities as they are.
+	 *
 	 * @param array $removed Result of detach_hooks().
 	 */
 	private static function reattach_hooks( array $removed ) {
@@ -153,18 +157,19 @@ class Miguel_Isolated_Cart {
 			}
 			$hook = $wp_filter[ $name ];
 			foreach ( $info['buckets'] as $priority => $entries ) {
-				$current = isset( $hook->callbacks[ $priority ] ) ? $hook->callbacks[ $priority ] : array();
-				$merged  = array();
+				foreach ( $entries as $entry ) {
+					$hook->add_filter( $name, $entry['function'], $priority, $entry['accepted_args'] );
+				}
+
+				$current = $hook->callbacks[ $priority ];
+				$ordered = array();
 				foreach ( $info['order'][ $priority ] as $id ) {
-					if ( isset( $entries[ $id ] ) ) {
-						$merged[ $id ] = $entries[ $id ];
-					} elseif ( isset( $current[ $id ] ) ) {
-						$merged[ $id ] = $current[ $id ];
+					if ( isset( $current[ $id ] ) ) {
+						$ordered[ $id ] = $current[ $id ];
 					}
 				}
-				$hook->callbacks[ $priority ] = $merged + $current;
+				$hook->callbacks[ $priority ] = $ordered + $current;
 			}
-			ksort( $hook->callbacks, SORT_NUMERIC );
 		}
 	}
 
