@@ -171,6 +171,11 @@ class Miguel_Isolated_Cart {
 	/**
 	 * An unsaved customer carrying the email and addresses.
 	 *
+	 * An address that was not sent is located as a web session's customer is
+	 * (WC_Customer_Data_Store_Session::set_defaults()): billing at the shop's default customer
+	 * location, shipping at the billing address. With no location at all WooCommerce finds no tax
+	 * rate and strips the base tax from tax-inclusive prices, unlike the web cart.
+	 *
 	 * @param array $customer Customer descriptor.
 	 * @return WC_Customer
 	 */
@@ -178,18 +183,48 @@ class Miguel_Isolated_Cart {
 		$wc_customer = new WC_Customer( 0 );
 		$wc_customer->set_billing_email( (string) $customer['email'] );
 
-		foreach ( array( 'billing', 'shipping' ) as $type ) {
-			if ( empty( $customer[ $type ] ) || ! is_array( $customer[ $type ] ) ) {
-				continue;
-			}
-			foreach ( array( 'country', 'state', 'city', 'postcode' ) as $field ) {
-				if ( isset( $customer[ $type ][ $field ] ) ) {
-					$wc_customer->{ "set_{$type}_{$field}" }( (string) $customer[ $type ][ $field ] );
-				}
-			}
+		$billing = self::sent_address( $customer['billing'] ?? null );
+		if ( null === $billing ) {
+			$default = wc_get_customer_default_location();
+			$billing = array(
+				'country' => (string) $default['country'],
+				'state'   => (string) $default['state'],
+			);
+		}
+		$shipping = self::sent_address( $customer['shipping'] ?? null );
+		if ( null === $shipping ) {
+			$shipping = $billing;
+		}
+
+		foreach ( $billing as $field => $value ) {
+			$wc_customer->{ "set_billing_{$field}" }( $value );
+		}
+		foreach ( $shipping as $field => $value ) {
+			$wc_customer->{ "set_shipping_{$field}" }( $value );
 		}
 
 		return $wc_customer;
+	}
+
+	/**
+	 * The country, state, city and postcode of a sent address.
+	 *
+	 * @param mixed $address Address from the customer descriptor.
+	 * @return array|null Field => string, or null when no address was sent.
+	 */
+	private static function sent_address( $address ) {
+		if ( empty( $address ) || ! is_array( $address ) ) {
+			return null;
+		}
+
+		$fields = array();
+		foreach ( array( 'country', 'state', 'city', 'postcode' ) as $field ) {
+			if ( isset( $address[ $field ] ) ) {
+				$fields[ $field ] = (string) $address[ $field ];
+			}
+		}
+
+		return $fields;
 	}
 
 	/**

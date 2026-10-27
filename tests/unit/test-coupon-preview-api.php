@@ -168,6 +168,33 @@ class Test_Miguel_Coupon_Preview_Api extends Miguel_Test_Case {
 		$this->assertSame( get_woocommerce_currency(), $data['currency'] );
 	}
 
+	public function test_tax_without_an_address_is_the_web_cart_tax() {
+		update_option( 'woocommerce_calc_taxes', 'yes' );
+		update_option( 'woocommerce_prices_include_tax', 'yes' );
+		update_option( 'woocommerce_default_country', 'CZ' );
+		update_option( 'woocommerce_tax_based_on', 'shipping' );
+		update_option( 'woocommerce_default_customer_address', 'base' );
+		WC_Tax::_insert_tax_rate(
+			array(
+				'tax_rate_country' => 'CZ',
+				'tax_rate'         => '21.0000',
+				'tax_rate_name'    => 'VAT',
+				'tax_rate_class'   => '',
+			)
+		);
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'c20' );
+
+		$data = $this->data( $this->preview( $this->body( 'c20' ) ) );
+
+		$this->assertTrue( $data['applied'] );
+		$this->assertEquals( 319, $data['lines'][0]['before']['total'] );
+		$this->assertEquals( 55.36, $data['lines'][0]['before']['tax'] );
+		$this->assertEquals( 55.36, $data['totals']['before']['tax'] );
+		$this->assertEquals( 255.2, $data['lines'][0]['after']['total'] );
+		$this->assertEquals( 255.2, $data['totals']['after']['total'] );
+	}
+
 	public function test_refused_coupon_is_200_with_the_cart() {
 		$this->create_product( 'BOOK-A' );
 		$this->create_coupon( 'old', array( 'date_expires' => time() - DAY_IN_SECONDS ) );

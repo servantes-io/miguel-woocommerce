@@ -283,6 +283,37 @@ class Test_Miguel_Coupon_Cart_Probe extends Miguel_Test_Case {
 		$this->assertEqualsWithDelta( 55.36, $result['totals']['tax'], 0.001 );
 	}
 
+	/**
+	 * Czech VAT 21 % in prices, the shop based in Czechia, tax by the shipping address.
+	 */
+	private function czech_vat_included() {
+		update_option( 'woocommerce_calc_taxes', 'yes' );
+		update_option( 'woocommerce_prices_include_tax', 'yes' );
+		update_option( 'woocommerce_default_country', 'CZ' );
+		update_option( 'woocommerce_tax_based_on', 'shipping' );
+		update_option( 'woocommerce_default_customer_address', 'base' );
+		WC_Tax::_insert_tax_rate(
+			array(
+				'tax_rate_country' => 'CZ',
+				'tax_rate'         => '21.0000',
+				'tax_rate_name'    => 'VAT',
+				'tax_rate_class'   => '',
+			)
+		);
+	}
+
+	public function test_tax_without_an_address_uses_the_default_customer_location() {
+		$this->czech_vat_included();
+		$product = $this->create_product( 'BOOK-A' );
+
+		$result = Miguel_Coupon_Cart_Probe::price( $this->lines( array( array( $product, 1 ) ) ), null, $this->customer() );
+
+		$this->assertEqualsWithDelta( 319, $result['lines'][0]['total'], 0.001 );
+		$this->assertEqualsWithDelta( 55.36, $result['lines'][0]['tax'], 0.001 );
+		$this->assertEqualsWithDelta( 319, $result['totals']['total'], 0.001 );
+		$this->assertEqualsWithDelta( 55.36, $result['totals']['tax'], 0.001 );
+	}
+
 	public function test_shipping_only_with_a_method() {
 		list( $lines ) = $this->two_lines();
 		$zone = new WC_Shipping_Zone();

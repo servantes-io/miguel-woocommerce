@@ -350,7 +350,33 @@ class Test_Miguel_Isolated_Cart extends Miguel_Test_Case {
 			}
 		);
 
-		$default = new WC_Customer( 0 );
-		$this->assertSame( array( 'SK', 'Bratislava', '81101', $default->get_shipping_country() ), $run['result'] );
+		// No shipping address: the goods go to the billing address, as on the web.
+		$this->assertSame( array( 'SK', 'Bratislava', '81101', 'SK' ), $run['result'] );
+	}
+
+	public function test_addresses_not_sent_are_the_default_customer_location() {
+		update_option( 'woocommerce_default_country', 'US:CA' );
+		update_option( 'woocommerce_default_customer_address', 'base' );
+
+		$read = function () {
+			$c = WC()->customer;
+			return array( $c->get_billing_country(), $c->get_billing_state(), $c->get_shipping_country(), $c->get_shipping_state(), $c->get_shipping_city() );
+		};
+
+		$none = Miguel_Isolated_Cart::run( $this->customer(), $read );
+		$this->assertSame( array( 'US', 'CA', 'US', 'CA', '' ), $none['result'] );
+
+		$shipping_only = Miguel_Isolated_Cart::run(
+			$this->customer(
+				array(
+					'shipping' => array(
+						'country' => 'CZ',
+						'city'    => 'Praha',
+					),
+				)
+			),
+			$read
+		);
+		$this->assertSame( array( 'US', 'CA', 'CZ', '', 'Praha' ), $shipping_only['result'] );
 	}
 }
