@@ -788,7 +788,9 @@ components:
         shipping:
           type: number
           nullable: true
-          description: Null unless a `shipping_method` and an address were sent.
+          description: >
+            Null unless a `shipping_method` and an address (shipping or, failing that, billing)
+            were sent; shipping is then not part of `total` either.
         fees:
           type: number
         total:

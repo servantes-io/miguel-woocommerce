@@ -382,6 +382,31 @@ class Test_Miguel_Coupon_Cart_Probe extends Miguel_Test_Case {
 		$this->assertEqualsWithDelta( 957 + 89, $with['totals']['total'], 0.001 );
 	}
 
+	public function test_shipping_needs_an_address_besides_the_method() {
+		list( $lines ) = $this->two_lines();
+		$zone = new WC_Shipping_Zone();
+		$zone->set_zone_name( 'Czechia' );
+		$zone->add_location( 'CZ', 'country' );
+		$zone->save();
+		$instance_id = $zone->add_shipping_method( 'flat_rate' );
+		update_option( 'woocommerce_flat_rate_' . $instance_id . '_settings', array( 'cost' => '89', 'tax_status' => 'none' ) );
+		$method = 'flat_rate:' . $instance_id;
+		// The default customer location is in the zone, so the cart could price shipping without an address.
+		update_option( 'woocommerce_default_country', 'CZ' );
+		update_option( 'woocommerce_default_customer_address', 'base' );
+
+		$no_address = Miguel_Coupon_Cart_Probe::price( $lines, null, $this->customer( array( 'shipping_method' => $method ) ) );
+		$no_method  = Miguel_Coupon_Cart_Probe::price( $lines, null, $this->customer( array( 'shipping' => array( 'country' => 'CZ' ) ) ) );
+		$billing    = Miguel_Coupon_Cart_Probe::price( $lines, null, $this->customer( array( 'shipping_method' => $method, 'billing' => array( 'country' => 'CZ', 'postcode' => '11000' ) ) ) );
+
+		$this->assertNull( $no_address['totals']['shipping'] );
+		$this->assertEqualsWithDelta( 957, $no_address['totals']['total'], 0.001 );
+		$this->assertNull( $no_method['totals']['shipping'] );
+		$this->assertEqualsWithDelta( 957, $no_method['totals']['total'], 0.001 );
+		$this->assertEqualsWithDelta( 89, $billing['totals']['shipping'], 0.001 );
+		$this->assertEqualsWithDelta( 957 + 89, $billing['totals']['total'], 0.001 );
+	}
+
 	public function test_coupon_usage_is_not_counted() {
 		list( $lines ) = $this->two_lines();
 		$this->create_coupon( 'c20' );

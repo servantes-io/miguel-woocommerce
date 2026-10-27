@@ -22,17 +22,41 @@ class Miguel_Coupon_Cart_Probe {
 	 * @throws Throwable Whatever the cart throws, after everything is restored.
 	 */
 	public static function price( array $lines, $coupon_code, array $customer ) {
-		$ran = Miguel_Isolated_Cart::run(
-			$customer,
-			function ( $cart ) use ( $lines, $coupon_code, $customer ) {
-				return self::snapshot( $cart, $lines, $coupon_code, $customer );
-			}
-		);
+		// WooCommerce prices shipping in every calculate_totals() (the default rate when none is
+		// chosen); without a method and an address to ship it to, it stays out of the cart.
+		$no_shipping = static function () {
+			return false;
+		};
+		if ( ! self::prices_shipping( $customer ) ) {
+			add_filter( 'woocommerce_cart_ready_to_calc_shipping', $no_shipping, PHP_INT_MAX );
+		}
+
+		try {
+			$ran = Miguel_Isolated_Cart::run(
+				$customer,
+				function ( $cart ) use ( $lines, $coupon_code, $customer ) {
+					return self::snapshot( $cart, $lines, $coupon_code, $customer );
+				}
+			);
+		} finally {
+			remove_filter( 'woocommerce_cart_ready_to_calc_shipping', $no_shipping, PHP_INT_MAX );
+		}
 
 		$snapshot            = $ran['result'];
 		$snapshot['notices'] = $ran['notices'];
 
 		return $snapshot;
+	}
+
+	/**
+	 * Whether shipping is priced: a shipping method was sent, and a shipping address or, failing
+	 * that, a billing address to ship to.
+	 *
+	 * @param array $customer Customer descriptor.
+	 * @return bool
+	 */
+	private static function prices_shipping( array $customer ) {
+		return ! empty( $customer['shipping_method'] ) && ( ! empty( $customer['shipping'] ) || ! empty( $customer['billing'] ) );
 	}
 
 	/**
@@ -96,7 +120,8 @@ class Miguel_Coupon_Cart_Probe {
 			}
 		}
 
-		if ( ! empty( $customer['shipping_method'] ) ) {
+		$prices_shipping = self::prices_shipping( $customer );
+		if ( $prices_shipping ) {
 			$cart->calculate_shipping();
 		}
 		$cart->calculate_totals();
@@ -158,7 +183,7 @@ class Miguel_Coupon_Cart_Probe {
 			'totals'     => array(
 				'items'    => self::money( (float) $cart->get_cart_contents_total() + (float) $cart->get_cart_contents_tax() ),
 				'discount' => self::money( (float) $cart->get_discount_total() + (float) $cart->get_discount_tax() ),
-				'shipping' => empty( $customer['shipping_method'] ) ? null : self::money( (float) $cart->get_shipping_total() + (float) $cart->get_shipping_tax() ),
+				'shipping' => $prices_shipping ? self::money( (float) $cart->get_shipping_total() + (float) $cart->get_shipping_tax() ) : null,
 				'fees'     => self::money( (float) $cart->get_fee_total() + (float) $cart->get_fee_tax() ),
 				'total'    => self::money( (float) $cart->get_total( 'edit' ) ),
 				'tax'      => self::money( (float) $cart->get_total_tax() ),
