@@ -980,7 +980,9 @@ components:
             enum: [location, shipping_method]
         notices:
           type: array
-          description: The plain-text notices the shop raised while pricing, without repeats.
+          description: >
+            The plain-text notices the shop raised while pricing the cart, without and then with
+            the coupon, in that order and without repeats.
           items:
             type: string
 

@@ -216,13 +216,12 @@ class Miguel_Coupon_Preview_Api {
 	 */
 	private function build_response( $sent_code, $code, $coupon, array $sent_lines, array $before, array $after, array $unchecked ) {
 		$applied = in_array( $code, $after['coupons'], true );
-		$notices = array_values( array_unique( $after['notices'] ) );
 
 		$error_code = null;
 		$message    = null;
 		if ( ! $applied ) {
 			$error_code = (int) ( $after['error_code'] ?? 0 );
-			$message    = $after['message'] ?? ( ! empty( $notices ) ? end( $notices ) : __( 'The coupon was removed from the cart.', 'miguel' ) );
+			$message    = $after['message'] ?? ( ! empty( $after['notices'] ) ? end( $after['notices'] ) : __( 'The coupon was removed from the cart.', 'miguel' ) );
 		}
 
 		$lines         = array();
@@ -269,7 +268,7 @@ class Miguel_Coupon_Preview_Api {
 			),
 			'other_coupons' => array_values( array_diff( array_unique( array_merge( $before['coupons'], $after['coupons'] ) ), array( $code ) ) ),
 			'unchecked'     => $unchecked,
-			'notices'       => $notices,
+			'notices'       => array_values( array_unique( array_merge( $before['notices'], $after['notices'] ) ) ),
 		);
 	}
 

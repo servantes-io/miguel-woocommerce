@@ -262,6 +262,24 @@ class Test_Miguel_Coupon_Preview_Api extends Miguel_Test_Case {
 		$this->assertEquals( 255.2, $data['totals']['after']['total'] );
 	}
 
+	public function test_notices_of_both_calculations_without_repeats() {
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'c20' );
+		$carts = 0;
+		add_action(
+			'woocommerce_add_to_cart',
+			function () use ( &$carts ) {
+				++$carts;
+				wc_add_notice( 'Every cart', 'notice' );
+				wc_add_notice( 'Cart ' . $carts, 'notice' );
+			}
+		);
+
+		$data = $this->data( $this->preview( $this->body( 'c20' ) ) );
+
+		$this->assertSame( array( 'Every cart', 'Cart 1', 'Cart 2', 'Coupon code applied successfully.' ), $data['notices'] );
+	}
+
 	public function test_refused_coupon_is_200_with_the_cart() {
 		$this->create_product( 'BOOK-A' );
 		$this->create_coupon( 'old', array( 'date_expires' => time() - DAY_IN_SECONDS ) );
