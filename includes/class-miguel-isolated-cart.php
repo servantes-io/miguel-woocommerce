@@ -135,10 +135,12 @@ class Miguel_Isolated_Cart {
 			}
 		}
 
+		// Through the WP_Hook itself: remove_filter() unsets a hook it empties from $wp_filter, and
+		// putting one back means writing $wp_filter. An emptied hook stays registered, inert.
 		foreach ( $removed as $name => $info ) {
 			foreach ( $info['buckets'] as $priority => $entries ) {
 				foreach ( $entries as $entry ) {
-					remove_filter( $name, $entry['function'], $priority );
+					$info['hook']->remove_filter( $name, $entry['function'], $priority );
 				}
 			}
 		}
@@ -149,7 +151,9 @@ class Miguel_Isolated_Cart {
 	/**
 	 * Put detached callbacks back at their old position in their priority bucket.
 	 *
-	 * Each callback goes back through WP_Hook::add_filter(), which keeps the hook's own list of
+	 * Each callback goes back through add_filter(), onto the WP_Hook detach_hooks() left registered,
+	 * or a new one when the hook was emptied and dropped meanwhile (run()'s own remove_action() calls
+	 * do that to woocommerce_cart_item_set_quantity). add_filter() keeps the hook's own list of
 	 * priorities (what do_action() iterates) and any running iteration in step; only the order
 	 * inside a bucket is then set by hand, which leaves the priorities as they are.
 	 *
@@ -159,15 +163,12 @@ class Miguel_Isolated_Cart {
 		global $wp_filter;
 
 		foreach ( $removed as $name => $info ) {
-			if ( ! isset( $wp_filter[ $name ] ) ) {
-				$wp_filter[ $name ] = $info['hook']; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-			}
-			$hook = $wp_filter[ $name ];
 			foreach ( $info['buckets'] as $priority => $entries ) {
 				foreach ( $entries as $entry ) {
-					$hook->add_filter( $name, $entry['function'], $priority, $entry['accepted_args'] );
+					add_filter( $name, $entry['function'], $priority, $entry['accepted_args'] );
 				}
 
+				$hook    = $wp_filter[ $name ];
 				$current = $hook->callbacks[ $priority ];
 				$ordered = array();
 				foreach ( $info['order'][ $priority ] as $id ) {
