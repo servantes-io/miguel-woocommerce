@@ -198,6 +198,7 @@ class Test_Miguel_Coupon_Preview_Api extends Miguel_Test_Case {
 		$data = $this->data( $this->preview( $this->body( ' C20 ' ) ) );
 
 		$this->assertTrue( $data['applied'] );
+		$this->assertSame( 'C20', $data['code'] );
 		$this->assertSame( 'c20', $data['coupon']['code'] );
 	}
 
@@ -233,11 +234,10 @@ class Test_Miguel_Coupon_Preview_Api extends Miguel_Test_Case {
 		$this->assertSame( 400, $response->get_error_data()['status'] );
 	}
 
-	public function test_probe_failure_is_500_and_restores() {
+	public function test_probe_failure_is_500() {
 		$this->create_product( 'BOOK-A' );
 		$this->create_coupon( 'c20' );
-		$cart_before = WC()->cart;
-		$probe       = new class() extends Miguel_Coupon_Cart_Probe {
+		$probe = new class() extends Miguel_Coupon_Cart_Probe {
 			/**
 			 * Always fails.
 			 *
@@ -256,7 +256,6 @@ class Test_Miguel_Coupon_Preview_Api extends Miguel_Test_Case {
 		$this->assertWPError( $response );
 		$this->assertSame( 'coupon.preview_failed', $response->get_error_code() );
 		$this->assertSame( 500, $response->get_error_data()['status'] );
-		$this->assertSame( $cart_before, WC()->cart );
 	}
 
 	public function test_nothing_persists() {

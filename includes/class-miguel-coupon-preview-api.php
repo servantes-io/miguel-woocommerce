@@ -86,7 +86,8 @@ class Miguel_Coupon_Preview_Api {
 			$payload = array();
 		}
 
-		$code = isset( $payload['code'] ) && is_string( $payload['code'] ) ? wc_format_coupon_code( wc_clean( $payload['code'] ) ) : '';
+		$sent_code = isset( $payload['code'] ) && is_string( $payload['code'] ) ? trim( $payload['code'] ) : '';
+		$code      = wc_format_coupon_code( wc_clean( $sent_code ) );
 		if ( '' === $code ) {
 			return new WP_Error(
 				'coupon.code_required',
@@ -122,6 +123,15 @@ class Miguel_Coupon_Preview_Api {
 			);
 		}
 
+		$coupon    = new WC_Coupon( $code );
+		$unchecked = $this->unchecked_restrictions( $coupon, $customer );
+
+		// A location rule cannot be judged without the address: price as if it passed.
+		$location_validator = in_array( 'location', $unchecked, true ) ? $this->get_location_validator() : null;
+		if ( $location_validator ) {
+			remove_filter( 'woocommerce_coupon_is_valid', $location_validator, 11 );
+		}
+
 		try {
 			$before = $this->probe->price( $lines, null, $customer );
 			$after  = $this->probe->price( $lines, $code, $customer );
@@ -133,25 +143,43 @@ class Miguel_Coupon_Preview_Api {
 				esc_html__( 'The shop could not price the cart.', 'miguel' ),
 				array( 'status' => 500 )
 			);
+		} finally {
+			if ( $location_validator ) {
+				add_filter( 'woocommerce_coupon_is_valid', $location_validator, 11, 3 );
+			}
 		}
 
-		$coupon = new WC_Coupon( $code );
+		return new WP_REST_Response( $this->build_response( $sent_code, $code, $coupon, $sent_lines, $before, $after, $unchecked ), 200 );
+	}
 
-		return new WP_REST_Response( $this->build_response( $code, $coupon, $sent_lines, $before, $after, $customer ), 200 );
+	/**
+	 * Smart Coupons' location validator, when it is hooked where Smart Coupons hooks it.
+	 *
+	 * @return callable|null
+	 */
+	private function get_location_validator() {
+		if ( ! class_exists( 'WC_SC_Coupons_By_Location' ) || ! is_callable( array( 'WC_SC_Coupons_By_Location', 'get_instance' ) ) ) {
+			return null;
+		}
+
+		$validator = array( WC_SC_Coupons_By_Location::get_instance(), 'validate' );
+
+		return 11 === has_filter( 'woocommerce_coupon_is_valid', $validator ) ? $validator : null;
 	}
 
 	/**
 	 * Assemble the response body from the two snapshots.
 	 *
+	 * @param string    $sent_code  Coupon code as the request sent it, trimmed.
 	 * @param string    $code       Formatted coupon code.
 	 * @param WC_Coupon $coupon     The coupon.
 	 * @param array     $sent_lines Lines from get_valid_lines().
 	 * @param array     $before     Snapshot without the coupon.
 	 * @param array     $after      Snapshot with the coupon.
-	 * @param array     $customer   Customer descriptor.
+	 * @param string[]  $unchecked  Result of unchecked_restrictions().
 	 * @return array
 	 */
-	private function build_response( $code, $coupon, array $sent_lines, array $before, array $after, array $customer ) {
+	private function build_response( $sent_code, $code, $coupon, array $sent_lines, array $before, array $after, array $unchecked ) {
 		$applied = in_array( $code, $after['coupons'], true );
 		$notices = array_values( array_unique( $after['notices'] ) );
 
@@ -187,23 +215,25 @@ class Miguel_Coupon_Preview_Api {
 			}
 		}
 
+		$product_codes = $this->get_product_codes_by_id();
+
 		return array(
-			'code'          => $code,
+			'code'          => $sent_code,
 			'applied'       => $applied,
 			'error_code'    => $error_code,
 			'message'       => $message,
 			'currency'      => get_woocommerce_currency(),
 			'coupon'        => $this->describe_coupon( $coupon ),
 			'lines'         => $lines,
-			'added_lines'   => $this->get_added_lines( $before, $after ),
+			'added_lines'   => $this->get_added_lines( $before, $after, $product_codes ),
 			'removed_lines' => $removed_lines,
-			'gift_choices'  => null,
+			'gift_choices'  => $this->get_gift_choices( $coupon, $product_codes ),
 			'totals'        => array(
 				'before' => $before['totals'],
 				'after'  => $after['totals'],
 			),
 			'other_coupons' => array_values( array_diff( array_unique( array_merge( $before['coupons'], $after['coupons'] ) ), array( $code ) ) ),
-			'unchecked'     => $this->unchecked_restrictions( $coupon, $customer ),
+			'unchecked'     => $unchecked,
 			'notices'       => $notices,
 		);
 	}
@@ -248,11 +278,12 @@ class Miguel_Coupon_Preview_Api {
 	/**
 	 * Cart lines the coupon added (a Smart Coupons gift): present after, absent before.
 	 *
-	 * @param array $before Snapshot without the coupon.
-	 * @param array $after  Snapshot with the coupon.
+	 * @param array $before        Snapshot without the coupon.
+	 * @param array $after         Snapshot with the coupon.
+	 * @param array $product_codes Result of get_product_codes_by_id().
 	 * @return array
 	 */
-	private function get_added_lines( array $before, array $after ) {
+	private function get_added_lines( array $before, array $after, array $product_codes ) {
 		$before_keys = array_column( $before['extra'], 'key' );
 
 		$added = array();
@@ -263,7 +294,7 @@ class Miguel_Coupon_Preview_Api {
 
 			$product = wc_get_product( $extra['product_id'] );
 			$added[] = array(
-				'product_code' => $this->get_product_code( $extra['product_id'] ),
+				'product_code' => $product_codes[ $extra['product_id'] ] ?? null,
 				'product_id'   => $extra['product_id'],
 				'sku'          => $product ? (string) $product->get_sku() : '',
 				'name'         => $product ? $product->get_name() : '',
@@ -279,19 +310,57 @@ class Miguel_Coupon_Preview_Api {
 	}
 
 	/**
-	 * The Miguel product code of a product, if it has one.
+	 * The gift products a Smart Coupons coupon lets the customer choose one of (in a dialog on the
+	 * web, so a REST cart adds none of them), or null for any other coupon.
 	 *
-	 * @param int $product_id WooCommerce product ID.
-	 * @return string|null
+	 * @param WC_Coupon $coupon        The coupon.
+	 * @param array     $product_codes Result of get_product_codes_by_id().
+	 * @return array|null
 	 */
-	private function get_product_code( $product_id ) {
+	private function get_gift_choices( $coupon, array $product_codes ) {
+		if ( 'yes' !== $coupon->get_meta( 'wc_sc_no_of_selectable_product' ) ) {
+			return null;
+		}
+
+		$products = array();
+		foreach ( (array) $coupon->get_meta( 'wc_sc_add_product_details' ) as $details ) {
+			if ( ! is_array( $details ) || empty( $details['product_id'] ) ) {
+				continue;
+			}
+
+			$product_id = absint( $details['product_id'] );
+			$product    = wc_get_product( $product_id );
+			$products[] = array(
+				'product_code'    => $product_codes[ $product_id ] ?? null,
+				'product_id'      => $product_id,
+				'sku'             => $product ? (string) $product->get_sku() : '',
+				'name'            => $product ? $product->get_name() : '',
+				'quantity'        => absint( $details['quantity'] ?? 1 ),
+				'discount_type'   => empty( $details['discount_type'] ) ? 'percent' : (string) $details['discount_type'],
+				'discount_amount' => (float) ( $details['discount_amount'] ?? 0 ),
+			);
+		}
+
+		return array( 'products' => $products );
+	}
+
+	/**
+	 * The Miguel product code of each product that has one the resolver would accept.
+	 *
+	 * A product has no code here when its codes are shared with other products (the resolver
+	 * refuses those as ambiguous).
+	 *
+	 * @return array Product ID => product code.
+	 */
+	private function get_product_codes_by_id() {
+		$codes = array();
 		foreach ( $this->resolver->get_product_code_details_map() as $product_code => $details ) {
-			if ( in_array( $product_id, $details['product_ids'], true ) ) {
-				return (string) $product_code;
+			if ( $details['is_unique'] && ! isset( $codes[ $details['product_id'] ] ) ) {
+				$codes[ $details['product_id'] ] = (string) $product_code;
 			}
 		}
 
-		return null;
+		return $codes;
 	}
 
 	/**
@@ -388,11 +457,28 @@ class Miguel_Coupon_Preview_Api {
 	/**
 	 * Restrictions the cart could not judge for lack of input, so a yes is conditional.
 	 *
+	 * Reads only which Smart Coupons restrictions the coupon has, never what they allow. Payment
+	 * method is always judged: every Miguel order is paid with the `miguel` gateway.
+	 *
 	 * @param WC_Coupon $coupon   The coupon.
 	 * @param array     $customer Customer descriptor.
-	 * @return string[]
+	 * @return string[] `location` without the address the coupon's location rule reads,
+	 *                  `shipping_method` without a shipping method.
 	 */
 	private function unchecked_restrictions( $coupon, array $customer ) {
-		return array();
+		$unchecked = array();
+
+		$lookup_in = $coupon->get_meta( 'sa_cbl_locations_lookup_in' );
+		$address   = is_array( $lookup_in ) && isset( $lookup_in['address'] ) ? $lookup_in['address'] : '';
+		if ( in_array( $address, array( 'billing', 'shipping' ), true ) && empty( $customer[ $address ] ) ) {
+			$unchecked[] = 'location';
+		}
+
+		$shipping_method_ids = $coupon->get_meta( 'wc_sc_shipping_method_ids' );
+		if ( is_array( $shipping_method_ids ) && ! empty( $shipping_method_ids ) && empty( $customer['shipping_method'] ) ) {
+			$unchecked[] = 'shipping_method';
+		}
+
+		return $unchecked;
 	}
 }

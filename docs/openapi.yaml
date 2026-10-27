@@ -804,8 +804,10 @@ components:
       properties:
         code:
           type: string
-          description: The code as the shop normalises it (trimmed, lower-case).
-          example: melvil20
+          description: >
+            The code as the request sent it, trimmed. `coupon.code` is the shop's own spelling
+            (lower-case).
+          example: MELVIL20
         applied:
           type: boolean
           description: Whether the coupon is on the cart after the shop has priced it.
@@ -918,7 +920,33 @@ components:
         gift_choices:
           type: object
           nullable: true
-          description: Reserved; always null for now.
+          description: >
+            The gift products a Smart Coupons coupon lets the customer choose one of (Smart
+            Coupons' "users can choose only one"; the web shop asks in a dialog, so the preview
+            adds none of them to `added_lines`); null for any other coupon.
+          properties:
+            products:
+              type: array
+              items:
+                type: object
+                properties:
+                  product_code:
+                    type: string
+                    nullable: true
+                    description: The Miguel product code, or null when the product has none.
+                  product_id:
+                    type: integer
+                  sku:
+                    type: string
+                  name:
+                    type: string
+                  quantity:
+                    type: integer
+                  discount_type:
+                    type: string
+                    description: Smart Coupons' discount on the gift, `percent` or `flat`.
+                  discount_amount:
+                    type: number
         totals:
           type: object
           properties:
@@ -937,9 +965,12 @@ components:
           type: array
           description: >
             Restrictions the cart could not judge for lack of input, so an applied coupon is
-            conditional.
+            conditional: `location` when the coupon is restricted by billing or shipping address
+            and that address was not sent (the coupon is priced as if the rule passed),
+            `shipping_method` when it is restricted by shipping method and none was sent.
           items:
             type: string
+            enum: [location, shipping_method]
         notices:
           type: array
           description: The plain-text notices the shop raised while pricing, without repeats.
