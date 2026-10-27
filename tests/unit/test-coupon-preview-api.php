@@ -168,6 +168,73 @@ class Test_Miguel_Coupon_Preview_Api extends Miguel_Test_Case {
 		$this->assertSame( get_woocommerce_currency(), $data['currency'] );
 	}
 
+	/**
+	 * Run a callback in the state of a REST request: WooCommerce loads no cart, session or customer
+	 * there, and no cart has been loaded from a session yet.
+	 *
+	 * @param callable $work Callback.
+	 * @return array array( callback result, array( WC()->cart, WC()->session, WC()->customer ) after it ).
+	 */
+	private function in_rest_request_state( callable $work ) {
+		global $wp_actions;
+
+		$wc     = WC();
+		$saved  = array( $wc->cart, $wc->session, $wc->customer );
+		$loaded = $wp_actions['woocommerce_load_cart_from_session'] ?? null;
+
+		$wc->cart     = null;
+		$wc->session  = null;
+		$wc->customer = null;
+		unset( $wp_actions['woocommerce_load_cart_from_session'] );
+
+		try {
+			$result = $work();
+
+			return array( $result, array( $wc->cart, $wc->session, $wc->customer ) );
+		} finally {
+			list( $wc->cart, $wc->session, $wc->customer ) = $saved;
+			if ( null !== $loaded ) {
+				$wp_actions['woocommerce_load_cart_from_session'] = $loaded; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+			}
+		}
+	}
+
+	public function test_preview_without_a_cart_session_or_customer() {
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'c20' );
+
+		list( $response, $after ) = $this->in_rest_request_state(
+			function () {
+				return $this->preview( $this->body( 'c20' ) );
+			}
+		);
+		$data = $this->data( $response );
+
+		$this->assertTrue( $data['applied'] );
+		$this->assertNull( $data['error_code'] );
+		$this->assertEquals( 319, $data['lines'][0]['before']['total'] );
+		$this->assertEquals( 255.2, $data['lines'][0]['after']['total'] );
+		$this->assertEquals( 319, $data['totals']['before']['total'] );
+		$this->assertEquals( 255.2, $data['totals']['after']['total'] );
+		$this->assertSame( array( null, null, null ), $after );
+	}
+
+	public function test_registered_customers_saved_cart_flag_survives() {
+		$user_id = self::factory()->user->create( array( 'user_email' => 'buyer@example.com' ) );
+		update_user_meta( $user_id, '_woocommerce_load_saved_cart_after_login', 1 );
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'c20' );
+
+		list( $response ) = $this->in_rest_request_state(
+			function () {
+				return $this->preview( $this->body( 'c20' ) );
+			}
+		);
+
+		$this->assertTrue( $this->data( $response )['applied'] );
+		$this->assertSame( '1', get_user_meta( $user_id, '_woocommerce_load_saved_cart_after_login', true ) );
+	}
+
 	public function test_tax_without_an_address_is_the_web_cart_tax() {
 		update_option( 'woocommerce_calc_taxes', 'yes' );
 		update_option( 'woocommerce_prices_include_tax', 'yes' );

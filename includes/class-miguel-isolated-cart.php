@@ -35,6 +35,12 @@ class Miguel_Isolated_Cart {
 		$throwaway = array();
 
 		add_filter( 'woocommerce_persistent_cart_enabled', '__return_false', PHP_INT_MAX );
+		// Loading the throwaway cart from its empty session would clear the real customer's
+		// "load saved cart after login" flag (WC_Cart_Session::get_cart_from_session()).
+		$keep_saved_cart_flag = static function ( $delete, $user_id, $meta_key ) {
+			return '_woocommerce_load_saved_cart_after_login' === $meta_key ? false : $delete;
+		};
+		add_filter( 'delete_user_metadata', $keep_saved_cart_flag, PHP_INT_MAX, 3 );
 
 		try {
 			wp_set_current_user( (int) $customer['user_id'] );
@@ -71,6 +77,7 @@ class Miguel_Isolated_Cart {
 			);
 		} finally {
 			remove_filter( 'woocommerce_persistent_cart_enabled', '__return_false', PHP_INT_MAX );
+			remove_filter( 'delete_user_metadata', $keep_saved_cart_flag, PHP_INT_MAX );
 			self::detach_hooks( $throwaway );
 			self::reattach_hooks( $detached );
 
