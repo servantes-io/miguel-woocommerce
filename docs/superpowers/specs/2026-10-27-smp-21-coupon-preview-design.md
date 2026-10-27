@@ -82,7 +82,7 @@ other API classes; product codes through `Miguel_Product_Code_Resolver`. The pat
   "code": "MELVIL20",
   "email": "jan@example.com",
   "line_items": [{ "product_code": "ABC123", "quantity": 1 }],
-  "shipping_method": "flat_rate",
+  "shipping_method": "flat_rate:3",
   "billing":  { "country": "CZ", "state": "", "city": "Praha", "postcode": "11000" },
   "shipping": { "country": "CZ", "state": "", "city": "Praha", "postcode": "11000" }
 }
@@ -90,8 +90,9 @@ other API classes; product codes through `Miguel_Product_Code_Resolver`. The pat
 
 - `code`, `line_items` required; `email`, `shipping_method`, `billing`, `shipping` optional.
 - `line_items[].price` is gone: the cart prices the books as the shop does (see Prices).
-- `shipping_method` takes the value the backend holds in `WoocommerceMethodId` (what
-  `GET /delivery-methods` reports and what `POST /orders` already sends as `shipping_lines[].method_id`).
+- `shipping_method` is a WooCommerce rate id `method_id:instance_id` (e.g. `flat_rate:3`) — the
+  backend's `DeliveryMethod.Code`, built from what `GET /delivery-methods` reports — the form
+  WooCommerce keeps in the session's `chosen_shipping_methods` and Smart Coupons reads.
 - 400 for a missing code or malformed lines, the resolver's 409 for an unknown or ambiguous code,
   as today.
 
