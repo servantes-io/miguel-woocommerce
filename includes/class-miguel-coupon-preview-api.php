@@ -134,7 +134,15 @@ class Miguel_Coupon_Preview_Api {
 			$before = $this->probe->price( $lines, null, $customer );
 			$after  = $this->probe->price( $lines, $code, $customer );
 		} catch ( Throwable $e ) {
-			Miguel::debug_log( 'Coupon preview failed', array( 'error' => $e->getMessage() ) );
+			Miguel::debug_log(
+				'Coupon preview failed',
+				array(
+					'error' => $e->getMessage(),
+					'class' => get_class( $e ),
+					'file'  => $e->getFile(),
+					'line'  => $e->getLine(),
+				)
+			);
 
 			return new WP_Error(
 				'coupon.preview_failed',

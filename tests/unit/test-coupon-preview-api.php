@@ -363,11 +363,30 @@ class Test_Miguel_Coupon_Preview_Api extends Miguel_Test_Case {
 			}
 		};
 
+		$upload_dir = wp_upload_dir();
+		$log_file   = trailingslashit( (string) $upload_dir['basedir'] ) . 'miguel-logs/miguel-debug-' . gmdate( 'd-m-Y' ) . '.log';
+		clearstatcache();
+		$log_offset = file_exists( $log_file ) ? filesize( $log_file ) : 0;
+		add_filter( 'miguel_enable_debug_log', '__return_true' );
+
 		$response = $this->preview( $this->body( 'c20' ), $probe );
 
 		$this->assertWPError( $response );
 		$this->assertSame( 'coupon.preview_failed', $response->get_error_code() );
 		$this->assertSame( 500, $response->get_error_data()['status'] );
+
+		$logged = null;
+		foreach ( explode( PHP_EOL, (string) file_get_contents( $log_file, false, null, $log_offset ) ) as $line ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			$entry = json_decode( $line, true );
+			if ( is_array( $entry ) && 'Coupon preview failed' === $entry['message'] ) {
+				$logged = $entry;
+			}
+		}
+		$this->assertIsArray( $logged );
+		$this->assertSame( 'boom', $logged['context']['error'] );
+		$this->assertSame( 'Error', $logged['context']['class'] );
+		$this->assertSame( __FILE__, $logged['context']['file'] );
+		$this->assertIsInt( $logged['context']['line'] );
 	}
 
 	public function test_nothing_persists() {
