@@ -817,8 +817,9 @@ components:
           type: integer
           nullable: true
           description: >
-            Null when applied. Otherwise WooCommerce's coupon error (`WC_Coupon::E_WC_COUPON_*`):
-            100 refused by a filter, 102 not valid for this e-mail, 105 does not exist,
+            Null when applied. Otherwise WooCommerce's coupon error (`WC_Coupon::E_WC_COUPON_*`),
+            for example (not an exhaustive list): 100 refused by a filter, 102 not valid for this
+            e-mail, 104 another coupon on the cart is for individual use, 105 does not exist,
             106 usage limit reached, for the coupon or for this customer (WooCommerce may
             answer 116 or 115 for the same), 107 expired, 108 minimum spend not met,
             109 not applicable to the products, 110 not valid for sale items, 112 maximum spend
@@ -1064,7 +1065,8 @@ paths:
         coupon adds, the totals, and, when the shop refuses the coupon, WooCommerce's error code
         and message. WooCommerce and any coupon plugin the shop runs decide, as at the web
         checkout. Nothing is saved and no usage is counted. A refused coupon is a normal
-        answer: HTTP 200 with `applied` false.
+        answer: HTTP 200 with `applied` false. Other plugins' cart hooks run during a preview,
+        as for a web cart, with the shop user who has the request's e-mail as the current user.
       requestBody:
         required: true
         content:

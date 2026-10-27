@@ -8,7 +8,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Miguel keeps no coupon definitions and no coupon logic: it sends the cart, the shop prices it in
  * a throwaway WooCommerce cart with and without the coupon, and Miguel shows the difference.
- * Nothing is saved.
+ * Nothing is saved. Other plugins' cart hooks run during a preview, as for a web cart, with the
+ * shop user who has the request's e-mail as the current user.
  *
  * @package Miguel
  */
@@ -455,7 +456,9 @@ class Miguel_Coupon_Preview_Api {
 			$shipping_method = $method;
 		}
 
-		// Per-customer usage limits are kept by user ID, which a guest would not have.
+		// Per-customer usage limits are kept by user ID, which a guest would not have. Whoever has the
+		// e-mail, an administrator included, becomes the current user for the call; that only decides
+		// how the cart is priced, since the call saves nothing.
 		$user = '' !== $email ? get_user_by( 'email', $email ) : false;
 
 		return array(
