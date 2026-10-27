@@ -54,29 +54,45 @@ class Miguel_Coupon_Cart_Probe {
 		$error_code = null;
 		$message    = null;
 		if ( null !== $coupon_code && '' !== $coupon_code ) {
-			$capture = function ( $text, $code ) use ( &$error_code, &$message ) {
-				if ( null === $error_code ) {
-					$error_code = (int) $code;
-					$message    = html_entity_decode( wp_strip_all_tags( (string) $text ), ENT_QUOTES, 'UTF-8' );
+			// First error about this coupon (or about no coupon in particular), first about another one.
+			$own       = null;
+			$other     = null;
+			$requested = wc_strtolower( wc_format_coupon_code( (string) $coupon_code ) );
+			$capture   = function ( $text, $code, $coupon = null ) use ( $requested, &$own, &$other ) {
+				$error = array( (int) $code, html_entity_decode( wp_strip_all_tags( (string) $text ), ENT_QUOTES, 'UTF-8' ) );
+				if ( ! $coupon instanceof WC_Coupon || wc_strtolower( wc_format_coupon_code( $coupon->get_code() ) ) === $requested ) {
+					$own = null === $own ? $error : $own;
+				} else {
+					$other = null === $other ? $error : $other;
 				}
 				return $text;
 			};
 
-			add_filter( 'woocommerce_coupon_error', $capture, 10, 2 );
+			add_filter( 'woocommerce_coupon_error', $capture, 10, 3 );
 			try {
 				$applied = $cart->apply_coupon( (string) $coupon_code );
 
-				// The web checkout judges allowed e-mails and a guest's per-customer limit here. WooCommerce
-				// removes the coupon for the former but only reports the latter (the order is refused later).
+				// An individual-use coupon already on the cart refuses this one with an error about itself.
+				if ( ! $applied && null === $own ) {
+					$own = $other;
+				}
+
+				// The web checkout judges allowed e-mails and a guest's per-customer limit here, for every
+				// applied coupon. WooCommerce removes the coupon for the former but only reports the latter
+				// (the order is refused later). Another coupon's refusal is not this coupon's.
 				$email = (string) $customer['email'];
 				if ( $applied && '' !== $email ) {
 					$cart->check_customer_coupons( array( 'billing_email' => $email ) );
-					if ( null !== $error_code ) {
+					if ( null !== $own ) {
 						$cart->remove_coupon( (string) $coupon_code );
 					}
 				}
 			} finally {
 				remove_filter( 'woocommerce_coupon_error', $capture, 10 );
+			}
+
+			if ( null !== $own ) {
+				list( $error_code, $message ) = $own;
 			}
 		}
 

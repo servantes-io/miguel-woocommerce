@@ -232,6 +232,56 @@ class Test_Miguel_Coupon_Cart_Probe extends Miguel_Test_Case {
 		$this->assertSame( array( 'once' ), $other['coupons'] );
 	}
 
+	/**
+	 * Apply a coupon of the shop's own whenever a product is added, as an auto-apply plugin does.
+	 *
+	 * @param string $code Coupon code.
+	 */
+	private function auto_apply( $code ) {
+		add_action(
+			'woocommerce_add_to_cart',
+			function () use ( $code ) {
+				if ( ! WC()->cart->has_discount( $code ) ) {
+					WC()->cart->apply_coupon( $code );
+				}
+			}
+		);
+	}
+
+	public function test_another_coupons_customer_check_does_not_refuse_the_requested_coupon() {
+		list( $lines ) = $this->two_lines();
+		$this->create_coupon( 'c20' );
+		$auto = $this->create_coupon(
+			'auto',
+			array(
+				'discount_type'        => 'fixed_cart',
+				'amount'               => 5,
+				'usage_limit_per_user' => 1,
+			)
+		);
+		$auto->increase_usage_count( 'buyer@example.com' );
+		$this->auto_apply( 'auto' );
+
+		$result = Miguel_Coupon_Cart_Probe::price( $lines, 'c20', $this->customer() );
+
+		$this->assertNull( $result['error_code'] );
+		$this->assertNull( $result['message'] );
+		$this->assertContains( 'c20', $result['coupons'] );
+	}
+
+	public function test_refusal_beside_an_individual_use_coupon_carries_its_code() {
+		list( $lines ) = $this->two_lines();
+		$this->create_coupon( 'c20' );
+		$this->create_coupon( 'solo', array( 'individual_use' => true ) );
+		$this->auto_apply( 'solo' );
+
+		$result = Miguel_Coupon_Cart_Probe::price( $lines, 'c20', $this->customer() );
+
+		$this->assertSame( WC_Coupon::E_WC_COUPON_ALREADY_APPLIED_INDIV_USE_ONLY, $result['error_code'] );
+		$this->assertIsString( $result['message'] );
+		$this->assertSame( array( 'solo' ), $result['coupons'] );
+	}
+
 	public function test_line_the_shop_will_not_add() {
 		$sold_out = $this->create_product( 'OUT' );
 		$sold_out->set_manage_stock( false );
