@@ -23,6 +23,10 @@ class Miguel_Isolated_Cart {
 	 * @throws Throwable Whatever $work throws, after everything is restored.
 	 */
 	public static function run( array $customer, callable $work ) {
+		// Miguel_Memory_Session extends WC_Session, which does not exist yet while this plugin's
+		// files are included (this plugin loads before WooCommerce).
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-memory-session.php';
+
 		$wc = WC();
 
 		$saved_cart     = $wc->cart;

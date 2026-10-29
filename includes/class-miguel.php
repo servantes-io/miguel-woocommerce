@@ -99,7 +99,6 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-delivery-methods-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-orders-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-coupon-preview-api.php';
-		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-memory-session.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-isolated-cart.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-coupon-cart-probe.php';
 
