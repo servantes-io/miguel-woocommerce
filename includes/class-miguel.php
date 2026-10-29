@@ -230,6 +230,9 @@ class Miguel {
 		$this->hook_manager->add_filter( 'woocommerce_payment_gateways', array( $this, 'register_payment_gateway' ) );
 		$this->hook_manager->add_action( 'woocommerce_blocks_payment_method_type_registration', array( $this, 'register_payment_gateway_blocks' ) );
 
+		// Like the gateway, the resolver's cache talks to nothing outside the shop.
+		Miguel_Product_Code_Resolver::register_cache_hooks( $this->hook_manager );
+
 		if ( ! defined( 'MIGUEL_TESTS' ) ) {
 			// Initialize services and register their hooks
 			$this->container->get( 'download' )->register_hooks();

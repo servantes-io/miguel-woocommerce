@@ -4,6 +4,7 @@
 
 * Added `POST /coupons/preview`, which shows Miguel what a WooCommerce discount coupon does to the cart a customer has in the app: Miguel sends the code, the customer's e-mail and the cart lines (and, when it has them, the delivery method and the addresses), and the shop puts the cart together in a temporary WooCommerce cart with and without the coupon, so WooCommerce and any coupon plugin the shop runs (Smart Coupons included) decide. The answer gives, for each line, the price before and after with tax, the gift products a coupon adds, the totals, and, for a coupon the shop refuses, WooCommerce's error code and message. Nothing is saved and no usage is counted
 * `POST /orders` accepts `coupon_lines: [{code}]`. The coupon is recorded on the order with a discount of 0 and the lines keep the prices Miguel sent, which already include the discount, so WooCommerce never applies the coupon a second time, whatever other plugins the shop runs. WooCommerce counts the coupon's use as it does for a web order. Before, WooCommerce would have applied the coupon to Miguel's prices again
+* `POST /orders` and `POST /coupons/preview` no longer load the whole catalogue on every request to find the products of Miguel's product codes: the code map is kept between requests and rebuilt after a product's SKU, downloads or Miguel code changes, after it is published, trashed or deleted, or when the print suffix changes. On a large shop that cost seconds per request, enough for Miguel to give up on a coupon preview
 
 ## 1.11.0
 
