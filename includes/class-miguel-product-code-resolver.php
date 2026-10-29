@@ -172,12 +172,18 @@ class Miguel_Product_Code_Resolver {
 	/**
 	 * Drop the cached map when a product's code meta changes.
 	 *
+	 * WooCommerce before 9 drops a product's cached meta only on `updated_post_meta`, so meta added
+	 * or deleted directly would still be read stale when the map is rebuilt: drop it here too.
+	 *
 	 * @param int|int[] $meta_id   Meta ID(s).
 	 * @param int       $object_id Post ID.
 	 * @param string    $meta_key  Meta key.
 	 */
 	public static function flush_cache_for_meta( $meta_id, $object_id, $meta_key ) {
 		if ( in_array( $meta_key, self::CODE_META_KEYS, true ) ) {
+			if ( class_exists( 'WC_Cache_Helper' ) ) {
+				WC_Cache_Helper::invalidate_cache_group( 'object_' . $object_id );
+			}
 			self::flush_cache_for_post( $object_id );
 		}
 	}
