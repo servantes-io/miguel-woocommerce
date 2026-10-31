@@ -11,6 +11,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Miguel_Product_Code_Resolver {
 
 	/**
+	 * Transient holding the code => product IDs map between requests.
+	 */
+	const CACHE_TRANSIENT = 'miguel_product_code_map';
+
+	/**
+	 * How long the map stands at most, for catalogue writes that bypass WordPress (direct SQL).
+	 */
+	const CACHE_TTL = DAY_IN_SECONDS;
+
+	/**
+	 * Product meta whose change can change a product's codes.
+	 */
+	const CODE_META_KEYS = array( '_sku', '_downloadable', '_downloadable_files', '_miguel_code' );
+
+	/**
 	 * Cached map of product code details.
 	 *
 	 * @var array|null
@@ -55,7 +70,7 @@ class Miguel_Product_Code_Resolver {
 	 */
 	public function get_product_code_details_map() {
 		if ( null === $this->product_code_details_map ) {
-			$this->product_code_details_map = $this->collect_product_code_details_map();
+			$this->product_code_details_map = $this->build_product_code_details_map( $this->get_product_code_entries() );
 
 			Miguel::debug_log(
 				'Collected product code details map',
@@ -135,11 +150,104 @@ class Miguel_Product_Code_Resolver {
 	}
 
 	/**
-	 * Collect map of Miguel product codes with all matched WooCommerce product IDs.
+	 * Register the hooks that drop the cached map when a product's codes may have changed.
+	 *
+	 * @param Miguel_Hook_Manager_Interface $hook_manager Hook manager.
+	 */
+	public static function register_cache_hooks( Miguel_Hook_Manager_Interface $hook_manager ) {
+		foreach ( array( 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ) as $hook ) {
+			$hook_manager->add_action( $hook, array( self::class, 'flush_cache_for_meta' ), 10, 3 );
+		}
+		$hook_manager->add_action( 'transition_post_status', array( self::class, 'flush_cache_for_status' ), 10, 3 );
+		$hook_manager->add_action( 'deleted_post', array( self::class, 'flush_cache_for_post' ) );
+	}
+
+	/**
+	 * Drop the cached map.
+	 */
+	public static function flush_cache() {
+		delete_transient( self::CACHE_TRANSIENT );
+	}
+
+	/**
+	 * Drop the cached map when a product's code meta changes.
+	 *
+	 * WooCommerce before 9 drops a product's cached meta only on `updated_post_meta`, so meta added
+	 * or deleted directly would still be read stale when the map is rebuilt: drop it here too.
+	 *
+	 * @param int|int[] $meta_id   Meta ID(s).
+	 * @param int       $object_id Post ID.
+	 * @param string    $meta_key  Meta key.
+	 */
+	public static function flush_cache_for_meta( $meta_id, $object_id, $meta_key ) {
+		if ( in_array( $meta_key, self::CODE_META_KEYS, true ) ) {
+			if ( class_exists( 'WC_Cache_Helper' ) ) {
+				WC_Cache_Helper::invalidate_cache_group( 'object_' . $object_id );
+			}
+			self::flush_cache_for_post( $object_id );
+		}
+	}
+
+	/**
+	 * Drop the cached map when a product is published, unpublished, trashed or restored.
+	 *
+	 * @param string  $new_status New status.
+	 * @param string  $old_status Old status.
+	 * @param WP_Post $post       Post.
+	 */
+	public static function flush_cache_for_status( $new_status, $old_status, $post ) {
+		if ( $new_status !== $old_status && $post instanceof WP_Post ) {
+			self::flush_cache_for_post( $post->ID );
+		}
+	}
+
+	/**
+	 * Drop the cached map when the post is a product or a variation.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public static function flush_cache_for_post( $post_id ) {
+		if ( in_array( get_post_type( $post_id ), array( 'product', 'product_variation' ), true ) ) {
+			self::flush_cache();
+		}
+	}
+
+	/**
+	 * Miguel product code => all matched WooCommerce product IDs, from the cache or the catalogue.
+	 *
+	 * Collecting it loads every product of the shop, which takes seconds on a large catalogue, so it
+	 * is kept between requests. The print suffix is stored with it: a change of the option or of
+	 * the filter shows as a different suffix.
 	 *
 	 * @return array
 	 */
-	private function collect_product_code_details_map() {
+	private function get_product_code_entries() {
+		$suffix = Miguel_Product_Code_Source::get_print_suffix();
+
+		$cached = get_transient( self::CACHE_TRANSIENT );
+		if ( is_array( $cached ) && isset( $cached['entries'] ) && ( $cached['suffix'] ?? null ) === $suffix ) {
+			return $cached['entries'];
+		}
+
+		$entries = $this->collect_product_code_entries();
+		set_transient(
+			self::CACHE_TRANSIENT,
+			array(
+				'suffix'  => $suffix,
+				'entries' => $entries,
+			),
+			self::CACHE_TTL
+		);
+
+		return $entries;
+	}
+
+	/**
+	 * Collect Miguel product codes with all matched WooCommerce product IDs.
+	 *
+	 * @return array Product code => sorted product IDs.
+	 */
+	private function collect_product_code_entries() {
 		$query = new WP_Query(
 			array(
 				'post_type' => array( 'product', 'product_variation' ),
@@ -171,16 +279,36 @@ class Miguel_Product_Code_Resolver {
 					continue;
 				}
 
-				$product_code_entries[ $product_code ][] = $product_id;
+				$product_code_entries[ $product_code ][] = (int) $product_id;
 			}
 		}
 
 		ksort( $product_code_entries );
+		foreach ( $product_code_entries as &$product_ids ) {
+			sort( $product_ids, SORT_NUMERIC );
+		}
+		unset( $product_ids );
 
+		Miguel::debug_log(
+			'Collected products for product code resolution',
+			array(
+				'product_post_count' => count( $query->posts ),
+				'resolved_code_count' => count( $product_code_entries ),
+			)
+		);
+
+		return $product_code_entries;
+	}
+
+	/**
+	 * The detailed map with uniqueness metadata.
+	 *
+	 * @param array $product_code_entries Result of get_product_code_entries().
+	 * @return array
+	 */
+	private function build_product_code_details_map( array $product_code_entries ) {
 		$product_code_details_map = array();
 		foreach ( $product_code_entries as $product_code => $product_ids ) {
-			sort( $product_ids, SORT_NUMERIC );
-
 			$product_code_details_map[ $product_code ] = array(
 				'product_code' => $product_code,
 				'product_id' => (int) reset( $product_ids ),
@@ -189,14 +317,6 @@ class Miguel_Product_Code_Resolver {
 				'match_count' => count( $product_ids ),
 			);
 		}
-
-		Miguel::debug_log(
-			'Collected products for product code resolution',
-			array(
-				'product_post_count' => count( $query->posts ),
-				'resolved_code_count' => count( $product_code_details_map ),
-			)
-		);
 
 		return $product_code_details_map;
 	}

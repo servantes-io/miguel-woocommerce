@@ -7,6 +7,13 @@
 
 class Miguel_Test_Case extends WC_Unit_Test_Case {
 
+	/**
+	 * Hook manager holding the product code resolver's cache hooks.
+	 *
+	 * @var Miguel_Hook_Manager
+	 */
+	private $cache_hook_manager;
+
 	public function setUp(): void {
 		parent::setUp();
 
@@ -19,6 +26,11 @@ class Miguel_Test_Case extends WC_Unit_Test_Case {
 
 		Miguel::reset_instance();
 
+		// reset_instance() removed the resolver's cache hooks with the rest; a shop always has them.
+		Miguel_Product_Code_Resolver::flush_cache();
+		$this->cache_hook_manager = new Miguel_Hook_Manager();
+		Miguel_Product_Code_Resolver::register_cache_hooks( $this->cache_hook_manager );
+
 		// Mock successful API responses
 		Miguel_Helper_HTTP::mock_api_responses( array() );
 	}
@@ -26,6 +38,8 @@ class Miguel_Test_Case extends WC_Unit_Test_Case {
 	public function tearDown(): void {
 		// Clear HTTP mocks
 		Miguel_Helper_HTTP::clear();
+
+		$this->cache_hook_manager->remove_all_hooks();
 
 		parent::tearDown();
 	}

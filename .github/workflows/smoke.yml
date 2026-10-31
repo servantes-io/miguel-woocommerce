@@ -1,0 +1,37 @@
+name: Smoke test
+
+# Installs the plugin's zip into a real WordPress + WooCommerce shop and opens it over HTTP
+# (scripts/smoke_docker.sh). The unit tests load WooCommerce before the plugin, so only this sees
+# what happens when WordPress loads the plugin first, as on a real shop.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Current versions, as the newest leg of tests.yml.
+          - woocommerce-version: 11.2.1
+            wordpress-version: 7.1.3
+            php-version: 8.3
+          # Minimum supported versions, as the floor leg of tests.yml.
+          - woocommerce-version: 7.9.1
+            wordpress-version: 6.5.8
+            php-version: 8.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Smoke test
+        env:
+          SMOKE_PHP_VERSION: ${{ matrix.php-version }}
+          SMOKE_WP_VERSION: ${{ matrix.wordpress-version }}
+          SMOKE_WC_VERSION: ${{ matrix.woocommerce-version }}
+        run: scripts/smoke_docker.sh

@@ -118,6 +118,105 @@ class Test_Miguel_Product_Code_Resolver extends Miguel_Test_Case {
 	}
 
 	/**
+	 * A second resolver, as in the next request, reads the map without loading the catalogue again.
+	 */
+	public function test_map_is_kept_between_resolvers() {
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_sku( 'cached-sku' );
+		$product->save();
+
+		$this->assertSame( $product->get_id(), ( new Miguel_Product_Code_Resolver() )->resolve_product_code( 'cached-sku' )['product_id'] );
+
+		$catalogue_queries = $this->count_catalogue_queries();
+		$resolved          = ( new Miguel_Product_Code_Resolver() )->resolve_product_code( 'cached-sku' );
+
+		$this->assertSame( $product->get_id(), $resolved['product_id'] );
+		$this->assertSame( 0, $catalogue_queries() );
+	}
+
+	/**
+	 * A product saved with another SKU drops the cached map.
+	 */
+	public function test_saved_sku_drops_cached_map() {
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_sku( 'old-sku' );
+		$product->save();
+		( new Miguel_Product_Code_Resolver() )->get_product_code_details_map();
+
+		$product->set_sku( 'new-sku' );
+		$product->save();
+
+		$map = ( new Miguel_Product_Code_Resolver() )->get_product_code_details_map();
+		$this->assertArrayHasKey( 'new-sku', $map );
+		$this->assertArrayNotHasKey( 'old-sku', $map );
+	}
+
+	/**
+	 * Code meta written directly, bypassing the product object, drops the cached map.
+	 */
+	public function test_meta_written_directly_drops_cached_map() {
+		$product = WC_Helper_Product::create_simple_product();
+		( new Miguel_Product_Code_Resolver() )->get_product_code_details_map();
+
+		update_post_meta( $product->get_id(), '_miguel_code', 'override-code' );
+
+		$resolved = ( new Miguel_Product_Code_Resolver() )->resolve_product_code( 'override-code' );
+		$this->assertSame( $product->get_id(), $resolved['product_id'] );
+	}
+
+	/**
+	 * A trashed product leaves the map.
+	 */
+	public function test_trashed_product_drops_cached_map() {
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_sku( 'trashed-sku' );
+		$product->save();
+		( new Miguel_Product_Code_Resolver() )->get_product_code_details_map();
+
+		wp_trash_post( $product->get_id() );
+
+		$this->assertArrayNotHasKey( 'trashed-sku', ( new Miguel_Product_Code_Resolver() )->get_product_code_details_map() );
+	}
+
+	/**
+	 * Another print suffix rebuilds the map: the codes of printed books depend on it.
+	 */
+	public function test_other_print_suffix_rebuilds_cached_map() {
+		$print = WC_Helper_Product::create_simple_product();
+		$print->set_downloadable( false );
+		$print->set_virtual( false );
+		$print->set_sku( 'suffixed' );
+		$print->save();
+		$this->assertArrayHasKey( 'suffixed', ( new Miguel_Product_Code_Resolver() )->get_product_code_details_map() );
+
+		add_filter( 'miguel_print_code_suffix', function () {
+			return ':print';
+		} );
+
+		$map = ( new Miguel_Product_Code_Resolver() )->get_product_code_details_map();
+		$this->assertArrayHasKey( 'suffixed:print', $map );
+		$this->assertArrayNotHasKey( 'suffixed', $map );
+	}
+
+	/**
+	 * Counts the resolver's catalogue queries from now on.
+	 *
+	 * @return callable Returns the count so far.
+	 */
+	private function count_catalogue_queries() {
+		$count = 0;
+		add_action( 'pre_get_posts', function ( $query ) use ( &$count ) {
+			if ( array( 'product', 'product_variation' ) === $query->get( 'post_type' ) ) {
+				++$count;
+			}
+		} );
+
+		return function () use ( &$count ) {
+			return $count;
+		};
+	}
+
+	/**
 	 * Test that debug logging is disabled by default.
 	 */
 	public function test_debug_log_is_disabled_by_default() {

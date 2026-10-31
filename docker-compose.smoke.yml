@@ -1,0 +1,61 @@
+# A throwaway WordPress + WooCommerce shop with this plugin installed from its zip, for
+# scripts/smoke_docker.sh. Nothing is published on the host; the checks reach the shop over the
+# compose network.
+services:
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: smoke
+      MYSQL_DATABASE: wordpress
+    tmpfs:
+      - /var/lib/mysql
+
+  # Builds miguel.zip with `make pack`, the zip CI's WooCommerce sniffer checks.
+  pack:
+    image: alpine:3.20
+    volumes:
+      - .:/project
+    working_dir: /project
+    environment:
+      HOST_UID: ${HOST_UID:-0}
+      HOST_GID: ${HOST_GID:-0}
+    # Root to install the tools; what it writes into the checkout goes back to the caller.
+    entrypoint:
+      - sh
+      - -c
+      - apk add --no-cache -q bash make gettext rsync zip && make pack && chown "$$HOST_UID:$$HOST_GID" miguel.zip languages/*.mo
+
+  wordpress:
+    image: wordpress:php${SMOKE_PHP_VERSION:-8.3}-apache
+    depends_on:
+      - db
+    volumes:
+      - site:/var/www/html
+
+  cli:
+    image: wordpress:cli-php${SMOKE_PHP_VERSION:-8.3}
+    depends_on:
+      - db
+    user: root
+    volumes:
+      - site:/var/www/html
+      - wpcli_cache:/wp-cli-cache
+      - ./miguel.zip:/smoke/miguel.zip:ro
+      - ./tests/smoke:/smoke/tests:ro
+    environment:
+      WP_CLI_CACHE_DIR: /wp-cli-cache
+      WP_VERSION: ${SMOKE_WP_VERSION:-7.1.3}
+      WC_VERSION: ${SMOKE_WC_VERSION:-11.2.1}
+    entrypoint: ["sh", "/smoke/tests/install.sh"]
+
+  checks:
+    image: curlimages/curl:8.10.1
+    depends_on:
+      - wordpress
+    volumes:
+      - ./tests/smoke:/smoke/tests:ro
+    entrypoint: ["sh", "/smoke/tests/checks.sh"]
+
+volumes:
+  site:
+  wpcli_cache:

@@ -653,6 +653,25 @@ components:
             Any other type is rejected with 409 `order.order_note_invalid`. Part of
             the idempotency payload: a replay adds no second note.
           example: "Objednávka vytvořena v aplikaci Melvil."
+        coupon_lines:
+          type: array
+          description: >
+            Coupons to record on the order, as Miguel previewed them with
+            `POST /coupons/preview`. Each coupon is attached with a discount of 0 and the
+            line items keep exactly the `subtotal` and `total` Miguel sent: the discount is
+            already in those prices, so WooCommerce does not apply the coupon again, whatever
+            other plugins the shop runs. The coupon's usage is counted by WooCommerce's own
+            order status hook, as for a web order. The codes are not checked against the shop
+            here: an order the customer has paid for is not refused over its coupon. A value
+            that is not an array of objects each holding a non-blank `code` is rejected with
+            409 `order.coupon_lines_invalid` before anything is created.
+          items:
+            type: object
+            required: [code]
+            properties:
+              code:
+                type: string
+                example: MELVIL20
 
     CreateOrderResponse:
       type: object
@@ -678,6 +697,294 @@ components:
         email_template:
           type: string
           nullable: true
+
+    CouponPreviewRequest:
+      type: object
+      required: [code, line_items]
+      properties:
+        code:
+          type: string
+          example: MELVIL20
+        email:
+          type: string
+          format: email
+          description: >
+            The customer's e-mail. Checked against the coupon's allowed e-mails, and used to
+            find the shop user whose per-customer usage limit applies.
+          example: jan@example.com
+        line_items:
+          type: array
+          minItems: 1
+          description: >
+            The cart. The shop prices the lines itself; a `price` sent on a line is ignored.
+          items:
+            type: object
+            required: [product_code, quantity]
+            properties:
+              product_code:
+                type: string
+                description: A Miguel product code, resolved as in `POST /orders`.
+                example: ABC123
+              quantity:
+                type: integer
+                minimum: 1
+        shipping_method:
+          type: string
+          pattern: '^[a-z0-9_-]+:\d+$'
+          description: >
+            The chosen delivery method as a WooCommerce shipping rate id,
+            `method_id:instance_id`, as `GET /delivery-methods` reports it. Without it the
+            shipping total is null and `shipping_method` is listed in `unchecked`. Any other
+            form is rejected with 400 `coupon.shipping_method_invalid`.
+          example: flat_rate:3
+        billing:
+          $ref: '#/components/schemas/CouponPreviewAddress'
+        shipping:
+          $ref: '#/components/schemas/CouponPreviewAddress'
+
+    CouponPreviewAddress:
+      type: object
+      description: >
+        Where the cart is billed or shipped, for coupons and shipping rates that depend on the
+        location. Fields other than these four are ignored.
+      properties:
+        country:
+          type: string
+          example: CZ
+        state:
+          type: string
+        city:
+          type: string
+          example: Praha
+        postcode:
+          type: string
+          example: "11000"
+
+    CouponPreviewPrice:
+      type: object
+      description: Amounts in the shop currency, including tax.
+      properties:
+        unit_price:
+          type: number
+          example: 271
+        total:
+          type: number
+          example: 271
+        tax:
+          type: number
+          description: The tax part of `total`.
+          example: 24.64
+
+    CouponPreviewTotals:
+      type: object
+      description: The cart's totals in the shop currency, including tax.
+      properties:
+        items:
+          type: number
+          description: The lines after line discounts.
+        discount:
+          type: number
+          description: The cart's discount total, store credit included.
+        shipping:
+          type: number
+          nullable: true
+          description: >
+            Null unless a `shipping_method` and an address (shipping or, failing that, billing)
+            were sent; shipping is then not part of `total` either.
+        fees:
+          type: number
+        total:
+          type: number
+        tax:
+          type: number
+
+    CouponPreviewResponse:
+      type: object
+      description: >
+        What the coupon does to the cart. The same body, with HTTP 200, whether or not the
+        coupon applies: a refusal is a normal answer.
+      properties:
+        code:
+          type: string
+          description: >
+            The code as the request sent it, trimmed. `coupon.code` is the shop's own spelling
+            (lower-case).
+          example: MELVIL20
+        applied:
+          type: boolean
+          description: Whether the coupon is on the cart after the shop has priced it.
+        error_code:
+          type: integer
+          nullable: true
+          description: >
+            Null when applied. Otherwise WooCommerce's coupon error (`WC_Coupon::E_WC_COUPON_*`),
+            for example (not an exhaustive list): 100 refused by a filter, 102 not valid for this
+            e-mail, 104 another coupon on the cart is for individual use, 105 does not exist,
+            106 usage limit reached, for the coupon or for this customer (WooCommerce may
+            answer 116 or 115 for the same), 107 expired, 108 minimum spend not met,
+            109 not applicable to the products, 110 not valid for sale items, 112 maximum spend
+            exceeded, 113 excluded products, 114 excluded categories, 0 refused by another
+            plugin without a code (see `message`).
+          example: 107
+        message:
+          type: string
+          nullable: true
+          description: Null when applied. Otherwise the reason, as plain text.
+          example: Coupon "melvil20" has expired.
+        currency:
+          type: string
+          example: CZK
+        coupon:
+          type: object
+          nullable: true
+          description: The coupon's own terms; null when the shop has no such coupon.
+          properties:
+            code:
+              type: string
+            discount_type:
+              type: string
+              description: WooCommerce discount type, e.g. `percent`, `fixed_product`, `fixed_cart`.
+            amount:
+              type: number
+            description:
+              type: string
+            free_shipping:
+              type: boolean
+              description: >
+                The coupon's own flag. Shipping is not recalculated for it unless a
+                `shipping_method` was sent.
+            expires_at:
+              type: string
+              format: date-time
+              nullable: true
+        lines:
+          type: array
+          description: One entry per line sent, in request order.
+          items:
+            type: object
+            properties:
+              product_code:
+                type: string
+              quantity:
+                type: integer
+                description: The quantity sent.
+              in_cart_quantity:
+                type: integer
+                description: >
+                  The quantity the shop put in the cart: less than `quantity` (or 0) when the
+                  product is out of stock, not purchasable or sold individually.
+              before:
+                $ref: '#/components/schemas/CouponPreviewPrice'
+              after:
+                $ref: '#/components/schemas/CouponPreviewPrice'
+              discount:
+                type: number
+                description: '`before.total` minus `after.total`.'
+              discounted:
+                type: boolean
+                description: Whether the coupon touched the line.
+        added_lines:
+          type: array
+          description: Lines the coupon added to the cart, such as a gift product.
+          items:
+            type: object
+            properties:
+              product_code:
+                type: string
+                nullable: true
+                description: The Miguel product code, or null when the product has none.
+              product_id:
+                type: integer
+              sku:
+                type: string
+              name:
+                type: string
+              quantity:
+                type: integer
+              unit_price:
+                type: number
+              total:
+                type: number
+              tax:
+                type: number
+              source:
+                type: string
+                description: '`smart_coupons_action` when the line is a Smart Coupons gift, else `unknown`.'
+        removed_lines:
+          type: array
+          description: Sent lines the coupon made the cart drop, in the quantity dropped.
+          items:
+            type: object
+            properties:
+              product_code:
+                type: string
+              quantity:
+                type: integer
+        gift_choices:
+          type: object
+          nullable: true
+          description: >
+            The gift products an applied Smart Coupons coupon lets the customer choose from; null
+            for any other coupon and whenever `applied` is false. Smart Coupons' only setting
+            here is "users can choose only one", so the customer always picks exactly one product
+            and no count is reported. The web shop asks in a dialog, so the preview adds none of
+            them to `added_lines`.
+          properties:
+            products:
+              type: array
+              items:
+                type: object
+                properties:
+                  product_code:
+                    type: string
+                    nullable: true
+                    description: The Miguel product code, or null when the product has none.
+                  product_id:
+                    type: integer
+                  sku:
+                    type: string
+                  name:
+                    type: string
+                  quantity:
+                    type: integer
+                  discount_type:
+                    type: string
+                    description: Smart Coupons' discount on the gift, `percent` or `flat`.
+                  discount_amount:
+                    type: number
+        totals:
+          type: object
+          properties:
+            before:
+              $ref: '#/components/schemas/CouponPreviewTotals'
+            after:
+              $ref: '#/components/schemas/CouponPreviewTotals'
+        other_coupons:
+          type: array
+          description: >
+            Codes the shop applied on its own (such as Smart Coupons auto-apply) in either cart.
+            They are part of both `before` and `after`.
+          items:
+            type: string
+        unchecked:
+          type: array
+          description: >
+            Restrictions the cart could not judge for lack of input, so an applied coupon is
+            conditional: `location` when the coupon is restricted by billing or shipping address
+            and that address was not sent (the coupon is priced as if the rule passed),
+            `shipping_method` when it is restricted by shipping method and none was sent. Any
+            non-empty `billing` or `shipping` object counts as sent: a partial address is judged
+            by the shop as it is.
+          items:
+            type: string
+            enum: [location, shipping_method]
+        notices:
+          type: array
+          description: >
+            The plain-text notices the shop raised while pricing the cart, without and then with
+            the coupon, in that order and without repeats.
+          items:
+            type: string
 
     UpdateOrderStatusRequest:
       type: object
@@ -737,6 +1044,76 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Zone'
+        "401":
+          description: Missing bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /coupons/preview:
+    post:
+      summary: Preview what a coupon does to a cart
+      operationId: previewCoupon
+      description: >
+        Puts the cart Miguel holds into a temporary WooCommerce cart twice, without and with the
+        coupon, and answers both: each line's price before and after, the gift products the
+        coupon adds, the totals, and, when the shop refuses the coupon, WooCommerce's error code
+        and message. WooCommerce and any coupon plugin the shop runs decide, as at the web
+        checkout. Nothing is saved and no usage is counted. A refused coupon is a normal
+        answer: HTTP 200 with `applied` false. Other plugins' cart hooks run during a preview,
+        as for a web cart, with the shop user who has the request's e-mail as the current user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponPreviewRequest'
+            example:
+              code: MELVIL20
+              email: jan@example.com
+              line_items:
+                - product_code: ABC123
+                  quantity: 1
+              shipping_method: flat_rate:3
+              billing: { country: CZ, state: "", city: Praha, postcode: "11000" }
+              shipping: { country: CZ, state: "", city: Praha, postcode: "11000" }
+      responses:
+        "200":
+          description: The cart priced with and without the coupon, whether or not it applies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponPreviewResponse'
+        "400":
+          description: >
+            Malformed request: `coupon.code_required` (no code), `coupon.line_items_invalid`
+            (line_items missing or empty, a line without a product code, a quantity that is not a
+            positive integer), `coupon.shipping_method_invalid` (not `method_id:instance_id`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "409":
+          description: >
+            A product code is unknown (`product_code.not_found`) or matches several products
+            (`product_code.ambiguous`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: The shop could not price the cart (`coupon.preview_failed`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         "401":
           description: Missing bearer token.
           content:

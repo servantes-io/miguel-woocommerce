@@ -8,6 +8,7 @@ make:
 	@echo " install      Installs required packages"
 	@echo " test         Runs tests locally"
 	@echo " test-docker  Runs tests in Docker (no local tools needed)"
+	@echo " smoke-docker Installs the plugin into a real shop in Docker and checks it"
 	@echo " pack         Creates a zip file with the plugin"
 	@echo ""
 
@@ -22,6 +23,9 @@ test:
 
 test-docker:
 	docker compose -f docker-compose.test.yml run --rm phpunit
+
+smoke-docker:
+	scripts/smoke_docker.sh
 
 build: $(static_langs)
 

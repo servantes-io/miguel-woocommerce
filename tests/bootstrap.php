@@ -28,9 +28,17 @@ require_once $_tests_dir . '/includes/functions.php';
 
 /**
  * Manually load the plugin being tested.
+ *
+ * For a local run against other plugins, MIGUEL_EXTRA_PLUGINS lists their main files
+ * (colon-separated, relative to the project root); they load after WooCommerce, before Miguel.
  */
 function _manually_load_plugin() {
 	require_once MIGUEL_WC_DIR . '/woocommerce.php';
+
+	foreach ( array_filter( explode( ':', (string) getenv( 'MIGUEL_EXTRA_PLUGINS' ) ) ) as $extra_plugin ) {
+		require_once MIGUEL_PROJECT_DIR . '/' . ltrim( trim( $extra_plugin ), '/' );
+	}
+
 	require_once MIGUEL_PROJECT_DIR . '/miguel.php';
 }
 
