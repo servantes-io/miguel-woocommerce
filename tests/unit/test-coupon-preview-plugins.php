@@ -448,7 +448,7 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 		$this->assertSame( $first, $second );
 	}
 
-	public function test_auto_applied_coupon_is_reported() {
+	public function test_auto_applied_coupon_is_left_out_and_reported() {
 		Miguel_Mock_Sc_Auto_Apply::install();
 		$this->create_product( 'BOOK-A' );
 		$this->create_coupon( 'c20' );
@@ -462,12 +462,35 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 
 		$data = $this->preview( $this->body( 'c20' ) );
 
+		// A Miguel order carries only the requested coupon, so the shop's own stays out of both carts.
 		$this->assertTrue( $data['applied'] );
 		$this->assertSame( array( 'auto5' ), $data['other_coupons'] );
-		$this->assertEquals( 314, $data['totals']['before']['total'] );
-		$this->assertEquals( 5, $data['totals']['before']['discount'] );
-		$this->assertEquals( 250.2, $data['totals']['after']['total'] );
-		$this->assertEquals( 68.8, $data['totals']['after']['discount'] );
+		$this->assertEquals( 319, $data['totals']['before']['total'] );
+		$this->assertEquals( 0, $data['totals']['before']['discount'] );
+		$this->assertEquals( 255.2, $data['totals']['after']['total'] );
+		$this->assertEquals( 63.8, $data['totals']['after']['discount'] );
+	}
+
+	public function test_staff_coupon_auto_applied_for_an_email_leaves_prices_alone() {
+		Miguel_Mock_Sc_Auto_Apply::install();
+		Miguel_Mock_Melvil_Pricing::install();
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'c20' );
+		$this->create_coupon(
+			'auto5',
+			array(
+				'amount'             => 100,
+				'email_restrictions' => array( '*@melvil.cz' ),
+			)
+		);
+
+		$data = $this->preview( $this->body( 'c20', array( 'email' => 'staff@melvil.cz' ) ) );
+
+		// dev.melvil.cz: slevapromelvil (100 %) is applied to a staff e-mail's every cart.
+		$this->assertTrue( $data['applied'] );
+		$this->assertSame( array( 'auto5' ), $data['other_coupons'] );
+		$this->assertEquals( 271, $data['lines'][0]['before']['total'] );
+		$this->assertEquals( 255, $data['lines'][0]['after']['total'] );
 	}
 
 	public function test_melvil_style_discount_in_line_price() {

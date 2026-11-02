@@ -309,7 +309,7 @@ class Miguel_Coupon_Preview_Api {
 				'before' => $before['totals'],
 				'after'  => $after['totals'],
 			),
-			'other_coupons' => array_values( array_diff( array_unique( array_merge( $before['coupons'], $after['coupons'] ) ), array( $code ) ) ),
+			'other_coupons' => array_values( array_diff( array_unique( array_merge( $before['coupons'], $after['coupons'], $before['left_out'], $after['left_out'] ) ), array( $code ) ) ),
 			'unchecked'     => $unchecked,
 			'notices'       => array_values( array_unique( array_merge( $before['notices'], $after['notices'] ) ) ),
 		);

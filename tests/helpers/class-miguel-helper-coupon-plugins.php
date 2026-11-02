@@ -359,7 +359,8 @@ class Miguel_Mock_Sc_Store_Credit {
  * `auto5` is applied to WC()->cart, which is then calculated again, whenever the cart has an items
  * total: on add-to-cart (where a first line has none yet, as WooCommerce calculates it later in the
  * same action) and after every calculation with a total (WC_Smart_Coupons fires its
- * `smart_coupons_before_calculate_totals` there).
+ * `smart_coupons_before_calculate_totals` there). Like the real plugin, it applies only a coupon
+ * WC_Discounts finds valid for the cart (WC_SC_Auto_Apply_Coupon::is_coupon_valid_for_auto_apply()).
  */
 class Miguel_Mock_Sc_Auto_Apply {
 
@@ -408,6 +409,9 @@ class Miguel_Mock_Sc_Auto_Apply {
 	public static function auto_apply_coupons() {
 		$cart = WC()->cart;
 		if ( self::$applying || $cart->is_empty() || (float) $cart->get_cart_contents_total() <= 0 || $cart->has_discount( self::CODE ) ) {
+			return;
+		}
+		if ( true !== ( new WC_Discounts( $cart ) )->is_coupon_valid( new WC_Coupon( self::CODE ) ) ) {
 			return;
 		}
 
