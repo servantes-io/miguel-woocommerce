@@ -235,6 +235,62 @@ class Test_Miguel_Coupon_Preview_Api extends Miguel_Test_Case {
 		$this->assertSame( '1', get_user_meta( $user_id, '_woocommerce_load_saved_cart_after_login', true ) );
 	}
 
+	public function test_registered_customers_own_prices_stay_out_of_the_preview() {
+		$user_id = self::factory()->user->create( array( 'user_email' => 'buyer@example.com' ) );
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'c20' );
+		// A shop that prices a book its customer already has at 0 (dev.melvil.cz does, SERGEN-36).
+		$owned = static function ( $price ) use ( $user_id ) {
+			return get_current_user_id() === $user_id ? 0 : $price;
+		};
+		add_filter( 'woocommerce_product_get_price', $owned );
+
+		try {
+			$data = $this->data( $this->preview( $this->body( 'c20' ) ) );
+		} finally {
+			remove_filter( 'woocommerce_product_get_price', $owned );
+		}
+
+		$this->assertTrue( $data['applied'] );
+		$this->assertEquals( 319, $data['lines'][0]['before']['total'] );
+		$this->assertEquals( 255.2, $data['lines'][0]['after']['total'] );
+	}
+
+	public function test_registered_customers_usage_limit_still_refuses() {
+		$user_id = self::factory()->user->create( array( 'user_email' => 'buyer@example.com' ) );
+		$this->create_product( 'BOOK-A' );
+		$coupon = $this->create_coupon( 'once', array( 'usage_limit_per_user' => 1 ) );
+		$coupon->increase_usage_count( $user_id );
+
+		$data = $this->data( $this->preview( $this->body( 'once' ) ) );
+
+		$this->assertFalse( $data['applied'] );
+		$this->assertContains(
+			$data['error_code'],
+			array( WC_Coupon::E_WC_COUPON_USAGE_LIMIT_REACHED, WC_Coupon::E_WC_COUPON_USAGE_LIMIT_COUPON_STUCK )
+		);
+	}
+
+	public function test_coupon_only_the_registered_customer_may_use_is_priced_as_theirs() {
+		$user_id = self::factory()->user->create( array( 'user_email' => 'buyer@example.com' ) );
+		$this->create_product( 'BOOK-A' );
+		$this->create_coupon( 'mine' );
+		$only_them = static function ( $valid ) use ( $user_id ) {
+			return $valid && get_current_user_id() === $user_id;
+		};
+		add_filter( 'woocommerce_coupon_is_valid', $only_them );
+
+		try {
+			$data = $this->data( $this->preview( $this->body( 'mine' ) ) );
+		} finally {
+			remove_filter( 'woocommerce_coupon_is_valid', $only_them );
+		}
+
+		$this->assertTrue( $data['applied'] );
+		$this->assertEquals( 319, $data['lines'][0]['before']['total'] );
+		$this->assertEquals( 255.2, $data['lines'][0]['after']['total'] );
+	}
+
 	public function test_tax_without_an_address_is_the_web_cart_tax() {
 		update_option( 'woocommerce_calc_taxes', 'yes' );
 		update_option( 'woocommerce_prices_include_tax', 'yes' );

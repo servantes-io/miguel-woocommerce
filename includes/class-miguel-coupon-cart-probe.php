@@ -133,10 +133,11 @@ class Miguel_Coupon_Cart_Probe {
 			$key = $keys[ $index ];
 			if ( null === $key || ! isset( $contents[ $key ] ) ) {
 				$line_cells[ $index ] = array(
-					'in_cart_quantity' => 0,
-					'unit_price'       => 0.0,
-					'total'            => 0.0,
-					'tax'              => 0.0,
+					'in_cart_quantity'   => 0,
+					'unit_price'         => 0.0,
+					'total'              => 0.0,
+					'tax'                => 0.0,
+					'regular_unit_price' => 0.0,
 				);
 				continue;
 			}
@@ -148,10 +149,12 @@ class Miguel_Coupon_Cart_Probe {
 			$in_cart           = min( (int) $line['quantity'], $item_quantity );
 
 			$line_cells[ $index ] = array(
-				'in_cart_quantity' => $in_cart,
-				'unit_price'       => self::money( $unit_price ),
-				'total'            => self::money( $unit_price * $in_cart ),
-				'tax'              => self::money( (float) $item['line_tax'] / $item_quantity * $in_cart ),
+				'in_cart_quantity'   => $in_cart,
+				'unit_price'         => self::money( $unit_price ),
+				'total'              => self::money( $unit_price * $in_cart ),
+				'tax'                => self::money( (float) $item['line_tax'] / $item_quantity * $in_cart ),
+				// The price a coupon on a shop like Melvil's comes off, whatever the cart charges without it.
+				'regular_unit_price' => self::money( wc_get_price_including_tax( $item['data'], array( 'price' => (float) $item['data']->get_regular_price() ) ) ),
 			);
 		}
 

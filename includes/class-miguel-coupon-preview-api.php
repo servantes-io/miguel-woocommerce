@@ -75,8 +75,9 @@ class Miguel_Coupon_Preview_Api {
 	/**
 	 * Show what a coupon code does to a cart.
 	 *
-	 * The cart is priced twice in a throwaway WooCommerce cart, without and with the coupon. A
-	 * coupon the shop refuses is a normal answer (200 with `applied` false), not an error.
+	 * The cart is priced in throwaway WooCommerce carts, without and with the coupon (see
+	 * price_both()). A coupon the shop refuses is a normal answer (200 with `applied` false), not
+	 * an error.
 	 *
 	 * @param WP_REST_Request $request REST request.
 	 * @return WP_REST_Response|WP_Error
@@ -131,8 +132,7 @@ class Miguel_Coupon_Preview_Api {
 		$silenced = in_array( 'location', $unchecked, true ) ? $this->silence_location_validator() : null;
 
 		try {
-			$before = $this->probe->price( $lines, null, $customer );
-			$after  = $this->probe->price( $lines, $code, $customer );
+			list( $before, $after ) = $this->price_both( $lines, $code, $customer );
 		} catch ( Throwable $e ) {
 			Miguel::debug_log(
 				'Coupon preview failed',
@@ -156,6 +156,39 @@ class Miguel_Coupon_Preview_Api {
 		}
 
 		return new WP_REST_Response( $this->build_response( $sent_code, $code, $coupon, $sent_lines, $before, $after, $unchecked ), 200 );
+	}
+
+	/**
+	 * The cart without and with the coupon, both priced for a guest with the customer's e-mail.
+	 *
+	 * A shop may price its registered customer's cart differently (dev.melvil.cz prices a book the
+	 * customer already has at 0), and Miguel compares the lines with its own prices. Whether the
+	 * coupon is theirs to use (per-user limits, a role rule) is judged in a third cart priced for the
+	 * customer; a coupon only they may use is priced in their cart throughout.
+	 *
+	 * @param array  $lines    Lines for the probe.
+	 * @param string $code     Formatted coupon code.
+	 * @param array  $customer Result of build_customer().
+	 * @return array array( $before, $after ) snapshots.
+	 */
+	private function price_both( array $lines, $code, array $customer ) {
+		$guest  = array_merge( $customer, array( 'user_id' => 0 ) );
+		$before = $this->probe->price( $lines, null, $guest );
+		if ( 0 === $customer['user_id'] ) {
+			return array( $before, $this->probe->price( $lines, $code, $guest ) );
+		}
+
+		$verdict = $this->probe->price( $lines, $code, $customer );
+		if ( ! in_array( $code, $verdict['coupons'], true ) ) {
+			return array( $before, $verdict );
+		}
+
+		$after = $this->probe->price( $lines, $code, $guest );
+		if ( ! in_array( $code, $after['coupons'], true ) ) {
+			return array( $this->probe->price( $lines, null, $customer ), $verdict );
+		}
+
+		return array( $before, $after );
 	}
 
 	/**
@@ -230,6 +263,8 @@ class Miguel_Coupon_Preview_Api {
 		if ( ! $applied ) {
 			$error_code = (int) ( $after['error_code'] ?? 0 );
 			$message    = $after['message'] ?? ( ! empty( $after['notices'] ) ? end( $after['notices'] ) : __( 'The coupon was removed from the cart.', 'miguel' ) );
+		} elseif ( $coupon->is_type( 'fixed_cart' ) ) {
+			$after = $this->settle_fixed_cart_remainder( (float) $coupon->get_amount(), $after );
 		}
 
 		$lines         = array();
@@ -278,6 +313,68 @@ class Miguel_Coupon_Preview_Api {
 			'unchecked'     => $unchecked,
 			'notices'       => array_values( array_unique( array_merge( $before['notices'], $after['notices'] ) ) ),
 		);
+	}
+
+	/**
+	 * The cart with a fixed_cart coupon's amount taken off exactly.
+	 *
+	 * A shop that puts the coupon in the line prices can miss the amount by its rounding: Melvil
+	 * takes equal shares off the regular prices and rounds each unit, so 100 off 399, 429 and 449 is
+	 * 366 + 396 + 416 = 1178, not 1177. When the lines' discount off their regular prices is that
+	 * close to the amount, the units left over go to the dearest lines one each, as WooCommerce's
+	 * own remainder does. A line takes one only when the whole step fits its quantity, so a unit
+	 * price is never split. Any other cart (WooCommerce's own split is exact) is left as it is.
+	 *
+	 * @param float $amount The coupon's amount.
+	 * @param array $after  Snapshot with the coupon.
+	 * @return array The snapshot, its line prices and item totals settled.
+	 */
+	private function settle_fixed_cart_remainder( $amount, array $after ) {
+		$decimals = wc_get_price_decimals();
+		$step     = pow( 10, -$decimals );
+		$units    = 0;
+		$discount = 0.0;
+		foreach ( $after['lines'] as $line ) {
+			$units    += $line['in_cart_quantity'];
+			$discount += $line['regular_unit_price'] * $line['in_cart_quantity'] - $line['total'];
+		}
+
+		$steps = (int) round( ( $amount - $discount ) / $step );
+		if ( 0 === $steps || abs( $steps ) > $units / 2 ) {
+			return $after;
+		}
+
+		// Dearest first; a missing discount lowers prices, an excess raises them.
+		$order = array_keys( $after['lines'] );
+		usort(
+			$order,
+			function ( $a, $b ) use ( $after ) {
+				return $after['lines'][ $b ]['unit_price'] <=> $after['lines'][ $a ]['unit_price'];
+			}
+		);
+		$change    = $steps > 0 ? -$step : $step;
+		$remaining = abs( $steps );
+		$settled   = 0.0;
+		foreach ( $order as $index ) {
+			$line = $after['lines'][ $index ];
+			$unit = $line['unit_price'] + $change;
+			if ( 0 === $line['in_cart_quantity'] || $line['in_cart_quantity'] > $remaining || $unit < 0 ) {
+				continue;
+			}
+
+			$after['lines'][ $index ]['unit_price'] = round( $unit, $decimals );
+			$after['lines'][ $index ]['total']      = round( $unit * $line['in_cart_quantity'], $decimals );
+			$settled                               += $change * $line['in_cart_quantity'];
+			$remaining                             -= $line['in_cart_quantity'];
+			if ( 0 === $remaining ) {
+				break;
+			}
+		}
+
+		$after['totals']['items'] = round( $after['totals']['items'] + $settled, $decimals );
+		$after['totals']['total'] = round( $after['totals']['total'] + $settled, $decimals );
+
+		return $after;
 	}
 
 	/**

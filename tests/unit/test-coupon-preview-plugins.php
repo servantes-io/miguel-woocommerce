@@ -44,6 +44,7 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 				$mock::uninstall();
 			}
 		}
+		delete_option( 'woocommerce_price_num_decimals' );
 
 		parent::tearDown();
 	}
@@ -485,5 +486,83 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 		$this->assertEquals( 0, $data['totals']['after']['discount'] );
 		$this->assertEquals( 271, $data['totals']['before']['total'] );
 		$this->assertEquals( 255, $data['totals']['after']['total'] );
+	}
+
+	/**
+	 * Three books at 399, 429 and 449 and a fixed_cart coupon of 100 off the cart.
+	 *
+	 * @return array Request lines.
+	 */
+	private function three_books_and_100_off() {
+		$this->create_product( 'BOOK-A', '399' );
+		$this->create_product( 'BOOK-B', '429' );
+		$this->create_product( 'BOOK-C', '449' );
+		$this->create_coupon(
+			'100korun',
+			array(
+				'discount_type' => 'fixed_cart',
+				'amount'        => 100,
+			)
+		);
+
+		return array_map(
+			fn( $code ) => array(
+				'product_code' => $code,
+				'quantity'     => 1,
+			),
+			array( 'BOOK-A', 'BOOK-B', 'BOOK-C' )
+		);
+	}
+
+	public function test_melvil_style_fixed_cart_coupon_takes_off_exactly_its_amount() {
+		// Melvil prices in whole crowns.
+		update_option( 'woocommerce_price_num_decimals', 0 );
+		Miguel_Mock_Melvil_Pricing::install();
+		$lines = $this->three_books_and_100_off();
+
+		$data = $this->preview( $this->body( '100korun', array( 'line_items' => $lines ) ) );
+
+		// Melvil takes 33.33 off each regular price and rounds each: 366 + 396 + 416 is 1178, not
+		// 1277 less 100. The unit left over comes off the dearest line, as WooCommerce's remainder does.
+		$this->assertTrue( $data['applied'] );
+		$this->assertEquals( array( 366, 396, 415 ), array_map( fn( $line ) => $line['after']['total'], $data['lines'] ) );
+		$this->assertEquals( 415, $data['lines'][2]['after']['unit_price'] );
+		$this->assertEquals( 382 - 415, $data['lines'][2]['discount'] );
+		$this->assertEquals( 1177, $data['totals']['after']['items'] );
+		$this->assertEquals( 1177, $data['totals']['after']['total'] );
+	}
+
+	public function test_melvil_style_fixed_cart_remainder_never_splits_a_unit_price() {
+		// Melvil prices in whole crowns.
+		update_option( 'woocommerce_price_num_decimals', 0 );
+		Miguel_Mock_Melvil_Pricing::install();
+		$this->create_product( 'BOOK-A', '429' );
+		$this->create_coupon(
+			'100korun',
+			array(
+				'discount_type' => 'fixed_cart',
+				'amount'        => 100,
+			)
+		);
+		$line = array(
+			'product_code' => 'BOOK-A',
+			'quantity'     => 3,
+		);
+
+		$data = $this->preview( $this->body( '100korun', array( 'line_items' => array( $line ) ) ) );
+
+		// Three copies at 396 are 1188; 1187 would need a unit price of 395.67, which the shop cannot charge.
+		$this->assertEquals( 396, $data['lines'][0]['after']['unit_price'] );
+		$this->assertEquals( 1188, $data['lines'][0]['after']['total'] );
+		$this->assertEquals( 1188, $data['totals']['after']['total'] );
+	}
+
+	public function test_plain_fixed_cart_coupon_is_left_as_woocommerce_spreads_it() {
+		$lines = $this->three_books_and_100_off();
+
+		$data = $this->preview( $this->body( '100korun', array( 'line_items' => $lines ) ) );
+
+		$this->assertEquals( 1177, $data['totals']['after']['total'] );
+		$this->assertEqualsWithDelta( 100, array_sum( array_column( $data['lines'], 'discount' ) ), 0.001 );
 	}
 }
