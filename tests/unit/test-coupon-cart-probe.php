@@ -269,7 +269,7 @@ class Test_Miguel_Coupon_Cart_Probe extends Miguel_Test_Case {
 		$this->assertContains( 'c20', $result['coupons'] );
 	}
 
-	public function test_refusal_beside_an_individual_use_coupon_carries_its_code() {
+	public function test_individual_use_coupon_the_shop_applies_does_not_refuse_the_requested_coupon() {
 		list( $lines ) = $this->two_lines();
 		$this->create_coupon( 'c20' );
 		$this->create_coupon( 'solo', array( 'individual_use' => true ) );
@@ -277,9 +277,21 @@ class Test_Miguel_Coupon_Cart_Probe extends Miguel_Test_Case {
 
 		$result = Miguel_Coupon_Cart_Probe::price( $lines, 'c20', $this->customer() );
 
-		$this->assertSame( WC_Coupon::E_WC_COUPON_ALREADY_APPLIED_INDIV_USE_ONLY, $result['error_code'] );
-		$this->assertIsString( $result['message'] );
-		$this->assertSame( array( 'solo' ), $result['coupons'] );
+		$this->assertNull( $result['error_code'] );
+		$this->assertSame( array( 'c20' ), $result['coupons'] );
+		$this->assertSame( array( 'solo' ), $result['left_out'] );
+	}
+
+	public function test_coupon_the_shop_applies_stays_out_of_the_cart_without_a_coupon() {
+		list( $lines ) = $this->two_lines();
+		$this->create_coupon( 'auto', array( 'amount' => 100 ) );
+		$this->auto_apply( 'auto' );
+
+		$result = Miguel_Coupon_Cart_Probe::price( $lines, null, $this->customer() );
+
+		$this->assertSame( array(), $result['coupons'] );
+		$this->assertSame( array( 'auto' ), $result['left_out'] );
+		$this->assertEqualsWithDelta( 319, $result['lines'][0]['total'], 0.001 );
 	}
 
 	public function test_line_the_shop_will_not_add() {

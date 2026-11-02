@@ -18,7 +18,7 @@ class Miguel_Coupon_Cart_Probe {
 	 * @param array       $lines       List of array( 'product_id' => int, 'quantity' => int ).
 	 * @param string|null $coupon_code Coupon code, or null to price the lines without a coupon.
 	 * @param array       $customer    Customer descriptor, see Miguel_Isolated_Cart::run().
-	 * @return array See the keys lines, extra, coupons, error_code, message, totals and notices.
+	 * @return array See the keys lines, extra, coupons, left_out, error_code, message, totals and notices.
 	 * @throws Throwable Whatever the cart throws, after everything is restored.
 	 */
 	public static function price( array $lines, $coupon_code, array $customer ) {
@@ -31,6 +31,20 @@ class Miguel_Coupon_Cart_Probe {
 			add_filter( 'woocommerce_cart_ready_to_calc_shipping', $no_shipping, PHP_INT_MAX );
 		}
 
+		// A Miguel order carries only the requested coupon, so one the shop applies on its own (Smart
+		// Coupons auto-apply checks validity first; dev.melvil.cz gives staff e-mails 100 %) stays out.
+		$requested     = null === $coupon_code ? '' : wc_strtolower( wc_format_coupon_code( (string) $coupon_code ) );
+		$left_out       = array();
+		$only_requested = static function ( $valid, $coupon ) use ( $requested, &$left_out ) {
+			$code = $coupon instanceof WC_Coupon ? wc_strtolower( wc_format_coupon_code( $coupon->get_code() ) ) : '';
+			if ( '' === $code || $code === $requested ) {
+				return $valid;
+			}
+			$left_out[ $code ] = true;
+			return false;
+		};
+		add_filter( 'woocommerce_coupon_is_valid', $only_requested, PHP_INT_MAX, 2 );
+
 		try {
 			$ran = Miguel_Isolated_Cart::run(
 				$customer,
@@ -40,10 +54,12 @@ class Miguel_Coupon_Cart_Probe {
 			);
 		} finally {
 			remove_filter( 'woocommerce_cart_ready_to_calc_shipping', $no_shipping, PHP_INT_MAX );
+			remove_filter( 'woocommerce_coupon_is_valid', $only_requested, PHP_INT_MAX );
 		}
 
-		$snapshot            = $ran['result'];
-		$snapshot['notices'] = $ran['notices'];
+		$snapshot             = $ran['result'];
+		$snapshot['left_out'] = array_keys( $left_out );
+		$snapshot['notices']  = $ran['notices'];
 
 		return $snapshot;
 	}

@@ -962,8 +962,9 @@ components:
         other_coupons:
           type: array
           description: >
-            Codes the shop applied on its own (such as Smart Coupons auto-apply) in either cart.
-            They are part of both `before` and `after`.
+            Codes the shop would have applied on its own (such as Smart Coupons auto-apply) in
+            either cart. A Miguel order carries only the requested coupon, so they are left out
+            of both `before` and `after`.
           items:
             type: string
         unchecked:

@@ -7,6 +7,7 @@
 * `POST /orders` and `POST /coupons/preview` no longer load the whole catalogue on every request to find the products of Miguel's product codes: the code map is kept between requests and rebuilt after a product's SKU, downloads or Miguel code changes, after it is published, trashed or deleted, or when the print suffix changes. On a large shop that cost seconds per request, enough for Miguel to give up on a coupon preview
 * Fixed `POST /coupons/preview` for a customer with a WordPress account: the cart is priced for a guest with the customer's e-mail, so the shop's prices for that account (dev.melvil.cz prices a book the customer already has at 0) no longer stand in for the prices Miguel compares with. Whether the coupon is the customer's to use (per-user limits, role rules) is still judged as them (SERGEN-36)
 * Fixed `POST /coupons/preview` for a fixed-cart coupon on a shop that puts the discount in rounded line prices (Melvil): the lines now add up to exactly the coupon's amount off, e.g. 100 off 399, 429 and 449 is 1177, not 1178 (SERGEN-36)
+* Fixed `POST /coupons/preview` for a customer the shop gives a coupon of its own: a coupon the shop applies by itself (Smart Coupons auto-apply, e.g. dev.melvil.cz's 100 % `slevapromelvil` for staff e-mails) stays out of both carts, since a Miguel order carries only the requested coupon, and is still listed in `other_coupons` (SERGEN-36)
 
 ## 1.11.0
 
