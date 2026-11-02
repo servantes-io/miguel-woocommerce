@@ -425,7 +425,9 @@ class Miguel_Mock_Sc_Auto_Apply {
  * Melvil's pricing (WcMelvilCart / WcMelvilPrices) for a printed book: on
  * woocommerce_before_calculate_totals (priority 20, on the cart it is handed) every line is priced
  * at the shop's 15 % off its regular price, or, while a percent coupon is applied, at the coupon's
- * percentage off the regular price instead (the two never add up), rounded to whole units; and
+ * percentage off the regular price instead (the two never add up), rounded to whole units; a
+ * fixed_cart coupon's amount comes off the regular prices instead in equal shares per unit, each
+ * unit rounded on its own (100 off 399, 429 and 449 is 366, 396 and 416, as on dev.melvil.cz); and
  * WooCommerce's own discount for any coupon is forced to 0 (WcMelvilCart::disable_coupon_on_bundles
  * returns 0 for every item, after melvil_coupon_get_discount_amount at the same priority).
  */
@@ -454,17 +456,24 @@ class Miguel_Mock_Melvil_Pricing {
 	 */
 	public static function before_calculate_totals( $cart ) {
 		$percent_off = 15.0;
+		$amount_off  = null;
 		foreach ( $cart->get_applied_coupons() as $code ) {
 			$coupon = new WC_Coupon( $code );
 			if ( $coupon->is_type( 'percent' ) ) {
 				$percent_off = (float) $coupon->get_amount();
 				break;
 			}
+			if ( $coupon->is_type( 'fixed_cart' ) ) {
+				$amount_off = (float) $coupon->get_amount();
+				break;
+			}
 		}
 
+		$units = max( 1, array_sum( wp_list_pluck( $cart->get_cart(), 'quantity' ) ) );
 		foreach ( $cart->get_cart() as $item ) {
 			$regular = (float) $item['data']->get_regular_price();
-			$item['data']->set_price( round( $regular - $regular * $percent_off / 100 ) );
+			$price   = null === $amount_off ? $regular - $regular * $percent_off / 100 : $regular - $amount_off / $units;
+			$item['data']->set_price( round( $price ) );
 		}
 	}
 
