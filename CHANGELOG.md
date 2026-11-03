@@ -8,6 +8,7 @@
 * Fixed `POST /coupons/preview` for a customer with a WordPress account: the cart is priced for a guest with the customer's e-mail, so the shop's prices for that account (dev.melvil.cz prices a book the customer already has at 0) no longer stand in for the prices Miguel compares with. Whether the coupon is the customer's to use (per-user limits, role rules) is still judged as them (SERGEN-36)
 * Fixed `POST /coupons/preview` for a fixed-cart coupon on a shop that puts the discount in rounded line prices (Melvil): the lines now add up to exactly the coupon's amount off, e.g. 100 off 399, 429 and 449 is 1177, not 1178 (SERGEN-36)
 * Fixed `POST /coupons/preview` for a customer the shop gives a coupon of its own: a coupon the shop applies by itself (Smart Coupons auto-apply, e.g. dev.melvil.cz's 100 % `slevapromelvil` for staff e-mails) stays out of both carts, since a Miguel order carries only the requested coupon, and is still listed in `other_coupons` (SERGEN-36)
+* A coupon limited to X items (e.g. test100, 100 % off one book) now goes to the cheapest items in the cart, or the dearest when Smart Coupons' "Apply discount on" is set to the highest priced product, on the web and in Miguel's coupon preview alike. Melvil's pricing gave it to the first items in cart order; the plugin orders the cart by price just for Melvil's pricing and puts the customer's order back right after (SERGEN-36)
 
 ## 1.11.0
 

@@ -512,6 +512,59 @@ class Test_Miguel_Coupon_Preview_Plugins extends Miguel_Test_Case {
 	}
 
 	/**
+	 * Books at 382, 365 and 339 in the given order and test100, 100 % off one item.
+	 *
+	 * @param string[] $order Product codes in cart order.
+	 * @param array    $meta  Coupon meta.
+	 * @return array Request lines.
+	 */
+	private function three_books_and_one_free( array $order, array $meta = array() ) {
+		$this->create_product( 'BOOK-A', '382' );
+		$this->create_product( 'BOOK-B', '365' );
+		$this->create_product( 'BOOK-C', '339' );
+		$this->create_coupon(
+			'test100',
+			array(
+				'amount'                 => 100,
+				'limit_usage_to_x_items' => 1,
+			),
+			$meta
+		);
+
+		return array_map(
+			fn( $code ) => array(
+				'product_code' => $code,
+				'quantity'     => 1,
+			),
+			$order
+		);
+	}
+
+	public function test_melvil_style_coupon_for_one_item_goes_to_the_cheapest() {
+		Miguel_Mock_Melvil_Pricing::install();
+		$lines = $this->three_books_and_one_free( array( 'BOOK-A', 'BOOK-B', 'BOOK-C' ) );
+
+		$data = $this->preview( $this->body( 'test100', array( 'line_items' => $lines ) ) );
+
+		// Melvil gives it to the first item in the cart, which made the free book depend on the order.
+		$this->assertTrue( $data['applied'] );
+		$this->assertSame( array( 'BOOK-A', 'BOOK-B', 'BOOK-C' ), array_column( $data['lines'], 'product_code' ) );
+		$this->assertEquals( array( 325, 310, 0 ), array_map( fn( $line ) => $line['after']['total'], $data['lines'] ) );
+	}
+
+	public function test_melvil_style_coupon_for_one_item_set_to_the_highest_priced_goes_to_the_dearest() {
+		Miguel_Mock_Melvil_Pricing::install();
+		$lines = $this->three_books_and_one_free(
+			array( 'BOOK-C', 'BOOK-B', 'BOOK-A' ),
+			array( 'wc_sc_cheapest_costliest_settings' => '1_costliest_cart' )
+		);
+
+		$data = $this->preview( $this->body( 'test100', array( 'line_items' => $lines ) ) );
+
+		$this->assertEquals( array( 288, 310, 0 ), array_map( fn( $line ) => $line['after']['total'], $data['lines'] ) );
+	}
+
+	/**
 	 * Three books at 399, 429 and 449 and a fixed_cart coupon of 100 off the cart.
 	 *
 	 * @return array Request lines.

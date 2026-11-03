@@ -101,6 +101,7 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-coupon-preview-api.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-isolated-cart.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-coupon-cart-probe.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-limited-coupon-items.php';
 
 		if ( is_admin() ) {
 			include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/admin/class-miguel-admin.php';
@@ -232,6 +233,7 @@ class Miguel {
 
 		// Like the gateway, the resolver's cache talks to nothing outside the shop.
 		Miguel_Product_Code_Resolver::register_cache_hooks( $this->hook_manager );
+		Miguel_Limited_Coupon_Items::register_hooks( $this->hook_manager );
 
 		if ( ! defined( 'MIGUEL_TESTS' ) ) {
 			// Initialize services and register their hooks
