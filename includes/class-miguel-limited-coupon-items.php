@@ -51,11 +51,10 @@ class Miguel_Limited_Coupon_Items {
 
 		$contents = $cart->get_cart_contents();
 		$keys     = array_keys( $contents );
-		$position = array_flip( $keys );
-		uksort(
+		// Sorting is stable since PHP 8, so equal prices keep the customer's order.
+		uasort(
 			$contents,
-			fn( $a, $b ) => $direction * ( (float) $contents[ $a ]['data']->get_regular_price() <=> (float) $contents[ $b ]['data']->get_regular_price() )
-				?: $position[ $a ] <=> $position[ $b ]
+			fn( $a, $b ) => $direction * ( (float) $a['data']->get_regular_price() <=> (float) $b['data']->get_regular_price() )
 		);
 
 		self::$keys[ spl_object_id( $cart ) ] = $keys;
