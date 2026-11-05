@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.11.1
+
+Released 2026-11-05
+
+* The plugin package no longer contains development files: the `docs` and `scripts` folders, `CLAUDE.md` and the test Docker setup
+
 ## 1.11.0
 
 Released 2026-11-05

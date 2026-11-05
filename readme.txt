@@ -3,7 +3,7 @@ Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 1.11.0
+Stable tag: 1.11.1
 Requires PHP: 8.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -160,5 +160,9 @@ The interactive wizard allows you to set the screen size for which the resulting
 * Orders Miguel creates with a pickup point pass it to the shop's carrier plugin (Zásilkovna, Balíkovna, GLS), so Shipmall exports the order with its branch
 * Fixed repeated order requests from Miguel: a retried request returns the order it already created instead of creating another one
 * Fixed the totals of orders created by Miguel: its prices are taken as including tax, so the order total matches Miguel
+
+= 1.11.1 =
+
+* The plugin package is smaller: it no longer contains files used only for development
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)

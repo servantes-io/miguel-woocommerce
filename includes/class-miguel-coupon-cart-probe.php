@@ -32,7 +32,7 @@ class Miguel_Coupon_Cart_Probe {
 		}
 
 		// A Miguel order carries only the requested coupon, so one the shop applies on its own (Smart
-		// Coupons auto-apply checks validity first; dev.melvil.cz gives staff e-mails 100 %) stays out.
+		// Coupons auto-apply checks validity first; a shop may give some e-mails 100 %) stays out.
 		$requested     = null === $coupon_code ? '' : wc_strtolower( wc_format_coupon_code( (string) $coupon_code ) );
 		$left_out       = array();
 		$only_requested = static function ( $valid, $coupon ) use ( $requested, &$left_out ) {
@@ -169,7 +169,7 @@ class Miguel_Coupon_Cart_Probe {
 				'unit_price'         => self::money( $unit_price ),
 				'total'              => self::money( $unit_price * $in_cart ),
 				'tax'                => self::money( (float) $item['line_tax'] / $item_quantity * $in_cart ),
-				// The price a coupon on a shop like Melvil's comes off, whatever the cart charges without it.
+				// The price a coupon on a shop with its own pricing comes off, whatever the cart charges without it.
 				'regular_unit_price' => self::money( wc_get_price_including_tax( $item['data'], array( 'price' => (float) $item['data']->get_regular_price() ) ) ),
 			);
 		}

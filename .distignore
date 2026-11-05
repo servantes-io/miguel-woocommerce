@@ -2,8 +2,12 @@
 /.git
 /.github
 /.vscode
+/.claude
+/.superpowers
 /tests
 /coverage
+/docs
+/scripts
 
 .distignore
 .gitignore
@@ -17,6 +21,7 @@ phpunit.xml
 phpcs-woocommerce.xml
 README.md
 CHANGELOG.md
+CLAUDE.md
 Makefile
 composer.json
 composer.lock
@@ -26,5 +31,8 @@ phpstan.neon.dist
 /*.zip
 
 docker-compose.yml
+docker-compose.test.yml
+docker-compose.smoke.yml
+Dockerfile.test
 /run
 /bin

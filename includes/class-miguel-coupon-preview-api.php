@@ -161,8 +161,8 @@ class Miguel_Coupon_Preview_Api {
 	/**
 	 * The cart without and with the coupon, both priced for a guest with the customer's e-mail.
 	 *
-	 * A shop may price its registered customer's cart differently (dev.melvil.cz prices a book the
-	 * customer already has at 0), and Miguel compares the lines with its own prices. Whether the
+	 * A shop may price its registered customer's cart differently (say, a book the customer already
+	 * has at 0), and Miguel compares the lines with its own prices. Whether the
 	 * coupon is theirs to use (per-user limits, a role rule) is judged in a third cart priced for the
 	 * customer; a coupon only they may use is priced in their cart throughout.
 	 *
@@ -318,8 +318,8 @@ class Miguel_Coupon_Preview_Api {
 	/**
 	 * The cart with a fixed_cart coupon's amount taken off exactly.
 	 *
-	 * A shop that puts the coupon in the line prices can miss the amount by its rounding: Melvil
-	 * takes equal shares off the regular prices and rounds each unit, so 100 off 399, 429 and 449 is
+	 * A shop that puts the coupon in the line prices can miss the amount by its rounding: taking
+	 * equal shares off the regular prices and rounding each unit, 100 off 399, 429 and 449 is
 	 * 366 + 396 + 416 = 1178, not 1177. When the lines' discount off their regular prices is that
 	 * close to the amount, the units left over go to the dearest lines one each, as WooCommerce's
 	 * own remainder does. A line takes one only when the whole step fits its quantity, so a unit

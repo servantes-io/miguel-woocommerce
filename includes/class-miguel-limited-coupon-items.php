@@ -8,11 +8,11 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Melvil's pricing (woocommerce-melvil, WcMelvilPrices::process_cart on
- * woocommerce_before_calculate_totals, priority 20) gives a coupon limited to X items to the first
- * X units in cart order, so which book was free depended on what the customer added first. Just
- * before it, the cart is ordered cheapest first, or dearest first for a coupon Smart Coupons sets
- * to "Highest priced qualifying product in cart"; just after, the customer's order is put back.
+ * A shop's pricing plugin (on woocommerce_before_calculate_totals, priority 20) can give a coupon
+ * limited to X items to the first X units in cart order, so which book was free depended on what
+ * the customer added first. Just before it, the cart is ordered cheapest first, or dearest first
+ * for a coupon Smart Coupons sets to "Highest priced qualifying product in cart"; just after, the
+ * customer's order is put back.
  */
 class Miguel_Limited_Coupon_Items {
 
@@ -39,7 +39,8 @@ class Miguel_Limited_Coupon_Items {
 	}
 
 	/**
-	 * Order the cart by regular price, which Melvil discounts from, for a coupon limited to X items.
+	 * Order the cart by regular price, which the pricing plugin discounts from, for a coupon limited
+	 * to X items.
 	 *
 	 * @param WC_Cart $cart The cart being calculated.
 	 */
@@ -79,7 +80,7 @@ class Miguel_Limited_Coupon_Items {
 
 	/**
 	 * 1 for cheapest first, -1 for dearest first, 0 when no applied coupon is limited to X items.
-	 * Melvil follows the first applied coupon with a limit, and so does this.
+	 * The pricing plugin follows the first applied coupon with a limit, and so does this.
 	 *
 	 * @param WC_Cart $cart The cart being calculated.
 	 * @return int
