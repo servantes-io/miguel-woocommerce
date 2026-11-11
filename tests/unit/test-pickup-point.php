@@ -213,6 +213,16 @@ class Test_Miguel_Pickup_Point extends Miguel_Test_Case {
 		$this->assertSame( 'b11000', $order->get_meta( 'tcp_pickup_id' ) );
 	}
 
+	public function test_balikovna_takes_cpost_uppercase_prefix_as_toret_prefix() {
+		$this->activate( 'toret-ceska-posta/toret-ceska-posta.php' );
+
+		// Česká pošta's map gives "B21137"; toret-ceska-posta keeps "b21137".
+		$order = $this->post_order( $this->pickup_order_payload( 'sergen32-balikovna-upper-b', $this->point( 'balikovna', 'B21137' ) ) );
+
+		$this->assertSame( 'b21137', $order->get_meta( 'tcp_pickup_id' ) );
+		$this->assertSame( 'b21137', $order->get_meta( 'tcp_pickup_linkid' ) );
+	}
+
 	public function test_balikovna_without_address_writes_no_address() {
 		$this->activate( 'toret-ceska-posta/toret-ceska-posta.php' );
 

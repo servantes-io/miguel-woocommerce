@@ -101,8 +101,9 @@ class Miguel_Pickup_Point {
 				);
 
 			case 'balikovna':
-				// toret-ceska-posta keeps a Balíkovna id with a leading "b".
-				$pickup_id = 0 === strpos( $id, 'b' ) ? $id : 'b' . $id;
+				// toret-ceska-posta keeps a Balíkovna id with a leading "b"; Česká pošta's map
+				// gives it with "B".
+				$pickup_id = 'b' . ltrim( $id, 'bB' );
 				$meta      = array(
 					'tcp_pickup_id'             => $pickup_id,
 					'tcp_pickup_linkid'         => $pickup_id,
