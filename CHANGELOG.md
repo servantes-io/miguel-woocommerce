@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+* Fixed the Balíkovna pickup point of a Miguel order: Česká pošta's map gives the point's id as `B21137`, which became `bB21137` in `tcp_pickup_id`, so Shipmall exported the branch as `B21137` instead of `21137`. The id is now stored as toret-ceska-posta keeps it, `b21137`, whether it comes with `b`, `B` or no prefix (SERGEN-32)
+
 ## 1.11.1
 
 Released 2026-11-05
