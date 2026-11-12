@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* Added `GET /orders/lookup?idempotency_key=…`, which tells Miguel whether the shop has the order it created with that key, without creating one: 200 with the order's id, status and creation date, 409 while a create with the key is still running, 404 when there is none. Miguel asks it when its create request got no answer, where repeating the create would make the order it wants to know about
+* Fixed `POST /orders` refusing an idempotency key for good after a create with it died (a PHP fatal error, a killed worker): its lock was never released, so every retry answered `idempotency.in_progress`. A lock older than 10 minutes is now taken over; if the dead create had already made the order, the retry answers with that order instead of creating a second one
+
 * Fixed the Balíkovna pickup point of a Miguel order: Česká pošta's map gives the point's id as `B21137`, which became `bB21137` in `tcp_pickup_id`, so Shipmall exported the branch as `B21137` instead of `21137`. The id is now stored as toret-ceska-posta keeps it, `b21137`, whether it comes with `b`, `B` or no prefix (SERGEN-32)
 
 ## 1.11.1

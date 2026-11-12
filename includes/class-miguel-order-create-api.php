@@ -17,6 +17,12 @@ class Miguel_Order_Create_Api {
 	const ASYNC_EMAIL_DISPATCH_ACTION = 'miguel_async_dispatch_order_emails';
 
 	/**
+	 * How long a create's lock means "still running" to a lookup. A create that died (a PHP fatal, a killed
+	 * worker) never deletes its lock, so an older one is not a create in progress.
+	 */
+	const LOOKUP_LOCK_FRESH_SECONDS = 600;
+
+	/**
 	 * Hook manager instance.
 	 *
 	 * @var Miguel_Hook_Manager_Interface
@@ -53,6 +59,15 @@ class Miguel_Order_Create_Api {
 	 * Register REST routes.
 	 */
 	public function register_routes() {
+		register_rest_route(
+			'miguel/v1',
+			'/orders/lookup',
+			array(
+				'methods' => WP_REST_Server::READABLE,
+				'callback' => array( $this, 'lookup_order' ),
+				'permission_callback' => array( $this, 'validate_api_access' ),
+			)
+		);
 		register_rest_route(
 			'miguel/v1',
 			'/orders',
@@ -138,6 +153,19 @@ class Miguel_Order_Create_Api {
 				return $this->build_replay_response( $replay_after_lock_fail['order_id'] );
 			}
 
+			$stale_lock = $this->stale_lock_value( $lock_option );
+			if ( null !== $stale_lock ) {
+				// The create holding the lock died. If it got as far as the order, answer with that order.
+				$dead_creates_order = $this->find_order_created_with_key( $idempotency_key, $result_option );
+				if ( $dead_creates_order ) {
+					$this->release_stale_lock( $lock_option, $stale_lock );
+					return $this->build_replay_response( $dead_creates_order->get_id() );
+				}
+				$lock_acquired = $this->release_stale_lock( $lock_option, $stale_lock )
+					&& add_option( $lock_option, (string) time(), '', 'no' );
+			}
+		}
+		if ( ! $lock_acquired ) {
 			return new WP_Error(
 				'idempotency.in_progress',
 				esc_html__( 'Request with this idempotency key is currently being processed.', 'miguel' ),
@@ -296,6 +324,129 @@ class Miguel_Order_Create_Api {
 			remove_filter( 'miguel_suppress_order_sync', '__return_true' );
 			delete_option( $lock_option );
 		}
+	}
+
+	/**
+	 * The order Miguel created with an idempotency key, without creating one. Miguel asks this when its create
+	 * request got no answer: a repeated create would make the order it wants to know about.
+	 *
+	 * 200 with the order, 409 while a create with the key is still running, 404 when the shop has no such order.
+	 *
+	 * @param WP_REST_Request $request REST request with `idempotency_key` (query) or the Idempotency-Key header.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function lookup_order( $request ) {
+		$params = $request->get_query_params();
+		$idempotency_key = $this->get_idempotency_key( $request, is_array( $params ) ? $params : array() );
+		if ( '' === $idempotency_key ) {
+			$idempotency_key = sanitize_text_field( trim( (string) $request->get_param( 'idempotency_key' ) ) );
+		}
+		if ( '' === $idempotency_key ) {
+			return new WP_Error(
+				'idempotency.key_required',
+				esc_html__( 'Idempotency key is required.', 'miguel' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$key_hash = hash( 'sha256', $idempotency_key );
+		$order = $this->find_order_created_with_key( $idempotency_key, 'miguel_order_idem_result_' . $key_hash );
+		if ( $order ) {
+			$created = $order->get_date_created();
+
+			return new WP_REST_Response(
+				array(
+					'id' => $order->get_id(),
+					'status' => $order->get_status(),
+					'date_created_gmt' => $created ? gmdate( 'Y-m-d\TH:i:s', $created->getTimestamp() ) : null,
+				),
+				200
+			);
+		}
+
+		$locked_at = (int) get_option( 'miguel_order_idem_lock_' . $key_hash, 0 );
+		if ( $locked_at > 0 && time() - $locked_at < self::LOOKUP_LOCK_FRESH_SECONDS ) {
+			return new WP_Error(
+				'idempotency.in_progress',
+				esc_html__( 'Request with this idempotency key is currently being processed.', 'miguel' ),
+				array( 'status' => 409 )
+			);
+		}
+
+		return new WP_Error(
+			'order.not_found',
+			esc_html__( 'No order was created with this idempotency key.', 'miguel' ),
+			array( 'status' => 404 )
+		);
+	}
+
+	/**
+	 * The lock's stored value when it is older than a create can run, i.e. left by a create that died; else null.
+	 *
+	 * @param string $lock_option Lock option name.
+	 * @return string|null
+	 */
+	private function stale_lock_value( $lock_option ) {
+		$value = get_option( $lock_option, false );
+		if ( false === $value ) {
+			return null;
+		}
+
+		return time() - (int) $value >= self::LOOKUP_LOCK_FRESH_SECONDS ? (string) $value : null;
+	}
+
+	/**
+	 * Deletes a stale lock only if it still holds the value read, so of two requests taking over the same dead
+	 * create's lock, the slower one cannot delete the lock the faster one has just taken.
+	 *
+	 * @param string $lock_option Lock option name.
+	 * @param string $stale_value The stale lock's value.
+	 * @return bool Whether the stale lock was deleted.
+	 */
+	private function release_stale_lock( $lock_option, $stale_value ) {
+		global $wpdb;
+
+		$deleted = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->options,
+			array(
+				'option_name'  => $lock_option,
+				'option_value' => $stale_value,
+			)
+		);
+		wp_cache_delete( $lock_option, 'options' );
+		wp_cache_delete( 'notoptions', 'options' );
+
+		return 1 === $deleted;
+	}
+
+	/**
+	 * The order created with a key: by the create's stored result, else by the key it put on the order.
+	 *
+	 * @param string $idempotency_key Idempotency key.
+	 * @param string $result_option   Option holding the create's result.
+	 * @return WC_Order|null
+	 */
+	private function find_order_created_with_key( $idempotency_key, $result_option ) {
+		$stored = get_option( $result_option, false );
+		if ( is_array( $stored ) && ! empty( $stored['order_id'] ) ) {
+			$order = wc_get_order( absint( $stored['order_id'] ) );
+			if ( $order ) {
+				return $order;
+			}
+		}
+
+		$ids = wc_get_orders(
+			array(
+				'limit' => 1,
+				'return' => 'ids',
+				'status' => 'any',
+				'meta_key' => '_miguel_idempotency_key', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => $idempotency_key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			)
+		);
+		$order = empty( $ids ) ? false : wc_get_order( (int) $ids[0] );
+
+		return $order ? $order : null;
 	}
 
 	/**
