@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Fixed the Balíkovna pickup point of a Miguel order: Česká pošta's map gives the point's id as `B21137`, which became `bB21137` in `tcp_pickup_id`, so Shipmall exported the branch as `B21137` instead of `21137`. The id is now stored as toret-ceska-posta keeps it, `b21137`, whether it comes with `b`, `B` or no prefix (SERGEN-32)
+* Fixed `GET /delivery-methods` reporting no cost for Toret's Balíkovna methods (`toret_tcp_balikovna`, `toret_tcp_balikovna_na_adresu`), which Miguel then offered as free: Toret prices from WooCommerce's cart, customer and session, which a REST request does not have, so its calculation failed. Rates are now calculated in an empty throwaway cart of a guest from the zone's country, and a method that still fails is logged as a warning (source `miguel`) (SERGEN-32)
 
 ## 1.11.1
 
