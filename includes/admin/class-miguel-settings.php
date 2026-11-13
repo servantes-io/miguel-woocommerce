@@ -157,6 +157,33 @@ class Miguel_Settings extends WC_Settings_Page {
 					'id'   => 'miguel_product_options',
 					'type' => 'sectionend',
 				),
+
+				array(
+					'id'    => 'miguel_open_app_options',
+					'type'  => 'title',
+					'title' => __( 'Open the app', 'miguel' ),
+					/* translators: 1: the address, 2: the shortcode that prints it. */
+					'desc'  => sprintf( __( 'Link the "read in the app" button to %1$s (shortcode %2$s). On a phone it opens the app with the signed-in customer signed in; otherwise it opens the app or its store page without signing in.', 'miguel' ), '<code>' . esc_html( Miguel_Open_App::url( 'web' ) ) . '</code>', '<code>[' . Miguel_Open_App::SHORTCODE . ']</code>' ),
+				),
+				array(
+					'id'      => Miguel_Open_App::ENABLED_OPTION,
+					'type'    => 'checkbox',
+					'title'   => __( 'Sign customers in to the app', 'miguel' ),
+					'desc'    => __( 'Let Miguel sign the shop\'s signed-in customer in to the app. Miguel allows it only for some applications.', 'miguel' ),
+					'default' => 'no',
+				),
+				array(
+					'id'      => Miguel_Open_App::FALLBACK_URL_OPTION,
+					'css'     => 'min-width: 350px;',
+					'type'    => 'url',
+					'title'   => __( 'Page when Miguel does not answer', 'miguel' ),
+					'desc'    => __( 'Where the button leads when Miguel cannot be reached. Leave empty for the home page.', 'miguel' ),
+					'default' => '',
+				),
+				array(
+					'id'   => 'miguel_open_app_options',
+					'type' => 'sectionend',
+				),
 			)
 		);
 

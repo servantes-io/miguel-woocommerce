@@ -35,6 +35,16 @@ function miguel_get_shortcode_atts( $shortcode, $defaults = array() ) {
 }
 
 /**
+ * The address of the theme's "read in the app" button: opens the app, with the shop's signed-in
+ * customer signed in where the shop allows it. The address itself never carries a token.
+ *
+ * @return string
+ */
+function miguel_open_app_url() {
+	return Miguel_Open_App::url( 'web' );
+}
+
+/**
  * Compose path to template file
  *
  * @param string $tpl Template file name (without extension)
