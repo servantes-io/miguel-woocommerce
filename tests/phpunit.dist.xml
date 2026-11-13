@@ -14,6 +14,9 @@
 
     <php>
         <const name="WP_RUN_CORE_TESTS" value="1" />
+        <!-- Errors are still displayed and still fail tests; logging them as well sends a copy
+             to stderr, which PHPUnit counts as an error in a @runInSeparateProcess test. -->
+        <ini name="log_errors" value="0" />
     </php>
 
     <testsuites>
