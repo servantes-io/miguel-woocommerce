@@ -85,10 +85,11 @@ components:
           description: >
             Shipping cost. Taken from the method's `cost` setting (flat_rate and methods
             following the same convention). When that setting is empty, the method is asked
-            to calculate its rates for an empty package addressed to the zone, and the cost
-            of its first rate is reported instead — this is how carriers that keep their
-            pricing outside WooCommerce (e.g. Toret Balíkovna) are priced. Empty string when
-            the method is disabled, produces no rate, or fails to calculate one.
+            to calculate its rates for an empty package addressed to the zone, in an empty
+            throwaway cart of a guest from the zone's country, and the cost of its first rate
+            is reported instead — this is how carriers that keep their pricing outside
+            WooCommerce (e.g. Toret Balíkovna) are priced. Empty string when the method is
+            disabled, produces no rate, or fails to calculate one.
             Excludes tax. See the endpoint description for the caveats.
           example: "5.00"
         min_amount:

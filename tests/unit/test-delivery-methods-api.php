@@ -106,6 +106,62 @@ class Miguel_Test_Calculated_Shipping_Method extends WC_Shipping_Method {
 }
 
 /**
+ * Replica of toret-ceska-posta's methods: calculate_shipping() ignores the package and prices
+ * from the shop's cart, customer and session, none of which exists during a REST request.
+ */
+class Miguel_Test_Cart_Priced_Shipping_Method extends WC_Shipping_Method {
+
+	/**
+	 * @param int $instance_id Instance ID.
+	 */
+	public function __construct( $instance_id = 0 ) {
+		$this->id           = 'miguel_test_cart_priced';
+		$this->instance_id  = absint( $instance_id );
+		$this->method_title = 'Cart priced';
+		$this->supports     = array( 'shipping-zones', 'instance-settings' );
+		$this->init();
+	}
+
+	/**
+	 * Instance settings deliberately declare no cost field.
+	 */
+	public function init() {
+		$this->instance_form_fields = array(
+			'enabled' => array(
+				'title'   => 'Povolit',
+				'type'    => 'checkbox',
+				'default' => 'yes',
+			),
+			'title'   => array(
+				'title'   => 'Titulek',
+				'type'    => 'text',
+				'default' => 'Balíkovna',
+			),
+		);
+		$this->init_instance_settings();
+		$this->enabled = $this->get_option( 'enabled' );
+		$this->title   = $this->get_option( 'title' );
+	}
+
+	/**
+	 * @param array $package Package, unused like Toret's.
+	 */
+	public function calculate_shipping( $package = array() ) {
+		$weight  = WC()->cart->get_cart_contents_weight();
+		$country = WC()->customer->get_shipping_country();
+		$payment = WC()->session->get( 'chosen_payment_method' );
+
+		$this->add_rate(
+			array(
+				'id'    => $this->get_rate_id(),
+				'label' => $this->title,
+				'cost'  => ( 'CZ' === $country ? 89 : 149 ) + ( 'cod' === $payment ? 30 : 0 ) + $weight,
+			)
+		);
+	}
+}
+
+/**
  * A third party method that blows up while calculating. The endpoint must survive it,
  * because WC()->cart and WC()->session are not available during a REST request.
  */
@@ -515,6 +571,7 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 	public function register_calculated_methods( $methods ) {
 		$methods['miguel_test_calculated'] = 'Miguel_Test_Calculated_Shipping_Method';
 		$methods['miguel_test_throwing']   = 'Miguel_Test_Throwing_Shipping_Method';
+		$methods['miguel_test_cart_priced'] = 'Miguel_Test_Cart_Priced_Shipping_Method';
 		return $methods;
 	}
 
@@ -625,6 +682,84 @@ class Test_Miguel_Delivery_Methods_Api extends Miguel_Test_Case {
 		$this->assertNotNull( $method, 'Expected zone not found in response' );
 		$this->assertSame( 'miguel_test_throwing', $method['method_id'] );
 		$this->assertSame( '', $method['cost'] );
+	}
+
+	/**
+	 * Fetch the first method of $zone_id the way a REST request sees the shop: with no cart,
+	 * session or customer. Puts the originals back afterwards.
+	 *
+	 * @param int $zone_id Zone ID.
+	 * @return array|null
+	 */
+	private function get_method_from_rest_context( $zone_id ) {
+		$wc    = WC();
+		$saved = array( $wc->cart, $wc->session, $wc->customer );
+
+		$wc->cart     = null;
+		$wc->session  = null;
+		$wc->customer = null;
+
+		try {
+			$method = $this->get_method_from_response( $zone_id );
+
+			$this->assertNull( $wc->cart, 'The throwaway cart must not outlive the request' );
+			$this->assertNull( $wc->session, 'The throwaway session must not outlive the request' );
+			$this->assertNull( $wc->customer, 'The throwaway customer must not outlive the request' );
+
+			return $method;
+		} finally {
+			list( $wc->cart, $wc->session, $wc->customer ) = $saved;
+		}
+	}
+
+	/**
+	 * Toret's Balíkovna prices from WC()->cart, WC()->customer and WC()->session, never from
+	 * the package (SERGEN-32). It gets a throwaway cart for a guest in the zone's country.
+	 */
+	public function test_cart_priced_method_gets_a_throwaway_cart_in_the_zone_country() {
+		$cz = $this->build_zone_with_method(
+			'Cart Priced CZ',
+			'CZ',
+			'miguel_test_cart_priced',
+			array(
+				'enabled' => 'yes',
+				'title'   => 'Balíkovna',
+			)
+		);
+		$de = $this->build_zone_with_method(
+			'Cart Priced DE',
+			'DE',
+			'miguel_test_cart_priced',
+			array(
+				'enabled' => 'yes',
+				'title'   => 'Balíkovna',
+			)
+		);
+
+		$this->assertSame( 89.0, (float) $this->get_method_from_rest_context( $cz->get_id() )['cost'] );
+		$this->assertSame( 149.0, (float) $this->get_method_from_rest_context( $de->get_id() )['cost'] );
+	}
+
+	/**
+	 * Pricing in a throwaway cart must leave the cart, session and customer it found alone.
+	 */
+	public function test_cart_priced_method_leaves_the_shops_cart_alone() {
+		$zone = $this->build_zone_with_method(
+			'Cart Priced Restore',
+			'CZ',
+			'miguel_test_cart_priced',
+			array(
+				'enabled' => 'yes',
+				'title'   => 'Balíkovna',
+			)
+		);
+
+		$wc     = WC();
+		$before = array( $wc->cart, $wc->session, $wc->customer );
+
+		$this->get_method_from_response( $zone->get_id() );
+
+		$this->assertSame( $before, array( $wc->cart, $wc->session, $wc->customer ) );
 	}
 
 	/**

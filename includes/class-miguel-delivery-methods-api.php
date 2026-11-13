@@ -228,8 +228,10 @@ class Miguel_Delivery_Methods_Api {
 	/**
 	 * Price a method by asking it to calculate its rates, the way the checkout does.
 	 *
-	 * Third party methods may reach for WC()->cart or WC()->session, neither of which exists
-	 * during a REST request, so a failure to price one method must not take the response down.
+	 * Third party methods may price from WC()->cart, WC()->customer and WC()->session rather
+	 * than the package (toret-ceska-posta does), and none of them exists during a REST request,
+	 * so the rates are calculated in an empty throwaway cart of a guest in the package's country.
+	 * A failure to price one method must still not take the response down.
 	 *
 	 * @param WC_Shipping_Method $method  Shipping method instance.
 	 * @param array              $package Package to price.
@@ -237,8 +239,24 @@ class Miguel_Delivery_Methods_Api {
 	 */
 	private function calculate_cost( $method, $package ) {
 		try {
-			$rates = $method->get_rates_for_package( $package );
+			$ran   = Miguel_Isolated_Cart::run(
+				array(
+					'email'           => '',
+					'user_id'         => 0,
+					'billing'         => array( 'country' => $package['destination']['country'] ),
+					'shipping'        => null,
+					'shipping_method' => null,
+				),
+				static function () use ( $method, $package ) {
+					return $method->get_rates_for_package( $package );
+				}
+			);
+			$rates = $ran['result'];
 		} catch ( Throwable $e ) {
+			Miguel::log(
+				sprintf( 'Delivery method %1$s:%2$d could not be priced: %3$s', $method->id, $method->get_instance_id(), $e->getMessage() ),
+				'warning'
+			);
 			return '';
 		}
 
