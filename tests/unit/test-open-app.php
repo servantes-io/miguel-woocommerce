@@ -59,10 +59,30 @@ class Miguel_Test_Open_App extends Miguel_Test_Case {
 		$this->open_app()->maybe_handle();
 
 		$this->assertSame( 1, $this->responses, 'the handler answers exactly once' );
-		$this->assertStringContainsString( 'no-store', $this->response['headers']['Cache-Control'] );
+		$this->assertNothingMayCacheIt( $this->response );
 		$this->assertStringNotContainsString( 'ulr-', $this->response['body'], 'the token is never in HTML' );
 
 		return $this->response;
+	}
+
+	/**
+	 * Every cache that may sit in front of WordPress is told, in the header it reads, not to store
+	 * the answer: browsers and proxies (Cache-Control, Expires, Pragma), CDNs (CDN-Cache-Control,
+	 * Cloudflare-CDN-Cache-Control, Surrogate-Control), nginx's FastCGI and proxy cache, which reads
+	 * X-Accel-Expires even where a host ignores Cache-Control, and LiteSpeed's server cache.
+	 */
+	private function assertNothingMayCacheIt( $response ) {
+		$headers = $response['headers'];
+		foreach ( array( 'no-store', 'no-cache', 'private', 'max-age=0' ) as $directive ) {
+			$this->assertStringContainsString( $directive, $headers['Cache-Control'] );
+		}
+		$this->assertLessThan( time(), strtotime( $headers['Expires'] ), 'Expires is in the past' );
+		$this->assertSame( 'no-cache', $headers['Pragma'] );
+		$this->assertSame( 'no-store', $headers['CDN-Cache-Control'] );
+		$this->assertSame( 'no-store', $headers['Cloudflare-CDN-Cache-Control'] );
+		$this->assertSame( 'no-store', $headers['Surrogate-Control'] );
+		$this->assertSame( '0', $headers['X-Accel-Expires'] );
+		$this->assertSame( 'no-cache', $headers['X-LiteSpeed-Cache-Control'] );
 	}
 
 	private function enable() {

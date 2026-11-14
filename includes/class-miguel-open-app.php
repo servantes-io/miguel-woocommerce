@@ -18,7 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Handled on the front end, where WordPress's login cookie applies (the REST API ignores it without
  * a nonce). The token only ever travels in a redirect's Location header, and no response may be
- * cached.
+ * cached: every one carries the no-cache header of each cache that may sit in front of WordPress
+ * (see `NO_CACHE_HEADERS`), and `DONOTCACHEPAGE` for page-cache plugins.
  *
  * @package Miguel
  */
@@ -28,6 +29,24 @@ class Miguel_Open_App {
 	const SHORTCODE           = 'miguel_open_app_url';
 	const ENABLED_OPTION      = 'miguel_open_app_enabled';
 	const FALLBACK_URL_OPTION = 'miguel_open_app_fallback_url';
+
+	/**
+	 * Sent with every response, each in the header its cache reads: browsers and shared proxies
+	 * (Cache-Control, Expires, Pragma for HTTP/1.0 ones), CDNs (CDN-Cache-Control per RFC 9213,
+	 * Cloudflare's own, Surrogate-Control for Fastly, Akamai and Varnish), nginx's FastCGI and proxy
+	 * cache (X-Accel-Expires, which it reads even where a host ignores Cache-Control) and LiteSpeed's
+	 * server cache. A cache configured to ignore all of them is the host's to exclude this address.
+	 */
+	const NO_CACHE_HEADERS = array(
+		'Cache-Control'                => 'no-store, no-cache, must-revalidate, max-age=0, private',
+		'Expires'                      => 'Wed, 11 Jan 1984 05:00:00 GMT',
+		'Pragma'                       => 'no-cache',
+		'CDN-Cache-Control'            => 'no-store',
+		'Cloudflare-CDN-Cache-Control' => 'no-store',
+		'Surrogate-Control'            => 'no-store',
+		'X-Accel-Expires'              => '0',
+		'X-LiteSpeed-Cache-Control'    => 'no-cache',
+	);
 
 	/**
 	 * Hook manager instance
@@ -191,10 +210,7 @@ class Miguel_Open_App {
 	private function redirect( $location ) {
 		return array(
 			'status'  => 302,
-			'headers' => array(
-				'Cache-Control' => 'no-store, private',
-				'Location'      => wp_sanitize_redirect( $location ),
-			),
+			'headers' => self::NO_CACHE_HEADERS + array( 'Location' => wp_sanitize_redirect( $location ) ),
 			'body'    => '',
 		);
 	}
@@ -214,10 +230,7 @@ class Miguel_Open_App {
 
 		return array(
 			'status'  => 200,
-			'headers' => array(
-				'Cache-Control' => 'no-store, private',
-				'Content-Type'  => 'text/html; charset=utf-8',
-			),
+			'headers' => self::NO_CACHE_HEADERS + array( 'Content-Type' => 'text/html; charset=utf-8' ),
 			'body'    => $body,
 		);
 	}
