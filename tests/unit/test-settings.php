@@ -36,7 +36,7 @@ class Test_Miguel_Settings extends Miguel_Test_Case {
 		$this->assertArrayHasKey( 'completed', $miguel_only['options'] );
 	}
 
-	public function test_settings_are_grouped_into_four_closed_sections() {
+	public function test_settings_are_grouped_into_five_closed_sections() {
 		$settings = ( new Miguel_Settings( new Miguel_Hook_Manager() ) )->get_settings();
 
 		$opened = array();
@@ -54,6 +54,7 @@ class Test_Miguel_Settings extends Miguel_Test_Case {
 			'miguel_order_options',
 			'miguel_order_status_options',
 			'miguel_product_options',
+			'miguel_open_app_options',
 		);
 
 		$this->assertSame( $expected, $opened );
@@ -120,5 +121,23 @@ class Test_Miguel_Settings extends Miguel_Test_Case {
 		$this->assertArrayNotHasKey( 'trash', $field['options'],
 			'trash is a post status, not an order status, and is always treated as a deletion' );
 		$this->assertSame( 'miguel_order_options', $this->section_of( $settings, Miguel_Orders::DELETED_STATUSES_OPTION ) );
+	}
+
+	public function test_settings_expose_the_open_app_switch_off_by_default_and_its_fallback() {
+		$settings = ( new Miguel_Settings( new Miguel_Hook_Manager() ) )->get_settings();
+
+		$by_id = array();
+		foreach ( $settings as $field ) {
+			if ( 'title' !== $field['type'] && 'sectionend' !== $field['type'] ) {
+				$by_id[ $field['id'] ] = $field;
+			}
+		}
+
+		$this->assertSame( 'checkbox', $by_id[ Miguel_Open_App::ENABLED_OPTION ]['type'] );
+		$this->assertSame( 'no', $by_id[ Miguel_Open_App::ENABLED_OPTION ]['default'] );
+		$this->assertSame( 'url', $by_id[ Miguel_Open_App::FALLBACK_URL_OPTION ]['type'] );
+		$this->assertSame( '', $by_id[ Miguel_Open_App::FALLBACK_URL_OPTION ]['default'] );
+		$this->assertSame( 'miguel_open_app_options', $this->section_of( $settings, Miguel_Open_App::ENABLED_OPTION ) );
+		$this->assertSame( 'miguel_open_app_options', $this->section_of( $settings, Miguel_Open_App::FALLBACK_URL_OPTION ) );
 	}
 }

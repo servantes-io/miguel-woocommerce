@@ -87,6 +87,7 @@ class Miguel {
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-product-code-source.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-download.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-orders.php';
+		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-open-app.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/trait-miguel-rest-auth.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-product-code-resolver.php';
 		include_once dirname( MIGUEL_PLUGIN_FILE ) . '/includes/class-miguel-products-api.php';
@@ -138,6 +139,13 @@ class Miguel {
 
 		$this->container->register( 'orders', function ( $container ) {
 			return new Miguel_Orders(
+				$container->get( 'hook_manager' ),
+				$container->get( 'v2_client' )
+			);
+		} );
+
+		$this->container->register( 'open_app', function ( $container ) {
+			return new Miguel_Open_App(
 				$container->get( 'hook_manager' ),
 				$container->get( 'v2_client' )
 			);
@@ -239,6 +247,7 @@ class Miguel {
 			// Initialize services and register their hooks
 			$this->container->get( 'download' )->register_hooks();
 			$this->container->get( 'orders' )->register_hooks();
+			$this->container->get( 'open_app' )->register_hooks();
 			$this->container->get( 'products_api' )->register_hooks();
 			$this->container->get( 'product_code_map_api' )->register_hooks();
 			$this->container->get( 'order_create_api' )->register_hooks();

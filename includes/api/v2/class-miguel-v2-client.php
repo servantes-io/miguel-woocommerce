@@ -140,6 +140,47 @@ class Miguel_V2_Client {
 	}
 
 	/**
+	 * Ask Miguel for the links that open the app for a shop's customer (SERGEN-33, contract point 3).
+	 *
+	 * With an email both links carry a one-time sign-in token, without one neither does. The answer is
+	 * never reported with its body: it holds the token.
+	 *
+	 * @param string|null $email The signed-in customer's email, or null.
+	 * @return array|WP_Error Decoded body ({ openUrl, appUrl, expiresAt }) or error.
+	 */
+	public function create_app_login_link( $email ) {
+		$operation = 'POST /v2/app-login-links';
+		// The visitor waits for this answer: give up quickly and let the caller fall back.
+		$response = $this->send( 'POST', 'v2/app-login-links', array( 'email' => $email ), 10 );
+		if ( is_wp_error( $response ) ) {
+			$this->report_unreachable( $operation, $response );
+			return $response;
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $code ) {
+			return $this->problem_to_wp_error( $response, $operation );
+		}
+
+		$decoded = json_decode( wp_remote_retrieve_body( $response ), true );
+		foreach ( array( 'openUrl', 'appUrl' ) as $field ) {
+			if ( ! is_array( $decoded ) || ! isset( $decoded[ $field ] ) || ! is_string( $decoded[ $field ] ) || '' === $decoded[ $field ] ) {
+				Miguel_Error_Reporter::report(
+					'MIGUEL_RESPONSE_INVALID',
+					$field . ' is missing or not a string',
+					array(
+						'operation'  => $operation,
+						'httpStatus' => $code,
+					)
+				);
+				return new WP_Error( 'miguel', __( 'Something went wrong.', 'miguel' ) );
+			}
+		}
+
+		return $decoded;
+	}
+
+	/**
 	 * Send an HTTP request.
 	 *
 	 * @param string     $method  HTTP method.
