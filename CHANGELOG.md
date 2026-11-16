@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 1.12.0
+
+Released 2026-11-16
+
+* Added `<shop>/?miguel-open-app=web|app`, which opens the Melvil app with the shop's signed-in customer signed in (SMP-24). The plugin asks Miguel's `POST /v2/app-login-links` for a one-time sign-in and redirects to the link it returns; the token travels only in the redirect's `Location` header, and every response tells browsers, CDNs, proxies and page-cache plugins not to store it. `web` is for the theme's "read in the app" button (`miguel_open_app_url()` or the `[miguel_open_app_url]` shortcode): it signs the customer in only on a phone, and otherwise opens the app without signing in. `app` is the app's sign-in window: a signed-out visitor goes through the shop's login first. Signing in is off until "Sign customers in to the app" is switched on in the new "Open the app" settings section, which also sets the page the button leads to when Miguel cannot be reached (the home page when empty)
+
+## 1.11.2
+
+Released 2026-11-13
 
 * Fixed the Balíkovna pickup point of a Miguel order: Česká pošta's map gives the point's id as `B21137`, which became `bB21137` in `tcp_pickup_id`, so Shipmall exported the branch as `B21137` instead of `21137`. The id is now stored as toret-ceska-posta keeps it, `b21137`, whether it comes with `b`, `B` or no prefix (SERGEN-32)
 * Fixed `GET /delivery-methods` reporting no cost for Toret's Balíkovna methods (`toret_tcp_balikovna`, `toret_tcp_balikovna_na_adresu`), which Miguel then offered as free: Toret prices from WooCommerce's cart, customer and session, which a REST request does not have, so its calculation failed. Rates are now calculated in an empty throwaway cart of a guest from the zone's country, and a method that still fails is logged as a warning (source `miguel`) (SERGEN-32)

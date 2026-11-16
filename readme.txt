@@ -3,7 +3,7 @@ Contributors: servantesczech
 Tags: ebooks, audiobooks, watermarked, social-drm, woocommerce
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 1.11.2
+Stable tag: 1.12.0
 Requires PHP: 8.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -164,5 +164,14 @@ The interactive wizard allows you to set the screen size for which the resulting
 = 1.11.1 =
 
 * The plugin package is smaller: it no longer contains files used only for development
+
+= 1.11.2 =
+
+* Fixed orders from the Miguel app with a Balíkovna pickup point, which Shipmall exported with a wrong branch id
+* Fixed Balíkovna delivery methods by Toret, which the Miguel app offered as free
+
+= 1.12.0 =
+
+* A "read in the app" button can open the Melvil app with the shop's signed-in customer signed in. Switch it on in the new "Open the app" settings section
 
 [Full changelog](https://github.com/servantes-io/miguel-woocommerce/blob/main/CHANGELOG.md)
