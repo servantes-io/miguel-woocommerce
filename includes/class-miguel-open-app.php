@@ -14,7 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * `web` is the theme's "read in the app" button: it redirects to the open page Miguel names, with a
  * one-time sign-in only for a signed-in customer on a phone. `app` is the app's sign-in window: it
- * routes a signed-out visitor through the shop's login and redirects a signed-in one into the app.
+ * routes a signed-out visitor through the shop's customer login (WooCommerce's My account page, else
+ * the WordPress login; the `miguel_open_app_login_url` filter may point it elsewhere) and redirects a
+ * signed-in one into the app.
  *
  * Handled on the front end, where WordPress's login cookie applies (the REST API ignores it without
  * a nonce). The token only ever travels in a redirect's Location header, and no response may be
@@ -88,6 +90,8 @@ class Miguel_Open_App {
 	public function register_hooks() {
 		// Before any other template_redirect callback can redirect or start output.
 		$this->hook_manager->add_action( 'template_redirect', array( $this, 'maybe_handle' ), 0 );
+		$this->hook_manager->add_filter( 'woocommerce_login_redirect', array( $this, 'continue_to_app_sign_in' ) );
+		$this->hook_manager->add_filter( 'woocommerce_registration_redirect', array( $this, 'continue_to_app_sign_in' ) );
 		add_shortcode( self::SHORTCODE, array( __CLASS__, 'shortcode' ) );
 	}
 
@@ -156,7 +160,7 @@ class Miguel_Open_App {
 		}
 
 		if ( ! is_user_logged_in() ) {
-			return $this->redirect( wp_login_url( self::url( 'app' ) ) );
+			return $this->redirect( $this->login_url() );
 		}
 
 		$email = $this->customer_email();
@@ -170,6 +174,45 @@ class Miguel_Open_App {
 		}
 
 		return $this->redirect( $result['appUrl'] );
+	}
+
+	/**
+	 * Where a signed-out visitor signs in: the customer login on WooCommerce's My account page, with
+	 * the way back in `redirect_to`, else the WordPress login.
+	 *
+	 * @return string
+	 */
+	private function login_url() {
+		$return_url = self::url( 'app' );
+		$page_id    = wc_get_page_id( 'myaccount' );
+		$my_account = 0 < $page_id ? get_permalink( $page_id ) : '';
+		$url        = $my_account ? add_query_arg( 'redirect_to', rawurlencode( $return_url ), $my_account ) : wp_login_url( $return_url );
+
+		/**
+		 * Filters where the app's sign-in window sends a signed-out visitor to sign in.
+		 *
+		 * The login must bring the visitor back to `$return_url` once signed in.
+		 *
+		 * @param string $url        The login address.
+		 * @param string $return_url The app's sign-in address to come back to.
+		 */
+		return (string) apply_filters( 'miguel_open_app_login_url', $url, $return_url );
+	}
+
+	/**
+	 * After a sign-in or registration on My account, WooCommerce returns the customer to the page
+	 * they came from (unless the form names a `redirect`). When that is My account opened by the
+	 * app's sign-in window, continue to the app's sign-in instead.
+	 *
+	 * @param string $redirect Where WooCommerce is about to send the customer.
+	 * @return string
+	 */
+	public function continue_to_app_sign_in( $redirect ) {
+		$query = (string) wp_parse_url( (string) $redirect, PHP_URL_QUERY );
+		parse_str( $query, $args );
+
+		$return_url = self::url( 'app' );
+		return isset( $args['redirect_to'] ) && $return_url === $args['redirect_to'] ? $return_url : $redirect;
 	}
 
 	/**

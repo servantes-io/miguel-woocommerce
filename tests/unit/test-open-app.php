@@ -20,11 +20,15 @@ class Miguel_Test_Open_App extends Miguel_Test_Case {
 	/** @var int */
 	private $responses;
 
+	/** @var Miguel_Hook_Manager|null */
+	private $hook_manager;
+
 	public function setUp(): void {
 		parent::setUp();
 		delete_option( Miguel_Error_Reporter::BUFFER_OPTION );
 		delete_option( Miguel_Open_App::ENABLED_OPTION );
 		delete_option( Miguel_Open_App::FALLBACK_URL_OPTION );
+		delete_option( 'woocommerce_myaccount_page_id' );
 		unset( $_SERVER['HTTP_SEC_CH_UA_MOBILE'] );
 		$_SERVER['HTTP_USER_AGENT'] = self::IPHONE;
 		$this->response  = null;
@@ -33,6 +37,10 @@ class Miguel_Test_Open_App extends Miguel_Test_Case {
 
 	public function tearDown(): void {
 		unset( $_GET[ Miguel_Open_App::QUERY_VAR ], $_SERVER['HTTP_USER_AGENT'] );
+		if ( $this->hook_manager ) {
+			$this->hook_manager->remove_all_hooks();
+			$this->hook_manager = null;
+		}
 		remove_shortcode( Miguel_Open_App::SHORTCODE );
 		wp_set_current_user( 0 );
 		parent::tearDown();
@@ -108,6 +116,29 @@ class Miguel_Test_Open_App extends Miguel_Test_Case {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Make WooCommerce's My account page exist and return its address.
+	 */
+	private function my_account_page() {
+		$page_id = self::factory()->post->create(
+			array(
+				'post_type'   => 'page',
+				'post_status' => 'publish',
+				'post_title'  => 'Můj účet',
+			)
+		);
+		update_option( 'woocommerce_myaccount_page_id', $page_id );
+		return get_permalink( $page_id );
+	}
+
+	/**
+	 * Register the handler's hooks for this test only.
+	 */
+	private function hook_up() {
+		$this->hook_manager = new Miguel_Hook_Manager();
+		( new Miguel_Open_App( $this->hook_manager, new Miguel_V2_Client( 'https://miguel.test', 'shop-key' ) ) )->register_hooks();
 	}
 
 	private function miguel_fails( $response ) {
@@ -264,14 +295,69 @@ class Miguel_Test_Open_App extends Miguel_Test_Case {
 
 	// Criterion 3.
 
-	public function test_app_signed_out_goes_through_shop_login_and_back(): void {
+	public function test_app_signed_out_goes_through_the_my_account_login_and_back(): void {
 		$this->enable();
+		$my_account = $this->my_account_page();
 		$this->miguel_answers();
 
 		$response = $this->visit( 'app' );
 
 		$this->assertSame( array(), $this->login_link_requests() );
+		$this->assert_redirect( add_query_arg( 'redirect_to', rawurlencode( home_url( '/?miguel-open-app=app' ) ), $my_account ), $response );
+	}
+
+	public function test_app_signed_out_without_a_my_account_page_goes_through_the_wordpress_login(): void {
+		$this->enable();
+		$this->miguel_answers();
+
+		$response = $this->visit( 'app' );
+
 		$this->assert_redirect( wp_login_url( home_url( '/?miguel-open-app=app' ) ), $response );
+	}
+
+	public function test_a_shop_may_point_the_sign_in_at_its_own_login_page(): void {
+		$this->enable();
+		$this->my_account_page();
+		$filter = function ( $url, $return_url ) {
+			return add_query_arg( 'back', rawurlencode( $return_url ), home_url( '/prihlaseni/' ) );
+		};
+		add_filter( 'miguel_open_app_login_url', $filter, 10, 2 );
+
+		$response = $this->visit( 'app' );
+		remove_filter( 'miguel_open_app_login_url', $filter, 10 );
+
+		$this->assert_redirect( home_url( '/prihlaseni/?back=' . rawurlencode( home_url( '/?miguel-open-app=app' ) ) ), $response );
+	}
+
+	/**
+	 * WooCommerce sends a customer who signed in or registered on My account back to the page they
+	 * came from: My account with the app's sign-in address in `redirect_to`.
+	 */
+	public function test_signing_in_or_registering_on_my_account_continues_to_the_app_sign_in(): void {
+		$app_sign_in = home_url( '/?miguel-open-app=app' );
+		$referer     = add_query_arg( 'redirect_to', rawurlencode( $app_sign_in ), $this->my_account_page() );
+		$this->hook_up();
+
+		$this->assertSame( $app_sign_in, apply_filters( 'woocommerce_login_redirect', $referer, wp_get_current_user() ) );
+		$this->assertSame( $app_sign_in, apply_filters( 'woocommerce_registration_redirect', $referer ) );
+		$this->assertSame( $app_sign_in, apply_filters( 'woocommerce_registration_redirect', wp_make_link_relative( $referer ) ) );
+	}
+
+	public function test_my_account_sign_in_leads_elsewhere_as_woocommerce_decides(): void {
+		$my_account = $this->my_account_page();
+		$this->hook_up();
+
+		foreach (
+			array(
+				$my_account,
+				add_query_arg( 'redirect_to', rawurlencode( home_url( '/kosik/' ) ), $my_account ),
+				add_query_arg( 'redirect_to', rawurlencode( 'https://evil.example/?miguel-open-app=app' ), $my_account ),
+				home_url( '/?miguel-open-app=app' ),
+			) as $redirect
+		) {
+			$this->assertSame( $redirect, apply_filters( 'woocommerce_login_redirect', $redirect, wp_get_current_user() ) );
+			$this->assertSame( $redirect, apply_filters( 'woocommerce_registration_redirect', $redirect ) );
+		}
 	}
 
 	public function test_app_signed_in_customer_is_redirected_to_app_url(): void {
