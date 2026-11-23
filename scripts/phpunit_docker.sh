@@ -56,7 +56,8 @@ refuse() {
 
 # Read the versions: strict KEY=value lines, a UTF-8 BOM and CR line ends
 # ignored, nothing is ever sourced or evaluated.
-[ -r "$VERSIONS_FILE" ] || refuse "test" "no such file"
+[ -e "$VERSIONS_FILE" ] || refuse "test" "no such file"
+[ -f "$VERSIONS_FILE" ] && [ -r "$VERSIONS_FILE" ] || refuse "test" "not a readable file"
 PHP="" MYSQL="" WP="" WC=""
 SEEN=" "
 while IFS= read -r line || [ -n "$line" ]; do
