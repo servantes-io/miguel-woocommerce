@@ -22,7 +22,7 @@ test:
 	vendor/bin/phpunit
 
 test-docker:
-	docker compose -f docker-compose.test.yml run --rm phpunit
+	docker compose --env-file .test-versions -f docker-compose.test.yml run --rm phpunit
 
 smoke-docker:
 	scripts/smoke_docker.sh

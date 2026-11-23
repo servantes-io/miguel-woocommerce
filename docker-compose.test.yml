@@ -1,6 +1,6 @@
 services:
   woocommerce_test_db:
-    image: mysql:8
+    image: mysql:${MYSQL_VERSION:?MYSQL_VERSION is not set (see .test-versions)}
     environment:
       MYSQL_ROOT_PASSWORD: woocommerce_test_password
       MYSQL_DATABASE: woocommerce_tests
@@ -11,6 +11,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.test
+      args:
+        PHP_VERSION: ${PHP_VERSION:?PHP_VERSION is not set (see .test-versions)}
+    # Tagged by the PHP version, so a change of it builds a new image.
+    image: miguel-woocommerce-phpunit:php${PHP_VERSION:?PHP_VERSION is not set (see .test-versions)}
     depends_on:
       - woocommerce_test_db
     volumes:
@@ -19,8 +23,8 @@ services:
       - wp_tests_cache:/tmp/wordpress-tests-lib
       - wp_core_cache:/tmp/wordpress
     environment:
-      WC_VERSION: ${WC_VERSION:-9.9.5}
-      WP_VERSION: ${WP_VERSION:-6.8.5}
+      WC_VERSION: ${WC_VERSION:?WC_VERSION is not set (see .test-versions)}
+      WP_VERSION: ${WP_VERSION:?WP_VERSION is not set (see .test-versions)}
     entrypoint: /project/bin/docker-test-entrypoint.sh
 
 volumes:

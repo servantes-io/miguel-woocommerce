@@ -1,0 +1,5 @@
+# The versions scripts/phpunit_docker.sh and `make test-docker` run the tests on. CI's matrices are separate.
+PHP_VERSION=8.3
+MYSQL_VERSION=8
+WP_VERSION=6.8.5
+WC_VERSION=9.9.5
