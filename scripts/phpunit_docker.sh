@@ -34,7 +34,8 @@
 #      kept: they are the WordPress/WooCommerce caches that make runs fast.
 #
 # The compose project name is fixed (not the directory name) so the cache
-# volumes are shared by every checkout and worktree, and so `down` can never
+# volumes are shared by every checkout and worktree (each named by the versions it
+# holds, see docker-compose.test.yml), and so `down` can never
 # touch a developer's own stack, which runs under the default project name.
 set -euo pipefail
 

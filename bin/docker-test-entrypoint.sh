@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-WC_VERSION=${WC_VERSION:-9.9.5}
-WP_VERSION=${WP_VERSION:-6.8.5}
+WC_VERSION=${WC_VERSION:?WC_VERSION is not set (see .test-versions)}
+WP_VERSION=${WP_VERSION:?WP_VERSION is not set (see .test-versions)}
 WP_TESTS_DIR=${WP_TESTS_DIR:-/tmp/wordpress-tests-lib}
 WP_CORE_DIR=${WP_CORE_DIR:-/tmp/wordpress}
 DB_HOST="woocommerce_test_db"

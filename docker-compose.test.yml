@@ -27,7 +27,15 @@ services:
       WP_VERSION: ${WP_VERSION:?WP_VERSION is not set (see .test-versions)}
     entrypoint: /project/bin/docker-test-entrypoint.sh
 
+# The installs are cached in named volumes that the entrypoint fills only when
+# they are empty, so each is named by the version it holds: a version bump in
+# .test-versions gets a fresh volume and installs that version instead of
+# running on the old one. Volumes of an older version stay until removed
+# (`docker volume ls`, `docker volume rm`). The versions are digits and dots.
 volumes:
   woocommerce_cache:
+    name: miguel-woocommerce-wc${WC_VERSION:?WC_VERSION is not set (see .test-versions)}
   wp_tests_cache:
+    name: miguel-woocommerce-wp${WP_VERSION:?WP_VERSION is not set (see .test-versions)}-tests-lib
   wp_core_cache:
+    name: miguel-woocommerce-wp${WP_VERSION:?WP_VERSION is not set (see .test-versions)}-core
