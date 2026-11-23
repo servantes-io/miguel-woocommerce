@@ -4,9 +4,10 @@ include .dbconfig
 
 # The Docker test targets take the lock scripts/phpunit_docker.sh takes (same file),
 # so a make run never shares the version-named cache volumes or the test database
-# with a script run; a machine without flock (macOS) runs without it.
+# with a script run; a machine without flock (macOS) runs without it. (LOCK is
+# expanded where it is used, so the lock file is only touched by those targets.)
 LOCK_FILE = /tmp/miguel-woocommerce-phpunit.lock
-LOCK := $(shell command -v flock >/dev/null 2>&1 && { [ -e $(LOCK_FILE) ] || : >$(LOCK_FILE); echo "flock $(LOCK_FILE)"; })
+LOCK = $(shell command -v flock >/dev/null 2>&1 && { [ -e $(LOCK_FILE) ] || : >$(LOCK_FILE); echo "flock $(LOCK_FILE)"; })
 
 make:
 	@echo "Please choose one of the following target:"
