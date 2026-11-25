@@ -1,0 +1,41 @@
+# Dependabot version updates (servantes-io/alfred#405): weekly, minor and patch grouped per
+# ecosystem, each major its own pull request. A release must be 7 days old before it is offered.
+version: 2
+# The test images' versions live in .test-versions, which Dependabot does not read.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Prague
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        update-types: [minor, patch]
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Prague
+    cooldown:
+      default-days: 7
+    groups:
+      composer:
+        update-types: [minor, patch]
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Prague
+    cooldown:
+      default-days: 7
+    groups:
+      compose:
+        update-types: [minor, patch]
